@@ -1,0 +1,17 @@
+[package]
+name = "doover-proto"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+description = "tonic/prost codegen for the Doover device_agent gRPC contract"
+
+[dependencies]
+tonic = { workspace = true }
+prost = { workspace = true }
+prost-types = { workspace = true }
+
+[build-dependencies]
+tonic-build = { workspace = true }
+# Self-contained protoc: used only when PROTOC is not already set (CI / Alpine
+# export PROTOC=/usr/bin/protoc instead).
+protoc-bin-vendored = "3"

@@ -1,0 +1,28 @@
+// Vendored VERBATIM from pydoover: protos/health.proto (the standard grpc.health.v1 contract)
+// Source: /Users/josh/Coding/doover/pydoover/protos/health.proto
+// pydoover version: 1.9.0 (proto last touched at commit 169bbcc4233ac47b0871f8a5171542620f9cf280)
+// Do not edit here — re-vendor from pydoover when it changes (CI sync check planned).
+
+syntax = "proto3";
+
+package grpc.health.v1;
+
+message HealthCheckRequest {
+  string service = 1;
+}
+
+message HealthCheckResponse {
+  enum ServingStatus {
+    UNKNOWN = 0;
+    SERVING = 1;
+    NOT_SERVING = 2;
+    SERVICE_UNKNOWN = 3;  // Used only by the Watch method.
+  }
+  ServingStatus status = 1;
+}
+
+service Health {
+  rpc Check(HealthCheckRequest) returns (HealthCheckResponse);
+
+  rpc Watch(HealthCheckRequest) returns (stream HealthCheckResponse);
+}

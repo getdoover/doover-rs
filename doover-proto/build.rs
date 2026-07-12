@@ -5,17 +5,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         std::env::set_var("PROTOC", protoc_bin_vendored::protoc_bin_path()?);
     }
 
-    tonic_build::configure()
-        // clients only: doover-rs writes *client* apps, it does not serve the
-        // device_agent service (that is the agent's job).
-        .build_client(true)
-        .build_server(false)
-        .compile_protos(
-            &["proto/device_agent.proto", "proto/platform_iface.proto"],
-            &["proto"],
-        )?;
+    let protos = [
+        "proto/device_agent.proto",
+        "proto/platform_iface.proto",
+        "proto/modbus_iface.proto",
+        "proto/health.proto",
+    ];
 
-    println!("cargo:rerun-if-changed=proto/device_agent.proto");
-    println!("cargo:rerun-if-changed=proto/platform_iface.proto");
+    tonic_build::configure()
+        // Apps consume the *client* stubs; the servers are generated too so
+        // tests can spin up in-process fakes of the sidecars.
+        .build_client(true)
+        .build_server(true)
+        .compile_protos(&protos, &["proto"])?;
+
+    for proto in protos {
+        println!("cargo:rerun-if-changed={proto}");
+    }
     Ok(())
 }

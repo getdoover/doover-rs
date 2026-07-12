@@ -17,6 +17,48 @@ pub mod names {
     pub const CHANNEL_SYNC: &str = "ChannelSync";
 }
 
+/// Which event kinds a subscriber wants delivered — pydoover's
+/// `EventSubscription` flag, hand-rolled to avoid a bitflags dependency.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EventSubscription(u8);
+
+impl EventSubscription {
+    pub const NONE: Self = Self(0);
+    pub const MESSAGE_CREATE: Self = Self(1 << 0);
+    pub const MESSAGE_UPDATE: Self = Self(1 << 1);
+    pub const AGGREGATE_UPDATE: Self = Self(1 << 2);
+    pub const ONESHOT_MESSAGE: Self = Self(1 << 3);
+    pub const CHANNEL_SYNC: Self = Self(1 << 4);
+    pub const ALL: Self = Self(0b1_1111);
+
+    pub const fn contains(self, other: Self) -> bool {
+        self.0 & other.0 == other.0
+    }
+
+    pub const fn intersects(self, other: Self) -> bool {
+        self.0 & other.0 != 0
+    }
+}
+
+impl std::ops::BitOr for EventSubscription {
+    type Output = Self;
+    fn bitor(self, rhs: Self) -> Self {
+        Self(self.0 | rhs.0)
+    }
+}
+
+impl std::ops::BitOrAssign for EventSubscription {
+    fn bitor_assign(&mut self, rhs: Self) {
+        self.0 |= rhs.0;
+    }
+}
+
+impl Default for EventSubscription {
+    fn default() -> Self {
+        Self::ALL
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Event {
     pub event_name: String,
@@ -26,17 +68,45 @@ pub struct Event {
 }
 
 impl Event {
+    /// Synthesize a `ChannelSync` event from the initial aggregate fetched on
+    /// subscription, so subscribers get the channel's boot state through the
+    /// same delivery path as live events (pydoover `ChannelSyncEvent`).
+    pub fn channel_sync(channel: impl Into<String>, aggregate_data: Value) -> Self {
+        let payload = serde_json::json!({ "aggregate": { "data": aggregate_data } });
+        Self {
+            event_name: names::CHANNEL_SYNC.to_string(),
+            channel: channel.into(),
+            payload,
+        }
+    }
+
     pub fn is_aggregate_update(&self) -> bool {
         self.event_name == names::AGGREGATE_UPDATE
     }
     pub fn is_message_create(&self) -> bool {
         self.event_name == names::MESSAGE_CREATE
     }
+    pub fn is_message_update(&self) -> bool {
+        self.event_name == names::MESSAGE_UPDATE
+    }
     pub fn is_one_shot(&self) -> bool {
         self.event_name == names::ONE_SHOT_MESSAGE
     }
     pub fn is_channel_sync(&self) -> bool {
         self.event_name == names::CHANNEL_SYNC
+    }
+
+    /// The `EventSubscription` flag this event corresponds to, or `NONE` for
+    /// an unrecognized event name (pydoover `_event_type_to_flag`).
+    pub fn subscription_flag(&self) -> EventSubscription {
+        match self.event_name.as_str() {
+            names::MESSAGE_CREATE => EventSubscription::MESSAGE_CREATE,
+            names::MESSAGE_UPDATE => EventSubscription::MESSAGE_UPDATE,
+            names::AGGREGATE_UPDATE => EventSubscription::AGGREGATE_UPDATE,
+            names::ONE_SHOT_MESSAGE => EventSubscription::ONESHOT_MESSAGE,
+            names::CHANNEL_SYNC => EventSubscription::CHANNEL_SYNC,
+            _ => EventSubscription::NONE,
+        }
     }
 
     /// For AggregateUpdate / ChannelSync: the full merged aggregate data

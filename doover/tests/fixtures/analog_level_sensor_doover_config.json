@@ -1,0 +1,348 @@
+{
+    "analog_level_sensor": {
+        "id": 144013263405893128,
+        "name": "analog_level_sensor",
+        "display_name": "Analog Level Sensor",
+        "type": "DEV",
+        "visibility": "PUB",
+        "allow_many": true,
+        "description": "App for analog (4-20mA) level sensors. Both radar and submersible sensors are supported.",
+        "long_description": "README.md",
+        "depends_on": [
+            "platform_interface"
+        ],
+        "organisation_id": null,
+        "image_name": "ghcr.io/getdoover/analog-level-sensor:main",
+        "container_registry_profile_id": 93955828574386692,
+        "build_args": "--platform linux/amd64,linux/arm64",
+        "staging_config": {
+            "container_registry_profile_id": "7369503425484439552",
+            "id": 179478624141861898
+        },
+        "config_schema": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "",
+            "title": "$default",
+            "type": "object",
+            "properties": {
+                "ai_pin": {
+                    "title": "AI Pin",
+                    "x-name": "ai_pin",
+                    "x-hidden": false,
+                    "type": "integer",
+                    "x-required": true,
+                    "description": "Analog input pin number",
+                    "x-position": 0
+                },
+                "sensor_maximum_metres": {
+                    "title": "Sensor Maximum Metres",
+                    "x-name": "sensor_maximum_metres",
+                    "x-hidden": false,
+                    "type": "number",
+                    "x-required": true,
+                    "description": "Maximum sensor depth (m)",
+                    "x-position": 1
+                },
+                "full_level": {
+                    "title": "Full Level",
+                    "x-name": "full_level",
+                    "x-hidden": false,
+                    "type": "number",
+                    "x-required": true,
+                    "description": "Level reading when full (m)",
+                    "x-position": 2
+                },
+                "sensor_minimum_ma": {
+                    "title": "Sensor Minimum mA",
+                    "x-name": "sensor_minimum_ma",
+                    "x-hidden": false,
+                    "type": [
+                        "number",
+                        "null"
+                    ],
+                    "x-required": false,
+                    "description": "Minimum sensor output (mA)",
+                    "default": 4.0,
+                    "x-position": 3
+                },
+                "sensor_maximum_ma": {
+                    "title": "Sensor Maximum mA",
+                    "x-name": "sensor_maximum_ma",
+                    "x-hidden": false,
+                    "type": [
+                        "number",
+                        "null"
+                    ],
+                    "x-required": false,
+                    "description": "Maximum sensor output (mA)",
+                    "default": 20.0,
+                    "x-position": 4
+                },
+                "sensor_minimum_metres": {
+                    "title": "Sensor Minimum Metres",
+                    "x-name": "sensor_minimum_metres",
+                    "x-hidden": false,
+                    "type": [
+                        "number",
+                        "null"
+                    ],
+                    "x-required": false,
+                    "description": "Minimum sensor depth (m)",
+                    "default": 0.0,
+                    "x-position": 5
+                },
+                "empty_level": {
+                    "title": "Empty Level",
+                    "x-name": "empty_level",
+                    "x-hidden": false,
+                    "type": [
+                        "number",
+                        "null"
+                    ],
+                    "x-required": false,
+                    "description": "Level reading when empty (m)",
+                    "default": 0.0,
+                    "x-position": 6
+                },
+                "power_pin": {
+                    "title": "Power Pin",
+                    "x-name": "power_pin",
+                    "x-hidden": false,
+                    "type": [
+                        "integer",
+                        "null"
+                    ],
+                    "x-required": false,
+                    "description": "Digital output pin to power the sensor",
+                    "default": null,
+                    "x-position": 7
+                },
+                "polling_frequency": {
+                    "title": "Polling Frequency",
+                    "x-name": "polling_frequency",
+                    "x-hidden": false,
+                    "type": [
+                        "number",
+                        "null"
+                    ],
+                    "x-required": false,
+                    "description": "How often to poll the sensor (Hz)",
+                    "default": 1.0,
+                    "x-position": 8
+                },
+                "sensor_type": {
+                    "enum": [
+                        "Submersible",
+                        "Radar",
+                        "Radar Inverted"
+                    ],
+                    "title": "Sensor Type",
+                    "x-name": "sensor_type",
+                    "x-hidden": false,
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "x-required": false,
+                    "description": "Type of sensor. Radar inverted reads like a submersible sensor.",
+                    "default": "Submersible",
+                    "x-position": 9
+                },
+                "volume_curve": {
+                    "title": "Volume Curve",
+                    "x-name": "volume_curve",
+                    "x-hidden": false,
+                    "type": "array",
+                    "x-required": true,
+                    "x-position": 10,
+                    "items": {
+                        "title": "Volume Curve Point",
+                        "x-name": "volume_curve_point",
+                        "x-hidden": false,
+                        "type": "object",
+                        "x-required": true,
+                        "properties": {
+                            "level": {
+                                "title": "Level",
+                                "x-name": "level",
+                                "x-hidden": false,
+                                "type": "number",
+                                "x-required": true,
+                                "description": "Level / depth in metres",
+                                "x-position": 1
+                            },
+                            "volume": {
+                                "title": "Volume",
+                                "x-name": "volume",
+                                "x-hidden": false,
+                                "type": "number",
+                                "x-required": true,
+                                "description": "Volume in configured volume units",
+                                "x-position": 2
+                            }
+                        },
+                        "additionalElements": true,
+                        "required": [
+                            "level",
+                            "volume"
+                        ],
+                        "x-collapsible": true,
+                        "x-defaultCollapsed": false
+                    }
+                },
+                "hide_volume": {
+                    "title": "Hide Volume",
+                    "x-name": "hide_volume",
+                    "x-hidden": false,
+                    "type": [
+                        "boolean",
+                        "null"
+                    ],
+                    "x-required": false,
+                    "description": "Whether to hide the tank volume in the UI",
+                    "default": true,
+                    "x-position": 11
+                },
+                "max_volume": {
+                    "title": "Max Volume",
+                    "x-name": "max_volume",
+                    "x-hidden": false,
+                    "type": [
+                        "number",
+                        "null"
+                    ],
+                    "x-required": false,
+                    "description": "Maximum tank volume in the configured volume units, used when no volume curve is configured",
+                    "default": 100000.0,
+                    "x-position": 12
+                },
+                "volume_units": {
+                    "title": "Volume Units",
+                    "x-name": "volume_units",
+                    "x-hidden": false,
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "x-required": false,
+                    "description": "Units to display the volume reading in (e.g. L, kL, gal)",
+                    "default": "L",
+                    "x-position": 13
+                },
+                "volume_decimal_precision": {
+                    "title": "Volume Decimal Precision",
+                    "x-name": "volume_decimal_precision",
+                    "x-hidden": false,
+                    "type": [
+                        "integer",
+                        "null"
+                    ],
+                    "x-required": false,
+                    "description": "Number of decimal places to show for the volume reading",
+                    "default": 0,
+                    "x-position": 14
+                },
+                "dv_app_position": {
+                    "title": "Position",
+                    "x-name": "dv_app_position",
+                    "x-hidden": true,
+                    "type": [
+                        "integer",
+                        "null"
+                    ],
+                    "x-required": false,
+                    "description": "Position of Application in UI Structure. Smaller numbers are closer to the top.",
+                    "default": 100,
+                    "x-position": 15,
+                    "minimum": 0
+                }
+            },
+            "additionalElements": true,
+            "required": [
+                "ai_pin",
+                "sensor_maximum_metres",
+                "full_level",
+                "volume_curve"
+            ]
+        },
+        "ui_schema": {
+            "displayString": "$config.app().APP_DISPLAY_NAME",
+            "hidden": "$config.app().hidden:boolean:false:boolean:false",
+            "position": "$config.app().dv_app_position:number:100",
+            "icon": null,
+            "colour": null,
+            "defaultOpen": "$config.app().dv_app_default_open:boolean",
+            "type": "uiApplication",
+            "name": "$config.app().APP_KEY",
+            "children": {
+                "level": {
+                    "name": "level",
+                    "type": "uiVariable",
+                    "displayString": "Level",
+                    "showActivity": true,
+                    "form": "radialGauge",
+                    "position": 51,
+                    "hidden": false,
+                    "units": "%",
+                    "varType": "float",
+                    "currentValue": "$tag.app().level_filled_percentage:number:null",
+                    "decPrecision": 1,
+                    "ranges": [
+                        {
+                            "min": 0,
+                            "max": 15.0,
+                            "colour": "blue",
+                            "show_on_graph": true,
+                            "label": "Low"
+                        },
+                        {
+                            "min": 15.0,
+                            "max": 100,
+                            "colour": "green",
+                            "show_on_graph": true,
+                            "label": "Good"
+                        }
+                    ],
+                    "live": true
+                },
+                "level_reading": {
+                    "name": "level_reading",
+                    "type": "uiVariable",
+                    "displayString": "Level Reading",
+                    "showActivity": true,
+                    "position": 52,
+                    "hidden": false,
+                    "units": "m",
+                    "varType": "float",
+                    "currentValue": "$tag.app().level_reading:number:null",
+                    "decPrecision": 2,
+                    "live": true
+                },
+                "volume": {
+                    "name": "volume",
+                    "type": "uiVariable",
+                    "displayString": "Volume",
+                    "showActivity": true,
+                    "position": 53,
+                    "hidden": true,
+                    "units": "L",
+                    "varType": "float",
+                    "currentValue": "$tag.app().level_volume:number:null",
+                    "decPrecision": 0
+                }
+            }
+        },
+        "key": null,
+        "owner_org_id": null,
+        "code_repo_id": null,
+        "repo_branch": "main",
+        "lambda_config": null,
+        "icon_url": null,
+        "banner_url": null,
+        "build_widget_command": null,
+        "export_config_command": null,
+        "export_ui_command": null,
+        "run_command": null,
+        "lambda_arn": null
+    }
+}

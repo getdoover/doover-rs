@@ -1,0 +1,24 @@
+{
+    "ai_pin": 3,
+    "full_level": 0.615,
+    "empty_level": 0,
+    "sensor_type": "Submersible",
+    "sensor_maximum_ma": 20,
+    "sensor_minimum_ma": 4,
+    "sensor_maximum_metres": 4.0816,
+    "sensor_minimum_metres": 0,
+    "show_in_ui": true,
+    "volume_curve": [
+        {"level": 0, "volume": 0},
+        {"level": 0.2, "volume": 150},
+        {"level": 0.25, "volume": 200},
+        {"level": 0.29, "volume": 250},
+        {"level": 0.33, "volume": 300},
+        {"level": 0.385, "volume": 350},
+        {"level": 0.425, "volume": 400},
+        {"level": 0.475, "volume": 450},
+        {"level": 0.515, "volume": 500},
+        {"level": 0.56, "volume": 550},
+        {"level": 0.615, "volume": 600}
+    ]
+}

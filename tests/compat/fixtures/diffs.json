@@ -1,0 +1,14309 @@
+[
+  {
+    "old": {},
+    "new": {},
+    "do_delete": true,
+    "diff": {},
+    "applied": {}
+  },
+  {
+    "old": {},
+    "new": {},
+    "do_delete": false,
+    "diff": {},
+    "applied": {}
+  },
+  {
+    "old": {},
+    "new": {
+      "a": 1
+    },
+    "do_delete": true,
+    "diff": {
+      "a": 1
+    },
+    "applied": {
+      "a": 1
+    }
+  },
+  {
+    "old": {},
+    "new": {
+      "a": 1
+    },
+    "do_delete": false,
+    "diff": {
+      "a": 1
+    },
+    "applied": {
+      "a": 1
+    }
+  },
+  {
+    "old": {},
+    "new": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "do_delete": true,
+    "diff": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "applied": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "old": {},
+    "new": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "do_delete": false,
+    "diff": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "applied": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "old": {},
+    "new": {
+      "a": 1.0
+    },
+    "do_delete": true,
+    "diff": {
+      "a": 1.0
+    },
+    "applied": {
+      "a": 1.0
+    }
+  },
+  {
+    "old": {},
+    "new": {
+      "a": 1.0
+    },
+    "do_delete": false,
+    "diff": {
+      "a": 1.0
+    },
+    "applied": {
+      "a": 1.0
+    }
+  },
+  {
+    "old": {},
+    "new": {
+      "a": true,
+      "b": false
+    },
+    "do_delete": true,
+    "diff": {
+      "a": true,
+      "b": false
+    },
+    "applied": {
+      "a": true,
+      "b": false
+    }
+  },
+  {
+    "old": {},
+    "new": {
+      "a": true,
+      "b": false
+    },
+    "do_delete": false,
+    "diff": {
+      "a": true,
+      "b": false
+    },
+    "applied": {
+      "a": true,
+      "b": false
+    }
+  },
+  {
+    "old": {},
+    "new": {
+      "a": null
+    },
+    "do_delete": true,
+    "diff": {
+      "a": null
+    },
+    "applied": {}
+  },
+  {
+    "old": {},
+    "new": {
+      "a": null
+    },
+    "do_delete": false,
+    "diff": {
+      "a": null
+    },
+    "applied": {
+      "a": null
+    }
+  },
+  {
+    "old": {},
+    "new": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "applied": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    }
+  },
+  {
+    "old": {},
+    "new": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "applied": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    }
+  },
+  {
+    "old": {},
+    "new": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "do_delete": true,
+    "diff": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "applied": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    }
+  },
+  {
+    "old": {},
+    "new": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "do_delete": false,
+    "diff": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "applied": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    }
+  },
+  {
+    "old": {},
+    "new": {
+      "a": {}
+    },
+    "do_delete": true,
+    "diff": {},
+    "applied": {}
+  },
+  {
+    "old": {},
+    "new": {
+      "a": {}
+    },
+    "do_delete": false,
+    "diff": {},
+    "applied": {}
+  },
+  {
+    "old": {},
+    "new": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "do_delete": true,
+    "diff": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "applied": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    }
+  },
+  {
+    "old": {},
+    "new": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "do_delete": false,
+    "diff": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "applied": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    }
+  },
+  {
+    "old": {},
+    "new": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "do_delete": true,
+    "diff": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "applied": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    }
+  },
+  {
+    "old": {},
+    "new": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "do_delete": false,
+    "diff": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "applied": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    }
+  },
+  {
+    "old": {},
+    "new": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "applied": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "old": {},
+    "new": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "applied": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "old": {},
+    "new": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "applied": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    }
+  },
+  {
+    "old": {},
+    "new": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "applied": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    }
+  },
+  {
+    "old": {},
+    "new": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "applied": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {}
+    }
+  },
+  {
+    "old": {},
+    "new": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "applied": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    }
+  },
+  {
+    "old": {
+      "a": 1
+    },
+    "new": {},
+    "do_delete": true,
+    "diff": {
+      "a": null
+    },
+    "applied": {}
+  },
+  {
+    "old": {
+      "a": 1
+    },
+    "new": {},
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "a": 1
+    }
+  },
+  {
+    "old": {
+      "a": 1
+    },
+    "new": {
+      "a": 1
+    },
+    "do_delete": true,
+    "diff": {},
+    "applied": {
+      "a": 1
+    }
+  },
+  {
+    "old": {
+      "a": 1
+    },
+    "new": {
+      "a": 1
+    },
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "a": 1
+    }
+  },
+  {
+    "old": {
+      "a": 1
+    },
+    "new": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "do_delete": true,
+    "diff": {
+      "b": 2,
+      "c": 3
+    },
+    "applied": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "old": {
+      "a": 1
+    },
+    "new": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "do_delete": false,
+    "diff": {
+      "b": 2,
+      "c": 3
+    },
+    "applied": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "old": {
+      "a": 1
+    },
+    "new": {
+      "a": 1.0
+    },
+    "do_delete": true,
+    "diff": {},
+    "applied": {
+      "a": 1
+    }
+  },
+  {
+    "old": {
+      "a": 1
+    },
+    "new": {
+      "a": 1.0
+    },
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "a": 1
+    }
+  },
+  {
+    "old": {
+      "a": 1
+    },
+    "new": {
+      "a": true,
+      "b": false
+    },
+    "do_delete": true,
+    "diff": {
+      "b": false
+    },
+    "applied": {
+      "a": 1,
+      "b": false
+    }
+  },
+  {
+    "old": {
+      "a": 1
+    },
+    "new": {
+      "a": true,
+      "b": false
+    },
+    "do_delete": false,
+    "diff": {
+      "b": false
+    },
+    "applied": {
+      "a": 1,
+      "b": false
+    }
+  },
+  {
+    "old": {
+      "a": 1
+    },
+    "new": {
+      "a": null
+    },
+    "do_delete": true,
+    "diff": {
+      "a": null
+    },
+    "applied": {}
+  },
+  {
+    "old": {
+      "a": 1
+    },
+    "new": {
+      "a": null
+    },
+    "do_delete": false,
+    "diff": {
+      "a": null
+    },
+    "applied": {
+      "a": null
+    }
+  },
+  {
+    "old": {
+      "a": 1
+    },
+    "new": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "applied": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    }
+  },
+  {
+    "old": {
+      "a": 1
+    },
+    "new": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "applied": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    }
+  },
+  {
+    "old": {
+      "a": 1
+    },
+    "new": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "do_delete": true,
+    "diff": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "applied": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    }
+  },
+  {
+    "old": {
+      "a": 1
+    },
+    "new": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "do_delete": false,
+    "diff": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "applied": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    }
+  },
+  {
+    "old": {
+      "a": 1
+    },
+    "new": {
+      "a": {}
+    },
+    "do_delete": true,
+    "diff": {},
+    "applied": {
+      "a": 1
+    }
+  },
+  {
+    "old": {
+      "a": 1
+    },
+    "new": {
+      "a": {}
+    },
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "a": 1
+    }
+  },
+  {
+    "old": {
+      "a": 1
+    },
+    "new": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "do_delete": true,
+    "diff": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "applied": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": 1
+    },
+    "new": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "do_delete": false,
+    "diff": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "applied": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": 1
+    },
+    "new": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "do_delete": true,
+    "diff": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "applied": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": 1
+    },
+    "new": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "do_delete": false,
+    "diff": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "applied": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": 1
+    },
+    "new": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "applied": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "old": {
+      "a": 1
+    },
+    "new": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "applied": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "old": {
+      "a": 1
+    },
+    "new": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      },
+      "a": null
+    },
+    "applied": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    }
+  },
+  {
+    "old": {
+      "a": 1
+    },
+    "new": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "applied": {
+      "a": 1,
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    }
+  },
+  {
+    "old": {
+      "a": 1
+    },
+    "new": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      },
+      "a": null
+    },
+    "applied": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {}
+    }
+  },
+  {
+    "old": {
+      "a": 1
+    },
+    "new": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "applied": {
+      "a": 1,
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    }
+  },
+  {
+    "old": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "new": {},
+    "do_delete": true,
+    "diff": {
+      "b": null,
+      "a": null,
+      "c": null
+    },
+    "applied": {}
+  },
+  {
+    "old": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "new": {},
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "old": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "new": {
+      "a": 1
+    },
+    "do_delete": true,
+    "diff": {
+      "b": null,
+      "c": null
+    },
+    "applied": {
+      "a": 1
+    }
+  },
+  {
+    "old": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "new": {
+      "a": 1
+    },
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "old": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "new": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "do_delete": true,
+    "diff": {},
+    "applied": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "old": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "new": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "old": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "new": {
+      "a": 1.0
+    },
+    "do_delete": true,
+    "diff": {
+      "b": null,
+      "c": null
+    },
+    "applied": {
+      "a": 1
+    }
+  },
+  {
+    "old": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "new": {
+      "a": 1.0
+    },
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "old": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "new": {
+      "a": true,
+      "b": false
+    },
+    "do_delete": true,
+    "diff": {
+      "b": false,
+      "c": null
+    },
+    "applied": {
+      "a": 1,
+      "b": false
+    }
+  },
+  {
+    "old": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "new": {
+      "a": true,
+      "b": false
+    },
+    "do_delete": false,
+    "diff": {
+      "b": false
+    },
+    "applied": {
+      "a": 1,
+      "b": false,
+      "c": 3
+    }
+  },
+  {
+    "old": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "new": {
+      "a": null
+    },
+    "do_delete": true,
+    "diff": {
+      "a": null,
+      "b": null,
+      "c": null
+    },
+    "applied": {}
+  },
+  {
+    "old": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "new": {
+      "a": null
+    },
+    "do_delete": false,
+    "diff": {
+      "a": null
+    },
+    "applied": {
+      "a": null,
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "old": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "new": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      },
+      "b": null,
+      "c": null
+    },
+    "applied": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    }
+  },
+  {
+    "old": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "new": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "applied": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      },
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "old": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "new": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "do_delete": true,
+    "diff": {
+      "a": {
+        "b": 1
+      },
+      "c": 2,
+      "b": null
+    },
+    "applied": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    }
+  },
+  {
+    "old": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "new": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "do_delete": false,
+    "diff": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "applied": {
+      "a": {
+        "b": 1
+      },
+      "b": 2,
+      "c": 2
+    }
+  },
+  {
+    "old": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "new": {
+      "a": {}
+    },
+    "do_delete": true,
+    "diff": {
+      "b": null,
+      "c": null
+    },
+    "applied": {
+      "a": 1
+    }
+  },
+  {
+    "old": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "new": {
+      "a": {}
+    },
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "old": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "new": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "do_delete": true,
+    "diff": {
+      "a": [
+        1,
+        2,
+        3
+      ],
+      "b": null,
+      "c": null
+    },
+    "applied": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "new": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "do_delete": false,
+    "diff": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "applied": {
+      "a": [
+        1,
+        2,
+        3
+      ],
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "old": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "new": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "do_delete": true,
+    "diff": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ],
+      "b": null,
+      "c": null
+    },
+    "applied": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "new": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "do_delete": false,
+    "diff": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "applied": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ],
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "old": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "new": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      },
+      "c": null
+    },
+    "applied": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "old": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "new": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "applied": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      },
+      "c": 3
+    }
+  },
+  {
+    "old": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "new": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      },
+      "b": null,
+      "a": null,
+      "c": null
+    },
+    "applied": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    }
+  },
+  {
+    "old": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "new": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "applied": {
+      "a": 1,
+      "b": 2,
+      "c": 3,
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    }
+  },
+  {
+    "old": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "new": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      },
+      "b": null,
+      "a": null,
+      "c": null
+    },
+    "applied": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {}
+    }
+  },
+  {
+    "old": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "new": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "applied": {
+      "a": 1,
+      "b": 2,
+      "c": 3,
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    }
+  },
+  {
+    "old": {
+      "a": 1.0
+    },
+    "new": {},
+    "do_delete": true,
+    "diff": {
+      "a": null
+    },
+    "applied": {}
+  },
+  {
+    "old": {
+      "a": 1.0
+    },
+    "new": {},
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "a": 1.0
+    }
+  },
+  {
+    "old": {
+      "a": 1.0
+    },
+    "new": {
+      "a": 1
+    },
+    "do_delete": true,
+    "diff": {},
+    "applied": {
+      "a": 1.0
+    }
+  },
+  {
+    "old": {
+      "a": 1.0
+    },
+    "new": {
+      "a": 1
+    },
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "a": 1.0
+    }
+  },
+  {
+    "old": {
+      "a": 1.0
+    },
+    "new": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "do_delete": true,
+    "diff": {
+      "b": 2,
+      "c": 3
+    },
+    "applied": {
+      "a": 1.0,
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "old": {
+      "a": 1.0
+    },
+    "new": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "do_delete": false,
+    "diff": {
+      "b": 2,
+      "c": 3
+    },
+    "applied": {
+      "a": 1.0,
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "old": {
+      "a": 1.0
+    },
+    "new": {
+      "a": 1.0
+    },
+    "do_delete": true,
+    "diff": {},
+    "applied": {
+      "a": 1.0
+    }
+  },
+  {
+    "old": {
+      "a": 1.0
+    },
+    "new": {
+      "a": 1.0
+    },
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "a": 1.0
+    }
+  },
+  {
+    "old": {
+      "a": 1.0
+    },
+    "new": {
+      "a": true,
+      "b": false
+    },
+    "do_delete": true,
+    "diff": {
+      "b": false
+    },
+    "applied": {
+      "a": 1.0,
+      "b": false
+    }
+  },
+  {
+    "old": {
+      "a": 1.0
+    },
+    "new": {
+      "a": true,
+      "b": false
+    },
+    "do_delete": false,
+    "diff": {
+      "b": false
+    },
+    "applied": {
+      "a": 1.0,
+      "b": false
+    }
+  },
+  {
+    "old": {
+      "a": 1.0
+    },
+    "new": {
+      "a": null
+    },
+    "do_delete": true,
+    "diff": {
+      "a": null
+    },
+    "applied": {}
+  },
+  {
+    "old": {
+      "a": 1.0
+    },
+    "new": {
+      "a": null
+    },
+    "do_delete": false,
+    "diff": {
+      "a": null
+    },
+    "applied": {
+      "a": null
+    }
+  },
+  {
+    "old": {
+      "a": 1.0
+    },
+    "new": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "applied": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    }
+  },
+  {
+    "old": {
+      "a": 1.0
+    },
+    "new": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "applied": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    }
+  },
+  {
+    "old": {
+      "a": 1.0
+    },
+    "new": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "do_delete": true,
+    "diff": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "applied": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    }
+  },
+  {
+    "old": {
+      "a": 1.0
+    },
+    "new": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "do_delete": false,
+    "diff": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "applied": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    }
+  },
+  {
+    "old": {
+      "a": 1.0
+    },
+    "new": {
+      "a": {}
+    },
+    "do_delete": true,
+    "diff": {},
+    "applied": {
+      "a": 1.0
+    }
+  },
+  {
+    "old": {
+      "a": 1.0
+    },
+    "new": {
+      "a": {}
+    },
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "a": 1.0
+    }
+  },
+  {
+    "old": {
+      "a": 1.0
+    },
+    "new": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "do_delete": true,
+    "diff": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "applied": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": 1.0
+    },
+    "new": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "do_delete": false,
+    "diff": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "applied": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": 1.0
+    },
+    "new": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "do_delete": true,
+    "diff": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "applied": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": 1.0
+    },
+    "new": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "do_delete": false,
+    "diff": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "applied": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": 1.0
+    },
+    "new": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "applied": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "old": {
+      "a": 1.0
+    },
+    "new": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "applied": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "old": {
+      "a": 1.0
+    },
+    "new": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      },
+      "a": null
+    },
+    "applied": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    }
+  },
+  {
+    "old": {
+      "a": 1.0
+    },
+    "new": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "applied": {
+      "a": 1.0,
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    }
+  },
+  {
+    "old": {
+      "a": 1.0
+    },
+    "new": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      },
+      "a": null
+    },
+    "applied": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {}
+    }
+  },
+  {
+    "old": {
+      "a": 1.0
+    },
+    "new": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "applied": {
+      "a": 1.0,
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    }
+  },
+  {
+    "old": {
+      "a": true,
+      "b": false
+    },
+    "new": {},
+    "do_delete": true,
+    "diff": {
+      "b": null,
+      "a": null
+    },
+    "applied": {}
+  },
+  {
+    "old": {
+      "a": true,
+      "b": false
+    },
+    "new": {},
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "a": true,
+      "b": false
+    }
+  },
+  {
+    "old": {
+      "a": true,
+      "b": false
+    },
+    "new": {
+      "a": 1
+    },
+    "do_delete": true,
+    "diff": {
+      "b": null
+    },
+    "applied": {
+      "a": true
+    }
+  },
+  {
+    "old": {
+      "a": true,
+      "b": false
+    },
+    "new": {
+      "a": 1
+    },
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "a": true,
+      "b": false
+    }
+  },
+  {
+    "old": {
+      "a": true,
+      "b": false
+    },
+    "new": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "do_delete": true,
+    "diff": {
+      "b": 2,
+      "c": 3
+    },
+    "applied": {
+      "a": true,
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "old": {
+      "a": true,
+      "b": false
+    },
+    "new": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "do_delete": false,
+    "diff": {
+      "b": 2,
+      "c": 3
+    },
+    "applied": {
+      "a": true,
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "old": {
+      "a": true,
+      "b": false
+    },
+    "new": {
+      "a": 1.0
+    },
+    "do_delete": true,
+    "diff": {
+      "b": null
+    },
+    "applied": {
+      "a": true
+    }
+  },
+  {
+    "old": {
+      "a": true,
+      "b": false
+    },
+    "new": {
+      "a": 1.0
+    },
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "a": true,
+      "b": false
+    }
+  },
+  {
+    "old": {
+      "a": true,
+      "b": false
+    },
+    "new": {
+      "a": true,
+      "b": false
+    },
+    "do_delete": true,
+    "diff": {},
+    "applied": {
+      "a": true,
+      "b": false
+    }
+  },
+  {
+    "old": {
+      "a": true,
+      "b": false
+    },
+    "new": {
+      "a": true,
+      "b": false
+    },
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "a": true,
+      "b": false
+    }
+  },
+  {
+    "old": {
+      "a": true,
+      "b": false
+    },
+    "new": {
+      "a": null
+    },
+    "do_delete": true,
+    "diff": {
+      "a": null,
+      "b": null
+    },
+    "applied": {}
+  },
+  {
+    "old": {
+      "a": true,
+      "b": false
+    },
+    "new": {
+      "a": null
+    },
+    "do_delete": false,
+    "diff": {
+      "a": null
+    },
+    "applied": {
+      "a": null,
+      "b": false
+    }
+  },
+  {
+    "old": {
+      "a": true,
+      "b": false
+    },
+    "new": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      },
+      "b": null
+    },
+    "applied": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    }
+  },
+  {
+    "old": {
+      "a": true,
+      "b": false
+    },
+    "new": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "applied": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      },
+      "b": false
+    }
+  },
+  {
+    "old": {
+      "a": true,
+      "b": false
+    },
+    "new": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "do_delete": true,
+    "diff": {
+      "a": {
+        "b": 1
+      },
+      "c": 2,
+      "b": null
+    },
+    "applied": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    }
+  },
+  {
+    "old": {
+      "a": true,
+      "b": false
+    },
+    "new": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "do_delete": false,
+    "diff": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "applied": {
+      "a": {
+        "b": 1
+      },
+      "b": false,
+      "c": 2
+    }
+  },
+  {
+    "old": {
+      "a": true,
+      "b": false
+    },
+    "new": {
+      "a": {}
+    },
+    "do_delete": true,
+    "diff": {
+      "b": null
+    },
+    "applied": {
+      "a": true
+    }
+  },
+  {
+    "old": {
+      "a": true,
+      "b": false
+    },
+    "new": {
+      "a": {}
+    },
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "a": true,
+      "b": false
+    }
+  },
+  {
+    "old": {
+      "a": true,
+      "b": false
+    },
+    "new": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "do_delete": true,
+    "diff": {
+      "a": [
+        1,
+        2,
+        3
+      ],
+      "b": null
+    },
+    "applied": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": true,
+      "b": false
+    },
+    "new": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "do_delete": false,
+    "diff": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "applied": {
+      "a": [
+        1,
+        2,
+        3
+      ],
+      "b": false
+    }
+  },
+  {
+    "old": {
+      "a": true,
+      "b": false
+    },
+    "new": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "do_delete": true,
+    "diff": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ],
+      "b": null
+    },
+    "applied": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": true,
+      "b": false
+    },
+    "new": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "do_delete": false,
+    "diff": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "applied": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ],
+      "b": false
+    }
+  },
+  {
+    "old": {
+      "a": true,
+      "b": false
+    },
+    "new": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "applied": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "old": {
+      "a": true,
+      "b": false
+    },
+    "new": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "applied": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "old": {
+      "a": true,
+      "b": false
+    },
+    "new": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      },
+      "b": null,
+      "a": null
+    },
+    "applied": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    }
+  },
+  {
+    "old": {
+      "a": true,
+      "b": false
+    },
+    "new": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "applied": {
+      "a": true,
+      "b": false,
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    }
+  },
+  {
+    "old": {
+      "a": true,
+      "b": false
+    },
+    "new": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      },
+      "b": null,
+      "a": null
+    },
+    "applied": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {}
+    }
+  },
+  {
+    "old": {
+      "a": true,
+      "b": false
+    },
+    "new": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "applied": {
+      "a": true,
+      "b": false,
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    }
+  },
+  {
+    "old": {
+      "a": null
+    },
+    "new": {},
+    "do_delete": true,
+    "diff": {
+      "a": null
+    },
+    "applied": {}
+  },
+  {
+    "old": {
+      "a": null
+    },
+    "new": {},
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "a": null
+    }
+  },
+  {
+    "old": {
+      "a": null
+    },
+    "new": {
+      "a": 1
+    },
+    "do_delete": true,
+    "diff": {
+      "a": 1
+    },
+    "applied": {
+      "a": 1
+    }
+  },
+  {
+    "old": {
+      "a": null
+    },
+    "new": {
+      "a": 1
+    },
+    "do_delete": false,
+    "diff": {
+      "a": 1
+    },
+    "applied": {
+      "a": 1
+    }
+  },
+  {
+    "old": {
+      "a": null
+    },
+    "new": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "do_delete": true,
+    "diff": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "applied": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "old": {
+      "a": null
+    },
+    "new": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "do_delete": false,
+    "diff": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "applied": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "old": {
+      "a": null
+    },
+    "new": {
+      "a": 1.0
+    },
+    "do_delete": true,
+    "diff": {
+      "a": 1.0
+    },
+    "applied": {
+      "a": 1.0
+    }
+  },
+  {
+    "old": {
+      "a": null
+    },
+    "new": {
+      "a": 1.0
+    },
+    "do_delete": false,
+    "diff": {
+      "a": 1.0
+    },
+    "applied": {
+      "a": 1.0
+    }
+  },
+  {
+    "old": {
+      "a": null
+    },
+    "new": {
+      "a": true,
+      "b": false
+    },
+    "do_delete": true,
+    "diff": {
+      "a": true,
+      "b": false
+    },
+    "applied": {
+      "a": true,
+      "b": false
+    }
+  },
+  {
+    "old": {
+      "a": null
+    },
+    "new": {
+      "a": true,
+      "b": false
+    },
+    "do_delete": false,
+    "diff": {
+      "a": true,
+      "b": false
+    },
+    "applied": {
+      "a": true,
+      "b": false
+    }
+  },
+  {
+    "old": {
+      "a": null
+    },
+    "new": {
+      "a": null
+    },
+    "do_delete": true,
+    "diff": {},
+    "applied": {
+      "a": null
+    }
+  },
+  {
+    "old": {
+      "a": null
+    },
+    "new": {
+      "a": null
+    },
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "a": null
+    }
+  },
+  {
+    "old": {
+      "a": null
+    },
+    "new": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "applied": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    }
+  },
+  {
+    "old": {
+      "a": null
+    },
+    "new": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "applied": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    }
+  },
+  {
+    "old": {
+      "a": null
+    },
+    "new": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "do_delete": true,
+    "diff": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "applied": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    }
+  },
+  {
+    "old": {
+      "a": null
+    },
+    "new": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "do_delete": false,
+    "diff": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "applied": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    }
+  },
+  {
+    "old": {
+      "a": null
+    },
+    "new": {
+      "a": {}
+    },
+    "do_delete": true,
+    "diff": {},
+    "applied": {
+      "a": null
+    }
+  },
+  {
+    "old": {
+      "a": null
+    },
+    "new": {
+      "a": {}
+    },
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "a": null
+    }
+  },
+  {
+    "old": {
+      "a": null
+    },
+    "new": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "do_delete": true,
+    "diff": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "applied": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": null
+    },
+    "new": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "do_delete": false,
+    "diff": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "applied": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": null
+    },
+    "new": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "do_delete": true,
+    "diff": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "applied": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": null
+    },
+    "new": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "do_delete": false,
+    "diff": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "applied": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": null
+    },
+    "new": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "applied": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "old": {
+      "a": null
+    },
+    "new": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "applied": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "old": {
+      "a": null
+    },
+    "new": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      },
+      "a": null
+    },
+    "applied": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    }
+  },
+  {
+    "old": {
+      "a": null
+    },
+    "new": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "applied": {
+      "a": null,
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    }
+  },
+  {
+    "old": {
+      "a": null
+    },
+    "new": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      },
+      "a": null
+    },
+    "applied": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {}
+    }
+  },
+  {
+    "old": {
+      "a": null
+    },
+    "new": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "applied": {
+      "a": null,
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "new": {},
+    "do_delete": true,
+    "diff": {
+      "a": null
+    },
+    "applied": {}
+  },
+  {
+    "old": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "new": {},
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "new": {
+      "a": 1
+    },
+    "do_delete": true,
+    "diff": {
+      "a": 1
+    },
+    "applied": {
+      "a": 1
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "new": {
+      "a": 1
+    },
+    "do_delete": false,
+    "diff": {
+      "a": 1
+    },
+    "applied": {
+      "a": 1
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "new": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "do_delete": true,
+    "diff": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "applied": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "new": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "do_delete": false,
+    "diff": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "applied": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "new": {
+      "a": 1.0
+    },
+    "do_delete": true,
+    "diff": {
+      "a": 1.0
+    },
+    "applied": {
+      "a": 1.0
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "new": {
+      "a": 1.0
+    },
+    "do_delete": false,
+    "diff": {
+      "a": 1.0
+    },
+    "applied": {
+      "a": 1.0
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "new": {
+      "a": true,
+      "b": false
+    },
+    "do_delete": true,
+    "diff": {
+      "a": true,
+      "b": false
+    },
+    "applied": {
+      "a": true,
+      "b": false
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "new": {
+      "a": true,
+      "b": false
+    },
+    "do_delete": false,
+    "diff": {
+      "a": true,
+      "b": false
+    },
+    "applied": {
+      "a": true,
+      "b": false
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "new": {
+      "a": null
+    },
+    "do_delete": true,
+    "diff": {
+      "a": null
+    },
+    "applied": {}
+  },
+  {
+    "old": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "new": {
+      "a": null
+    },
+    "do_delete": false,
+    "diff": {
+      "a": null
+    },
+    "applied": {
+      "a": null
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "new": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "do_delete": true,
+    "diff": {},
+    "applied": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "new": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "new": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "do_delete": true,
+    "diff": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "applied": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "new": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "do_delete": false,
+    "diff": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "applied": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "new": {
+      "a": {}
+    },
+    "do_delete": true,
+    "diff": {
+      "a": {
+        "b": null
+      }
+    },
+    "applied": {
+      "a": {}
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "new": {
+      "a": {}
+    },
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "new": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "do_delete": true,
+    "diff": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "applied": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "new": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "do_delete": false,
+    "diff": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "applied": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "new": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "do_delete": true,
+    "diff": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "applied": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "new": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "do_delete": false,
+    "diff": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "applied": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "new": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "applied": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "new": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "applied": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "new": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      },
+      "a": null
+    },
+    "applied": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "new": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "applied": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      },
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "new": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      },
+      "a": null
+    },
+    "applied": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {}
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "new": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "applied": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      },
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "new": {},
+    "do_delete": true,
+    "diff": {
+      "a": null,
+      "c": null
+    },
+    "applied": {}
+  },
+  {
+    "old": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "new": {},
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "new": {
+      "a": 1
+    },
+    "do_delete": true,
+    "diff": {
+      "a": 1,
+      "c": null
+    },
+    "applied": {
+      "a": 1
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "new": {
+      "a": 1
+    },
+    "do_delete": false,
+    "diff": {
+      "a": 1
+    },
+    "applied": {
+      "a": 1,
+      "c": 2
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "new": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "do_delete": true,
+    "diff": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "applied": {
+      "a": 1,
+      "c": 3,
+      "b": 2
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "new": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "do_delete": false,
+    "diff": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "applied": {
+      "a": 1,
+      "c": 3,
+      "b": 2
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "new": {
+      "a": 1.0
+    },
+    "do_delete": true,
+    "diff": {
+      "a": 1.0,
+      "c": null
+    },
+    "applied": {
+      "a": 1.0
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "new": {
+      "a": 1.0
+    },
+    "do_delete": false,
+    "diff": {
+      "a": 1.0
+    },
+    "applied": {
+      "a": 1.0,
+      "c": 2
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "new": {
+      "a": true,
+      "b": false
+    },
+    "do_delete": true,
+    "diff": {
+      "a": true,
+      "b": false,
+      "c": null
+    },
+    "applied": {
+      "a": true,
+      "b": false
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "new": {
+      "a": true,
+      "b": false
+    },
+    "do_delete": false,
+    "diff": {
+      "a": true,
+      "b": false
+    },
+    "applied": {
+      "a": true,
+      "c": 2,
+      "b": false
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "new": {
+      "a": null
+    },
+    "do_delete": true,
+    "diff": {
+      "a": null,
+      "c": null
+    },
+    "applied": {}
+  },
+  {
+    "old": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "new": {
+      "a": null
+    },
+    "do_delete": false,
+    "diff": {
+      "a": null
+    },
+    "applied": {
+      "a": null,
+      "c": 2
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "new": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      },
+      "c": null
+    },
+    "applied": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "new": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "applied": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      },
+      "c": 2
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "new": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "do_delete": true,
+    "diff": {},
+    "applied": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "new": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "new": {
+      "a": {}
+    },
+    "do_delete": true,
+    "diff": {
+      "a": {
+        "b": null
+      },
+      "c": null
+    },
+    "applied": {
+      "a": {}
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "new": {
+      "a": {}
+    },
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "new": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "do_delete": true,
+    "diff": {
+      "a": [
+        1,
+        2,
+        3
+      ],
+      "c": null
+    },
+    "applied": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "new": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "do_delete": false,
+    "diff": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "applied": {
+      "a": [
+        1,
+        2,
+        3
+      ],
+      "c": 2
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "new": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "do_delete": true,
+    "diff": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ],
+      "c": null
+    },
+    "applied": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "new": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "do_delete": false,
+    "diff": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "applied": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ],
+      "c": 2
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "new": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      },
+      "c": null
+    },
+    "applied": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "new": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "applied": {
+      "a": "str",
+      "c": 2,
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "new": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      },
+      "a": null,
+      "c": null
+    },
+    "applied": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "new": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "applied": {
+      "a": {
+        "b": 1
+      },
+      "c": 2,
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "new": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      },
+      "a": null,
+      "c": null
+    },
+    "applied": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {}
+    }
+  },
+  {
+    "old": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "new": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "applied": {
+      "a": {
+        "b": 1
+      },
+      "c": 2,
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    }
+  },
+  {
+    "old": {
+      "a": {}
+    },
+    "new": {},
+    "do_delete": true,
+    "diff": {
+      "a": null
+    },
+    "applied": {}
+  },
+  {
+    "old": {
+      "a": {}
+    },
+    "new": {},
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "a": {}
+    }
+  },
+  {
+    "old": {
+      "a": {}
+    },
+    "new": {
+      "a": 1
+    },
+    "do_delete": true,
+    "diff": {
+      "a": 1
+    },
+    "applied": {
+      "a": 1
+    }
+  },
+  {
+    "old": {
+      "a": {}
+    },
+    "new": {
+      "a": 1
+    },
+    "do_delete": false,
+    "diff": {
+      "a": 1
+    },
+    "applied": {
+      "a": 1
+    }
+  },
+  {
+    "old": {
+      "a": {}
+    },
+    "new": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "do_delete": true,
+    "diff": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "applied": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "old": {
+      "a": {}
+    },
+    "new": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "do_delete": false,
+    "diff": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "applied": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "old": {
+      "a": {}
+    },
+    "new": {
+      "a": 1.0
+    },
+    "do_delete": true,
+    "diff": {
+      "a": 1.0
+    },
+    "applied": {
+      "a": 1.0
+    }
+  },
+  {
+    "old": {
+      "a": {}
+    },
+    "new": {
+      "a": 1.0
+    },
+    "do_delete": false,
+    "diff": {
+      "a": 1.0
+    },
+    "applied": {
+      "a": 1.0
+    }
+  },
+  {
+    "old": {
+      "a": {}
+    },
+    "new": {
+      "a": true,
+      "b": false
+    },
+    "do_delete": true,
+    "diff": {
+      "a": true,
+      "b": false
+    },
+    "applied": {
+      "a": true,
+      "b": false
+    }
+  },
+  {
+    "old": {
+      "a": {}
+    },
+    "new": {
+      "a": true,
+      "b": false
+    },
+    "do_delete": false,
+    "diff": {
+      "a": true,
+      "b": false
+    },
+    "applied": {
+      "a": true,
+      "b": false
+    }
+  },
+  {
+    "old": {
+      "a": {}
+    },
+    "new": {
+      "a": null
+    },
+    "do_delete": true,
+    "diff": {
+      "a": null
+    },
+    "applied": {}
+  },
+  {
+    "old": {
+      "a": {}
+    },
+    "new": {
+      "a": null
+    },
+    "do_delete": false,
+    "diff": {
+      "a": null
+    },
+    "applied": {
+      "a": null
+    }
+  },
+  {
+    "old": {
+      "a": {}
+    },
+    "new": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "applied": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    }
+  },
+  {
+    "old": {
+      "a": {}
+    },
+    "new": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "applied": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    }
+  },
+  {
+    "old": {
+      "a": {}
+    },
+    "new": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "do_delete": true,
+    "diff": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "applied": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    }
+  },
+  {
+    "old": {
+      "a": {}
+    },
+    "new": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "do_delete": false,
+    "diff": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "applied": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    }
+  },
+  {
+    "old": {
+      "a": {}
+    },
+    "new": {
+      "a": {}
+    },
+    "do_delete": true,
+    "diff": {},
+    "applied": {
+      "a": {}
+    }
+  },
+  {
+    "old": {
+      "a": {}
+    },
+    "new": {
+      "a": {}
+    },
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "a": {}
+    }
+  },
+  {
+    "old": {
+      "a": {}
+    },
+    "new": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "do_delete": true,
+    "diff": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "applied": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": {}
+    },
+    "new": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "do_delete": false,
+    "diff": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "applied": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": {}
+    },
+    "new": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "do_delete": true,
+    "diff": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "applied": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": {}
+    },
+    "new": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "do_delete": false,
+    "diff": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "applied": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": {}
+    },
+    "new": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "applied": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "old": {
+      "a": {}
+    },
+    "new": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "applied": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "old": {
+      "a": {}
+    },
+    "new": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      },
+      "a": null
+    },
+    "applied": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    }
+  },
+  {
+    "old": {
+      "a": {}
+    },
+    "new": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "applied": {
+      "a": {},
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    }
+  },
+  {
+    "old": {
+      "a": {}
+    },
+    "new": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      },
+      "a": null
+    },
+    "applied": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {}
+    }
+  },
+  {
+    "old": {
+      "a": {}
+    },
+    "new": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "applied": {
+      "a": {},
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "new": {},
+    "do_delete": true,
+    "diff": {
+      "a": null
+    },
+    "applied": {}
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "new": {},
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "new": {
+      "a": 1
+    },
+    "do_delete": true,
+    "diff": {
+      "a": 1
+    },
+    "applied": {
+      "a": 1
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "new": {
+      "a": 1
+    },
+    "do_delete": false,
+    "diff": {
+      "a": 1
+    },
+    "applied": {
+      "a": 1
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "new": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "do_delete": true,
+    "diff": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "applied": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "new": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "do_delete": false,
+    "diff": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "applied": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "new": {
+      "a": 1.0
+    },
+    "do_delete": true,
+    "diff": {
+      "a": 1.0
+    },
+    "applied": {
+      "a": 1.0
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "new": {
+      "a": 1.0
+    },
+    "do_delete": false,
+    "diff": {
+      "a": 1.0
+    },
+    "applied": {
+      "a": 1.0
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "new": {
+      "a": true,
+      "b": false
+    },
+    "do_delete": true,
+    "diff": {
+      "a": true,
+      "b": false
+    },
+    "applied": {
+      "a": true,
+      "b": false
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "new": {
+      "a": true,
+      "b": false
+    },
+    "do_delete": false,
+    "diff": {
+      "a": true,
+      "b": false
+    },
+    "applied": {
+      "a": true,
+      "b": false
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "new": {
+      "a": null
+    },
+    "do_delete": true,
+    "diff": {
+      "a": null
+    },
+    "applied": {}
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "new": {
+      "a": null
+    },
+    "do_delete": false,
+    "diff": {
+      "a": null
+    },
+    "applied": {
+      "a": null
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "new": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "applied": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "new": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "applied": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "new": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "do_delete": true,
+    "diff": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "applied": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "new": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "do_delete": false,
+    "diff": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "applied": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "new": {
+      "a": {}
+    },
+    "do_delete": true,
+    "diff": {},
+    "applied": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "new": {
+      "a": {}
+    },
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "new": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "do_delete": true,
+    "diff": {},
+    "applied": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "new": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "new": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "do_delete": true,
+    "diff": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "applied": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "new": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "do_delete": false,
+    "diff": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "applied": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "new": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "applied": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "new": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "applied": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "new": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      },
+      "a": null
+    },
+    "applied": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "new": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "applied": {
+      "a": [
+        1,
+        2,
+        3
+      ],
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "new": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      },
+      "a": null
+    },
+    "applied": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {}
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "new": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "applied": {
+      "a": [
+        1,
+        2,
+        3
+      ],
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "new": {},
+    "do_delete": true,
+    "diff": {
+      "a": null
+    },
+    "applied": {}
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "new": {},
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "new": {
+      "a": 1
+    },
+    "do_delete": true,
+    "diff": {
+      "a": 1
+    },
+    "applied": {
+      "a": 1
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "new": {
+      "a": 1
+    },
+    "do_delete": false,
+    "diff": {
+      "a": 1
+    },
+    "applied": {
+      "a": 1
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "new": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "do_delete": true,
+    "diff": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "applied": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "new": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "do_delete": false,
+    "diff": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "applied": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "new": {
+      "a": 1.0
+    },
+    "do_delete": true,
+    "diff": {
+      "a": 1.0
+    },
+    "applied": {
+      "a": 1.0
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "new": {
+      "a": 1.0
+    },
+    "do_delete": false,
+    "diff": {
+      "a": 1.0
+    },
+    "applied": {
+      "a": 1.0
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "new": {
+      "a": true,
+      "b": false
+    },
+    "do_delete": true,
+    "diff": {
+      "a": true,
+      "b": false
+    },
+    "applied": {
+      "a": true,
+      "b": false
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "new": {
+      "a": true,
+      "b": false
+    },
+    "do_delete": false,
+    "diff": {
+      "a": true,
+      "b": false
+    },
+    "applied": {
+      "a": true,
+      "b": false
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "new": {
+      "a": null
+    },
+    "do_delete": true,
+    "diff": {
+      "a": null
+    },
+    "applied": {}
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "new": {
+      "a": null
+    },
+    "do_delete": false,
+    "diff": {
+      "a": null
+    },
+    "applied": {
+      "a": null
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "new": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "applied": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "new": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "applied": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "new": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "do_delete": true,
+    "diff": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "applied": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "new": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "do_delete": false,
+    "diff": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "applied": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "new": {
+      "a": {}
+    },
+    "do_delete": true,
+    "diff": {},
+    "applied": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "new": {
+      "a": {}
+    },
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "new": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "do_delete": true,
+    "diff": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "applied": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "new": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "do_delete": false,
+    "diff": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "applied": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "new": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "do_delete": true,
+    "diff": {},
+    "applied": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "new": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "new": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "applied": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "new": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "applied": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "new": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      },
+      "a": null
+    },
+    "applied": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "new": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "applied": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ],
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "new": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      },
+      "a": null
+    },
+    "applied": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {}
+    }
+  },
+  {
+    "old": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "new": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "applied": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ],
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    }
+  },
+  {
+    "old": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "new": {},
+    "do_delete": true,
+    "diff": {
+      "b": null,
+      "a": null
+    },
+    "applied": {}
+  },
+  {
+    "old": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "new": {},
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "old": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "new": {
+      "a": 1
+    },
+    "do_delete": true,
+    "diff": {
+      "a": 1,
+      "b": null
+    },
+    "applied": {
+      "a": 1
+    }
+  },
+  {
+    "old": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "new": {
+      "a": 1
+    },
+    "do_delete": false,
+    "diff": {
+      "a": 1
+    },
+    "applied": {
+      "a": 1,
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "old": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "new": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "do_delete": true,
+    "diff": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "applied": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "old": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "new": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "do_delete": false,
+    "diff": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "applied": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "old": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "new": {
+      "a": 1.0
+    },
+    "do_delete": true,
+    "diff": {
+      "a": 1.0,
+      "b": null
+    },
+    "applied": {
+      "a": 1.0
+    }
+  },
+  {
+    "old": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "new": {
+      "a": 1.0
+    },
+    "do_delete": false,
+    "diff": {
+      "a": 1.0
+    },
+    "applied": {
+      "a": 1.0,
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "old": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "new": {
+      "a": true,
+      "b": false
+    },
+    "do_delete": true,
+    "diff": {
+      "a": true,
+      "b": false
+    },
+    "applied": {
+      "a": true,
+      "b": false
+    }
+  },
+  {
+    "old": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "new": {
+      "a": true,
+      "b": false
+    },
+    "do_delete": false,
+    "diff": {
+      "a": true,
+      "b": false
+    },
+    "applied": {
+      "a": true,
+      "b": false
+    }
+  },
+  {
+    "old": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "new": {
+      "a": null
+    },
+    "do_delete": true,
+    "diff": {
+      "a": null,
+      "b": null
+    },
+    "applied": {}
+  },
+  {
+    "old": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "new": {
+      "a": null
+    },
+    "do_delete": false,
+    "diff": {
+      "a": null
+    },
+    "applied": {
+      "a": null,
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "old": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "new": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      },
+      "b": null
+    },
+    "applied": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    }
+  },
+  {
+    "old": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "new": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "applied": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      },
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "old": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "new": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "do_delete": true,
+    "diff": {
+      "a": {
+        "b": 1
+      },
+      "c": 2,
+      "b": null
+    },
+    "applied": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    }
+  },
+  {
+    "old": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "new": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "do_delete": false,
+    "diff": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "applied": {
+      "a": {
+        "b": 1
+      },
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      },
+      "c": 2
+    }
+  },
+  {
+    "old": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "new": {
+      "a": {}
+    },
+    "do_delete": true,
+    "diff": {
+      "b": null
+    },
+    "applied": {
+      "a": "str"
+    }
+  },
+  {
+    "old": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "new": {
+      "a": {}
+    },
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "old": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "new": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "do_delete": true,
+    "diff": {
+      "a": [
+        1,
+        2,
+        3
+      ],
+      "b": null
+    },
+    "applied": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "new": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "do_delete": false,
+    "diff": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "applied": {
+      "a": [
+        1,
+        2,
+        3
+      ],
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "old": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "new": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "do_delete": true,
+    "diff": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ],
+      "b": null
+    },
+    "applied": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    }
+  },
+  {
+    "old": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "new": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "do_delete": false,
+    "diff": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "applied": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ],
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "old": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "new": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "do_delete": true,
+    "diff": {},
+    "applied": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "old": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "new": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "old": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "new": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      },
+      "b": null,
+      "a": null
+    },
+    "applied": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    }
+  },
+  {
+    "old": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "new": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "applied": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      },
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    }
+  },
+  {
+    "old": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "new": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      },
+      "b": null,
+      "a": null
+    },
+    "applied": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {}
+    }
+  },
+  {
+    "old": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "new": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "applied": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      },
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "new": {},
+    "do_delete": true,
+    "diff": {
+      "app": null
+    },
+    "applied": {}
+  },
+  {
+    "old": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "new": {},
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "new": {
+      "a": 1
+    },
+    "do_delete": true,
+    "diff": {
+      "a": 1,
+      "app": null
+    },
+    "applied": {
+      "a": 1
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "new": {
+      "a": 1
+    },
+    "do_delete": false,
+    "diff": {
+      "a": 1
+    },
+    "applied": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      },
+      "a": 1
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "new": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "do_delete": true,
+    "diff": {
+      "a": 1,
+      "b": 2,
+      "c": 3,
+      "app": null
+    },
+    "applied": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "new": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "do_delete": false,
+    "diff": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "applied": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      },
+      "a": 1,
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "new": {
+      "a": 1.0
+    },
+    "do_delete": true,
+    "diff": {
+      "a": 1.0,
+      "app": null
+    },
+    "applied": {
+      "a": 1.0
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "new": {
+      "a": 1.0
+    },
+    "do_delete": false,
+    "diff": {
+      "a": 1.0
+    },
+    "applied": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      },
+      "a": 1.0
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "new": {
+      "a": true,
+      "b": false
+    },
+    "do_delete": true,
+    "diff": {
+      "a": true,
+      "b": false,
+      "app": null
+    },
+    "applied": {
+      "a": true,
+      "b": false
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "new": {
+      "a": true,
+      "b": false
+    },
+    "do_delete": false,
+    "diff": {
+      "a": true,
+      "b": false
+    },
+    "applied": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      },
+      "a": true,
+      "b": false
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "new": {
+      "a": null
+    },
+    "do_delete": true,
+    "diff": {
+      "a": null,
+      "app": null
+    },
+    "applied": {}
+  },
+  {
+    "old": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "new": {
+      "a": null
+    },
+    "do_delete": false,
+    "diff": {
+      "a": null
+    },
+    "applied": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      },
+      "a": null
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "new": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      },
+      "app": null
+    },
+    "applied": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "new": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "applied": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      },
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "new": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "do_delete": true,
+    "diff": {
+      "a": {
+        "b": 1
+      },
+      "c": 2,
+      "app": null
+    },
+    "applied": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "new": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "do_delete": false,
+    "diff": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "applied": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      },
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "new": {
+      "a": {}
+    },
+    "do_delete": true,
+    "diff": {
+      "app": null
+    },
+    "applied": {}
+  },
+  {
+    "old": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "new": {
+      "a": {}
+    },
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "new": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "do_delete": true,
+    "diff": {
+      "a": [
+        1,
+        2,
+        3
+      ],
+      "app": null
+    },
+    "applied": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "new": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "do_delete": false,
+    "diff": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "applied": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      },
+      "a": [
+        1,
+        2,
+        3
+      ]
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "new": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "do_delete": true,
+    "diff": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ],
+      "app": null
+    },
+    "applied": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "new": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "do_delete": false,
+    "diff": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "applied": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      },
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "new": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      },
+      "app": null
+    },
+    "applied": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "new": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "applied": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      },
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "new": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "do_delete": true,
+    "diff": {},
+    "applied": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "new": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "new": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "app": {
+        "level": 6.0,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "applied": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {}
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "new": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "app": {
+        "level": 6.0,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "applied": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "new": {},
+    "do_delete": true,
+    "diff": {
+      "app": null,
+      "other": null
+    },
+    "applied": {}
+  },
+  {
+    "old": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "new": {},
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "new": {
+      "a": 1
+    },
+    "do_delete": true,
+    "diff": {
+      "a": 1,
+      "app": null,
+      "other": null
+    },
+    "applied": {
+      "a": 1
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "new": {
+      "a": 1
+    },
+    "do_delete": false,
+    "diff": {
+      "a": 1
+    },
+    "applied": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      },
+      "a": 1
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "new": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "do_delete": true,
+    "diff": {
+      "a": 1,
+      "b": 2,
+      "c": 3,
+      "app": null,
+      "other": null
+    },
+    "applied": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "new": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "do_delete": false,
+    "diff": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "applied": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      },
+      "a": 1,
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "new": {
+      "a": 1.0
+    },
+    "do_delete": true,
+    "diff": {
+      "a": 1.0,
+      "app": null,
+      "other": null
+    },
+    "applied": {
+      "a": 1.0
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "new": {
+      "a": 1.0
+    },
+    "do_delete": false,
+    "diff": {
+      "a": 1.0
+    },
+    "applied": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      },
+      "a": 1.0
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "new": {
+      "a": true,
+      "b": false
+    },
+    "do_delete": true,
+    "diff": {
+      "a": true,
+      "b": false,
+      "app": null,
+      "other": null
+    },
+    "applied": {
+      "a": true,
+      "b": false
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "new": {
+      "a": true,
+      "b": false
+    },
+    "do_delete": false,
+    "diff": {
+      "a": true,
+      "b": false
+    },
+    "applied": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      },
+      "a": true,
+      "b": false
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "new": {
+      "a": null
+    },
+    "do_delete": true,
+    "diff": {
+      "a": null,
+      "app": null,
+      "other": null
+    },
+    "applied": {}
+  },
+  {
+    "old": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "new": {
+      "a": null
+    },
+    "do_delete": false,
+    "diff": {
+      "a": null
+    },
+    "applied": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      },
+      "a": null
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "new": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      },
+      "app": null,
+      "other": null
+    },
+    "applied": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "new": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "applied": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      },
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "new": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "do_delete": true,
+    "diff": {
+      "a": {
+        "b": 1
+      },
+      "c": 2,
+      "app": null,
+      "other": null
+    },
+    "applied": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "new": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "do_delete": false,
+    "diff": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "applied": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      },
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "new": {
+      "a": {}
+    },
+    "do_delete": true,
+    "diff": {
+      "app": null,
+      "other": null
+    },
+    "applied": {}
+  },
+  {
+    "old": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "new": {
+      "a": {}
+    },
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "new": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "do_delete": true,
+    "diff": {
+      "a": [
+        1,
+        2,
+        3
+      ],
+      "app": null,
+      "other": null
+    },
+    "applied": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "new": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "do_delete": false,
+    "diff": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "applied": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      },
+      "a": [
+        1,
+        2,
+        3
+      ]
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "new": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "do_delete": true,
+    "diff": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ],
+      "app": null,
+      "other": null
+    },
+    "applied": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "new": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "do_delete": false,
+    "diff": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "applied": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      },
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "new": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      },
+      "app": null,
+      "other": null
+    },
+    "applied": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "new": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "applied": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      },
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "new": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "do_delete": true,
+    "diff": {
+      "app": {
+        "level": 5.5,
+        "on": true
+      },
+      "other": null
+    },
+    "applied": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "new": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "do_delete": false,
+    "diff": {
+      "app": {
+        "level": 5.5,
+        "on": true
+      }
+    },
+    "applied": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      },
+      "other": {
+        "x": null
+      }
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "new": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "do_delete": true,
+    "diff": {},
+    "applied": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    }
+  },
+  {
+    "old": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "new": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "do_delete": false,
+    "diff": {},
+    "applied": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {},
+    "diff": {},
+    "do_delete": true,
+    "result": {}
+  },
+  {
+    "op": "apply",
+    "data": {},
+    "diff": {},
+    "do_delete": false,
+    "result": {}
+  },
+  {
+    "op": "apply",
+    "data": {},
+    "diff": {
+      "a": null
+    },
+    "do_delete": true,
+    "result": {}
+  },
+  {
+    "op": "apply",
+    "data": {},
+    "diff": {
+      "a": null
+    },
+    "do_delete": false,
+    "result": {
+      "a": null
+    }
+  },
+  {
+    "op": "apply",
+    "data": {},
+    "diff": {
+      "a": {
+        "b": null
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "a": {}
+    }
+  },
+  {
+    "op": "apply",
+    "data": {},
+    "diff": {
+      "a": {
+        "b": null
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "a": {
+        "b": null
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {},
+    "diff": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "a": {
+        "y": 1
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {},
+    "diff": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {},
+    "diff": {
+      "c": 4
+    },
+    "do_delete": true,
+    "result": {
+      "c": 4
+    }
+  },
+  {
+    "op": "apply",
+    "data": {},
+    "diff": {
+      "c": 4
+    },
+    "do_delete": false,
+    "result": {
+      "c": 4
+    }
+  },
+  {
+    "op": "apply",
+    "data": {},
+    "diff": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "a": {
+        "b": {
+          "c": 2
+        }
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {},
+    "diff": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {},
+    "diff": "scalar-replacement",
+    "do_delete": true,
+    "result": "scalar-replacement"
+  },
+  {
+    "op": "apply",
+    "data": {},
+    "diff": "scalar-replacement",
+    "do_delete": false,
+    "result": "scalar-replacement"
+  },
+  {
+    "op": "apply",
+    "data": {},
+    "diff": {
+      "a": 5
+    },
+    "do_delete": true,
+    "result": {
+      "a": 5
+    }
+  },
+  {
+    "op": "apply",
+    "data": {},
+    "diff": {
+      "a": 5
+    },
+    "do_delete": false,
+    "result": {
+      "a": 5
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1
+    },
+    "diff": {},
+    "do_delete": true,
+    "result": {
+      "a": 1
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1
+    },
+    "diff": {},
+    "do_delete": false,
+    "result": {
+      "a": 1
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1
+    },
+    "diff": {
+      "a": null
+    },
+    "do_delete": true,
+    "result": {}
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1
+    },
+    "diff": {
+      "a": null
+    },
+    "do_delete": false,
+    "result": {
+      "a": null
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1
+    },
+    "diff": {
+      "a": {
+        "b": null
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "a": {
+        "b": null
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1
+    },
+    "diff": {
+      "a": {
+        "b": null
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "a": {
+        "b": null
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1
+    },
+    "diff": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1
+    },
+    "diff": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1
+    },
+    "diff": {
+      "c": 4
+    },
+    "do_delete": true,
+    "result": {
+      "a": 1,
+      "c": 4
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1
+    },
+    "diff": {
+      "c": 4
+    },
+    "do_delete": false,
+    "result": {
+      "a": 1,
+      "c": 4
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1
+    },
+    "diff": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1
+    },
+    "diff": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1
+    },
+    "diff": "scalar-replacement",
+    "do_delete": true,
+    "result": "scalar-replacement"
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1
+    },
+    "diff": "scalar-replacement",
+    "do_delete": false,
+    "result": "scalar-replacement"
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1
+    },
+    "diff": {
+      "a": 5
+    },
+    "do_delete": true,
+    "result": {
+      "a": 5
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1
+    },
+    "diff": {
+      "a": 5
+    },
+    "do_delete": false,
+    "result": {
+      "a": 5
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "diff": {},
+    "do_delete": true,
+    "result": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "diff": {},
+    "do_delete": false,
+    "result": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "diff": {
+      "a": null
+    },
+    "do_delete": true,
+    "result": {
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "diff": {
+      "a": null
+    },
+    "do_delete": false,
+    "result": {
+      "a": null,
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "diff": {
+      "a": {
+        "b": null
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "a": {
+        "b": null
+      },
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "diff": {
+      "a": {
+        "b": null
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "a": {
+        "b": null
+      },
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "diff": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "a": {
+        "x": null,
+        "y": 1
+      },
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "diff": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "a": {
+        "x": null,
+        "y": 1
+      },
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "diff": {
+      "c": 4
+    },
+    "do_delete": true,
+    "result": {
+      "a": 1,
+      "b": 2,
+      "c": 4
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "diff": {
+      "c": 4
+    },
+    "do_delete": false,
+    "result": {
+      "a": 1,
+      "b": 2,
+      "c": 4
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "diff": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      },
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "diff": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      },
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "diff": "scalar-replacement",
+    "do_delete": true,
+    "result": "scalar-replacement"
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "diff": "scalar-replacement",
+    "do_delete": false,
+    "result": "scalar-replacement"
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "diff": {
+      "a": 5
+    },
+    "do_delete": true,
+    "result": {
+      "a": 5,
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "diff": {
+      "a": 5
+    },
+    "do_delete": false,
+    "result": {
+      "a": 5,
+      "b": 2,
+      "c": 3
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1.0
+    },
+    "diff": {},
+    "do_delete": true,
+    "result": {
+      "a": 1.0
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1.0
+    },
+    "diff": {},
+    "do_delete": false,
+    "result": {
+      "a": 1.0
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1.0
+    },
+    "diff": {
+      "a": null
+    },
+    "do_delete": true,
+    "result": {}
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1.0
+    },
+    "diff": {
+      "a": null
+    },
+    "do_delete": false,
+    "result": {
+      "a": null
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1.0
+    },
+    "diff": {
+      "a": {
+        "b": null
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "a": {
+        "b": null
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1.0
+    },
+    "diff": {
+      "a": {
+        "b": null
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "a": {
+        "b": null
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1.0
+    },
+    "diff": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1.0
+    },
+    "diff": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1.0
+    },
+    "diff": {
+      "c": 4
+    },
+    "do_delete": true,
+    "result": {
+      "a": 1.0,
+      "c": 4
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1.0
+    },
+    "diff": {
+      "c": 4
+    },
+    "do_delete": false,
+    "result": {
+      "a": 1.0,
+      "c": 4
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1.0
+    },
+    "diff": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1.0
+    },
+    "diff": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1.0
+    },
+    "diff": "scalar-replacement",
+    "do_delete": true,
+    "result": "scalar-replacement"
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1.0
+    },
+    "diff": "scalar-replacement",
+    "do_delete": false,
+    "result": "scalar-replacement"
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1.0
+    },
+    "diff": {
+      "a": 5
+    },
+    "do_delete": true,
+    "result": {
+      "a": 5
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": 1.0
+    },
+    "diff": {
+      "a": 5
+    },
+    "do_delete": false,
+    "result": {
+      "a": 5
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": true,
+      "b": false
+    },
+    "diff": {},
+    "do_delete": true,
+    "result": {
+      "a": true,
+      "b": false
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": true,
+      "b": false
+    },
+    "diff": {},
+    "do_delete": false,
+    "result": {
+      "a": true,
+      "b": false
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": true,
+      "b": false
+    },
+    "diff": {
+      "a": null
+    },
+    "do_delete": true,
+    "result": {
+      "b": false
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": true,
+      "b": false
+    },
+    "diff": {
+      "a": null
+    },
+    "do_delete": false,
+    "result": {
+      "a": null,
+      "b": false
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": true,
+      "b": false
+    },
+    "diff": {
+      "a": {
+        "b": null
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "a": {
+        "b": null
+      },
+      "b": false
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": true,
+      "b": false
+    },
+    "diff": {
+      "a": {
+        "b": null
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "a": {
+        "b": null
+      },
+      "b": false
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": true,
+      "b": false
+    },
+    "diff": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "a": {
+        "x": null,
+        "y": 1
+      },
+      "b": false
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": true,
+      "b": false
+    },
+    "diff": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "a": {
+        "x": null,
+        "y": 1
+      },
+      "b": false
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": true,
+      "b": false
+    },
+    "diff": {
+      "c": 4
+    },
+    "do_delete": true,
+    "result": {
+      "a": true,
+      "b": false,
+      "c": 4
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": true,
+      "b": false
+    },
+    "diff": {
+      "c": 4
+    },
+    "do_delete": false,
+    "result": {
+      "a": true,
+      "b": false,
+      "c": 4
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": true,
+      "b": false
+    },
+    "diff": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      },
+      "b": false
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": true,
+      "b": false
+    },
+    "diff": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      },
+      "b": false
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": true,
+      "b": false
+    },
+    "diff": "scalar-replacement",
+    "do_delete": true,
+    "result": "scalar-replacement"
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": true,
+      "b": false
+    },
+    "diff": "scalar-replacement",
+    "do_delete": false,
+    "result": "scalar-replacement"
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": true,
+      "b": false
+    },
+    "diff": {
+      "a": 5
+    },
+    "do_delete": true,
+    "result": {
+      "a": 5,
+      "b": false
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": true,
+      "b": false
+    },
+    "diff": {
+      "a": 5
+    },
+    "do_delete": false,
+    "result": {
+      "a": 5,
+      "b": false
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": null
+    },
+    "diff": {},
+    "do_delete": true,
+    "result": {
+      "a": null
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": null
+    },
+    "diff": {},
+    "do_delete": false,
+    "result": {
+      "a": null
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": null
+    },
+    "diff": {
+      "a": null
+    },
+    "do_delete": true,
+    "result": {}
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": null
+    },
+    "diff": {
+      "a": null
+    },
+    "do_delete": false,
+    "result": {
+      "a": null
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": null
+    },
+    "diff": {
+      "a": {
+        "b": null
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "a": {
+        "b": null
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": null
+    },
+    "diff": {
+      "a": {
+        "b": null
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "a": {
+        "b": null
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": null
+    },
+    "diff": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": null
+    },
+    "diff": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": null
+    },
+    "diff": {
+      "c": 4
+    },
+    "do_delete": true,
+    "result": {
+      "a": null,
+      "c": 4
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": null
+    },
+    "diff": {
+      "c": 4
+    },
+    "do_delete": false,
+    "result": {
+      "a": null,
+      "c": 4
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": null
+    },
+    "diff": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": null
+    },
+    "diff": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": null
+    },
+    "diff": "scalar-replacement",
+    "do_delete": true,
+    "result": "scalar-replacement"
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": null
+    },
+    "diff": "scalar-replacement",
+    "do_delete": false,
+    "result": "scalar-replacement"
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": null
+    },
+    "diff": {
+      "a": 5
+    },
+    "do_delete": true,
+    "result": {
+      "a": 5
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": null
+    },
+    "diff": {
+      "a": 5
+    },
+    "do_delete": false,
+    "result": {
+      "a": 5
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "diff": {},
+    "do_delete": true,
+    "result": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "diff": {},
+    "do_delete": false,
+    "result": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "diff": {
+      "a": null
+    },
+    "do_delete": true,
+    "result": {}
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "diff": {
+      "a": null
+    },
+    "do_delete": false,
+    "result": {
+      "a": null
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "diff": {
+      "a": {
+        "b": null
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "a": {}
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "diff": {
+      "a": {
+        "b": null
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "a": {
+        "b": null
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "diff": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "a": {
+        "b": {
+          "c": 1
+        },
+        "y": 1
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "diff": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "a": {
+        "b": {
+          "c": 1
+        },
+        "x": null,
+        "y": 1
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "diff": {
+      "c": 4
+    },
+    "do_delete": true,
+    "result": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      },
+      "c": 4
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "diff": {
+      "c": 4
+    },
+    "do_delete": false,
+    "result": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      },
+      "c": 4
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "diff": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "a": {
+        "b": {
+          "c": 2
+        }
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "diff": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "diff": "scalar-replacement",
+    "do_delete": true,
+    "result": "scalar-replacement"
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "diff": "scalar-replacement",
+    "do_delete": false,
+    "result": "scalar-replacement"
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "diff": {
+      "a": 5
+    },
+    "do_delete": true,
+    "result": {
+      "a": 5
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {
+        "b": {
+          "c": 1
+        }
+      }
+    },
+    "diff": {
+      "a": 5
+    },
+    "do_delete": false,
+    "result": {
+      "a": 5
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "diff": {},
+    "do_delete": true,
+    "result": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "diff": {},
+    "do_delete": false,
+    "result": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "diff": {
+      "a": null
+    },
+    "do_delete": true,
+    "result": {
+      "c": 2
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "diff": {
+      "a": null
+    },
+    "do_delete": false,
+    "result": {
+      "a": null,
+      "c": 2
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "diff": {
+      "a": {
+        "b": null
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "a": {},
+      "c": 2
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "diff": {
+      "a": {
+        "b": null
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "a": {
+        "b": null
+      },
+      "c": 2
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "diff": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "a": {
+        "b": 1,
+        "y": 1
+      },
+      "c": 2
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "diff": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "a": {
+        "b": 1,
+        "x": null,
+        "y": 1
+      },
+      "c": 2
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "diff": {
+      "c": 4
+    },
+    "do_delete": true,
+    "result": {
+      "a": {
+        "b": 1
+      },
+      "c": 4
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "diff": {
+      "c": 4
+    },
+    "do_delete": false,
+    "result": {
+      "a": {
+        "b": 1
+      },
+      "c": 4
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "diff": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      },
+      "c": 2
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "diff": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      },
+      "c": 2
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "diff": "scalar-replacement",
+    "do_delete": true,
+    "result": "scalar-replacement"
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "diff": "scalar-replacement",
+    "do_delete": false,
+    "result": "scalar-replacement"
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "diff": {
+      "a": 5
+    },
+    "do_delete": true,
+    "result": {
+      "a": 5,
+      "c": 2
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {
+        "b": 1
+      },
+      "c": 2
+    },
+    "diff": {
+      "a": 5
+    },
+    "do_delete": false,
+    "result": {
+      "a": 5,
+      "c": 2
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {}
+    },
+    "diff": {},
+    "do_delete": true,
+    "result": {
+      "a": {}
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {}
+    },
+    "diff": {},
+    "do_delete": false,
+    "result": {
+      "a": {}
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {}
+    },
+    "diff": {
+      "a": null
+    },
+    "do_delete": true,
+    "result": {}
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {}
+    },
+    "diff": {
+      "a": null
+    },
+    "do_delete": false,
+    "result": {
+      "a": null
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {}
+    },
+    "diff": {
+      "a": {
+        "b": null
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "a": {}
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {}
+    },
+    "diff": {
+      "a": {
+        "b": null
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "a": {
+        "b": null
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {}
+    },
+    "diff": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "a": {
+        "y": 1
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {}
+    },
+    "diff": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {}
+    },
+    "diff": {
+      "c": 4
+    },
+    "do_delete": true,
+    "result": {
+      "a": {},
+      "c": 4
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {}
+    },
+    "diff": {
+      "c": 4
+    },
+    "do_delete": false,
+    "result": {
+      "a": {},
+      "c": 4
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {}
+    },
+    "diff": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "a": {
+        "b": {
+          "c": 2
+        }
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {}
+    },
+    "diff": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {}
+    },
+    "diff": "scalar-replacement",
+    "do_delete": true,
+    "result": "scalar-replacement"
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {}
+    },
+    "diff": "scalar-replacement",
+    "do_delete": false,
+    "result": "scalar-replacement"
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {}
+    },
+    "diff": {
+      "a": 5
+    },
+    "do_delete": true,
+    "result": {
+      "a": 5
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": {}
+    },
+    "diff": {
+      "a": 5
+    },
+    "do_delete": false,
+    "result": {
+      "a": 5
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "diff": {},
+    "do_delete": true,
+    "result": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "diff": {},
+    "do_delete": false,
+    "result": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "diff": {
+      "a": null
+    },
+    "do_delete": true,
+    "result": {}
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "diff": {
+      "a": null
+    },
+    "do_delete": false,
+    "result": {
+      "a": null
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "diff": {
+      "a": {
+        "b": null
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "a": {
+        "b": null
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "diff": {
+      "a": {
+        "b": null
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "a": {
+        "b": null
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "diff": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "diff": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "diff": {
+      "c": 4
+    },
+    "do_delete": true,
+    "result": {
+      "a": [
+        1,
+        2,
+        3
+      ],
+      "c": 4
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "diff": {
+      "c": 4
+    },
+    "do_delete": false,
+    "result": {
+      "a": [
+        1,
+        2,
+        3
+      ],
+      "c": 4
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "diff": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "diff": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "diff": "scalar-replacement",
+    "do_delete": true,
+    "result": "scalar-replacement"
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "diff": "scalar-replacement",
+    "do_delete": false,
+    "result": "scalar-replacement"
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "diff": {
+      "a": 5
+    },
+    "do_delete": true,
+    "result": {
+      "a": 5
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": [
+        1,
+        2,
+        3
+      ]
+    },
+    "diff": {
+      "a": 5
+    },
+    "do_delete": false,
+    "result": {
+      "a": 5
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "diff": {},
+    "do_delete": true,
+    "result": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "diff": {},
+    "do_delete": false,
+    "result": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "diff": {
+      "a": null
+    },
+    "do_delete": true,
+    "result": {}
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "diff": {
+      "a": null
+    },
+    "do_delete": false,
+    "result": {
+      "a": null
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "diff": {
+      "a": {
+        "b": null
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "a": {
+        "b": null
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "diff": {
+      "a": {
+        "b": null
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "a": {
+        "b": null
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "diff": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "diff": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "diff": {
+      "c": 4
+    },
+    "do_delete": true,
+    "result": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ],
+      "c": 4
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "diff": {
+      "c": 4
+    },
+    "do_delete": false,
+    "result": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ],
+      "c": 4
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "diff": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "diff": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "diff": "scalar-replacement",
+    "do_delete": true,
+    "result": "scalar-replacement"
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "diff": "scalar-replacement",
+    "do_delete": false,
+    "result": "scalar-replacement"
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "diff": {
+      "a": 5
+    },
+    "do_delete": true,
+    "result": {
+      "a": 5
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": [
+        1,
+        {
+          "x": 2
+        }
+      ]
+    },
+    "diff": {
+      "a": 5
+    },
+    "do_delete": false,
+    "result": {
+      "a": 5
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "diff": {},
+    "do_delete": true,
+    "result": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "diff": {},
+    "do_delete": false,
+    "result": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "diff": {
+      "a": null
+    },
+    "do_delete": true,
+    "result": {
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "diff": {
+      "a": null
+    },
+    "do_delete": false,
+    "result": {
+      "a": null,
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "diff": {
+      "a": {
+        "b": null
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "a": {
+        "b": null
+      },
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "diff": {
+      "a": {
+        "b": null
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "a": {
+        "b": null
+      },
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "diff": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "a": {
+        "x": null,
+        "y": 1
+      },
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "diff": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "a": {
+        "x": null,
+        "y": 1
+      },
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "diff": {
+      "c": 4
+    },
+    "do_delete": true,
+    "result": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      },
+      "c": 4
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "diff": {
+      "c": 4
+    },
+    "do_delete": false,
+    "result": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      },
+      "c": 4
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "diff": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      },
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "diff": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      },
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "diff": "scalar-replacement",
+    "do_delete": true,
+    "result": "scalar-replacement"
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "diff": "scalar-replacement",
+    "do_delete": false,
+    "result": "scalar-replacement"
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "diff": {
+      "a": 5
+    },
+    "do_delete": true,
+    "result": {
+      "a": 5,
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "a": "str",
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    },
+    "diff": {
+      "a": 5
+    },
+    "do_delete": false,
+    "result": {
+      "a": 5,
+      "b": {
+        "c": [
+          true,
+          null,
+          1.5
+        ]
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "diff": {},
+    "do_delete": true,
+    "result": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "diff": {},
+    "do_delete": false,
+    "result": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "diff": {
+      "a": null
+    },
+    "do_delete": true,
+    "result": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "diff": {
+      "a": null
+    },
+    "do_delete": false,
+    "result": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      },
+      "a": null
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "diff": {
+      "a": {
+        "b": null
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      },
+      "a": {}
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "diff": {
+      "a": {
+        "b": null
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      },
+      "a": {
+        "b": null
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "diff": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      },
+      "a": {
+        "y": 1
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "diff": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      },
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "diff": {
+      "c": 4
+    },
+    "do_delete": true,
+    "result": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      },
+      "c": 4
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "diff": {
+      "c": 4
+    },
+    "do_delete": false,
+    "result": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      },
+      "c": 4
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "diff": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      },
+      "a": {
+        "b": {
+          "c": 2
+        }
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "diff": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      },
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "diff": "scalar-replacement",
+    "do_delete": true,
+    "result": "scalar-replacement"
+  },
+  {
+    "op": "apply",
+    "data": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "diff": "scalar-replacement",
+    "do_delete": false,
+    "result": "scalar-replacement"
+  },
+  {
+    "op": "apply",
+    "data": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "diff": {
+      "a": 5
+    },
+    "do_delete": true,
+    "result": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      },
+      "a": 5
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      }
+    },
+    "diff": {
+      "a": 5
+    },
+    "do_delete": false,
+    "result": {
+      "app": {
+        "level": 5.5,
+        "raw": 5,
+        "on": true
+      },
+      "a": 5
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "diff": {},
+    "do_delete": true,
+    "result": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "diff": {},
+    "do_delete": false,
+    "result": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "diff": {
+      "a": null
+    },
+    "do_delete": true,
+    "result": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "diff": {
+      "a": null
+    },
+    "do_delete": false,
+    "result": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      },
+      "a": null
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "diff": {
+      "a": {
+        "b": null
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      },
+      "a": {}
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "diff": {
+      "a": {
+        "b": null
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      },
+      "a": {
+        "b": null
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "diff": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      },
+      "a": {
+        "y": 1
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "diff": {
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      },
+      "a": {
+        "x": null,
+        "y": 1
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "diff": {
+      "c": 4
+    },
+    "do_delete": true,
+    "result": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      },
+      "c": 4
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "diff": {
+      "c": 4
+    },
+    "do_delete": false,
+    "result": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      },
+      "c": 4
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "diff": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    },
+    "do_delete": true,
+    "result": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      },
+      "a": {
+        "b": {
+          "c": 2
+        }
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "diff": {
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    },
+    "do_delete": false,
+    "result": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      },
+      "a": {
+        "b": {
+          "c": 2,
+          "d": null
+        }
+      }
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "diff": "scalar-replacement",
+    "do_delete": true,
+    "result": "scalar-replacement"
+  },
+  {
+    "op": "apply",
+    "data": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "diff": "scalar-replacement",
+    "do_delete": false,
+    "result": "scalar-replacement"
+  },
+  {
+    "op": "apply",
+    "data": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "diff": {
+      "a": 5
+    },
+    "do_delete": true,
+    "result": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      },
+      "a": 5
+    }
+  },
+  {
+    "op": "apply",
+    "data": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      }
+    },
+    "diff": {
+      "a": 5
+    },
+    "do_delete": false,
+    "result": {
+      "app": {
+        "level": 6.0,
+        "raw": 5,
+        "on": false
+      },
+      "other": {
+        "x": null
+      },
+      "a": 5
+    }
+  }
+]

@@ -1,0 +1,771 @@
+[
+  {
+    "case": "container_plain",
+    "element": "Container",
+    "expected": {
+      "name": "group",
+      "type": "uiContainer",
+      "displayString": "Group",
+      "showActivity": true,
+      "position": 53,
+      "hidden": false,
+      "children": {
+        "speed": {
+          "name": "speed",
+          "type": "uiVariable",
+          "displayString": "Speed",
+          "showActivity": true,
+          "position": 51,
+          "hidden": false,
+          "varType": "float",
+          "currentValue": "$tag.app().speed:number:null",
+          "live": true
+        },
+        "reset": {
+          "name": "reset",
+          "type": "uiButton",
+          "displayString": "Reset",
+          "position": 52,
+          "hidden": false,
+          "currentValue": "$cmds.app().reset"
+        }
+      }
+    }
+  },
+  {
+    "case": "container_explicit_position_child",
+    "element": "Container",
+    "expected": {
+      "name": "group",
+      "type": "uiContainer",
+      "displayString": "Group",
+      "showActivity": true,
+      "position": 99,
+      "hidden": false,
+      "children": {
+        "status": {
+          "name": "status",
+          "type": "uiVariable",
+          "displayString": "Status",
+          "showActivity": true,
+          "position": 7,
+          "hidden": false,
+          "varType": "string",
+          "currentValue": null
+        },
+        "pump": {
+          "name": "pump",
+          "type": "uiSwitch",
+          "displayString": "Pump",
+          "position": 52,
+          "hidden": false,
+          "currentValue": "$cmds.app().pump"
+        }
+      }
+    }
+  },
+  {
+    "case": "container_nested",
+    "element": "Container",
+    "expected": {
+      "name": "outer",
+      "type": "uiContainer",
+      "displayString": "Outer",
+      "showActivity": true,
+      "position": 55,
+      "hidden": false,
+      "children": {
+        "top": {
+          "name": "top",
+          "type": "uiVariable",
+          "displayString": "Top",
+          "showActivity": true,
+          "position": 51,
+          "hidden": false,
+          "varType": "float",
+          "currentValue": null
+        },
+        "inner": {
+          "name": "inner",
+          "type": "uiContainer",
+          "displayString": "Inner",
+          "showActivity": true,
+          "position": 53,
+          "hidden": false,
+          "children": {
+            "deep": {
+              "name": "deep",
+              "type": "uiButton",
+              "displayString": "Deep",
+              "position": 52,
+              "hidden": false,
+              "currentValue": "$cmds.app().deep"
+            }
+          }
+        },
+        "flag": {
+          "name": "flag",
+          "type": "uiVariable",
+          "displayString": "Flag",
+          "showActivity": true,
+          "position": 54,
+          "hidden": false,
+          "varType": "bool",
+          "currentValue": null
+        }
+      }
+    }
+  },
+  {
+    "case": "submodule_plain",
+    "element": "Submodule",
+    "expected": {
+      "name": "pump_details",
+      "type": "uiSubmodule",
+      "displayString": "Pump Details",
+      "showActivity": true,
+      "position": 53,
+      "hidden": false,
+      "children": {
+        "speed": {
+          "name": "speed",
+          "type": "uiVariable",
+          "displayString": "Speed",
+          "showActivity": true,
+          "position": 51,
+          "hidden": false,
+          "varType": "float",
+          "currentValue": "$tag.app().speed:number:null",
+          "live": true
+        },
+        "reset": {
+          "name": "reset",
+          "type": "uiButton",
+          "displayString": "Reset",
+          "position": 52,
+          "hidden": false,
+          "currentValue": "$cmds.app().reset"
+        }
+      }
+    }
+  },
+  {
+    "case": "submodule_status_and_collapsed",
+    "element": "Submodule",
+    "expected": {
+      "name": "pump_details",
+      "type": "uiSubmodule",
+      "displayString": "Pump Details",
+      "showActivity": true,
+      "position": 51,
+      "hidden": false,
+      "children": {},
+      "statusString": "OK",
+      "defaultOpen": false
+    }
+  },
+  {
+    "case": "submodule_status_none",
+    "element": "Submodule",
+    "expected": {
+      "name": "pump_details",
+      "type": "uiSubmodule",
+      "displayString": "Pump Details",
+      "showActivity": true,
+      "position": 51,
+      "hidden": false,
+      "children": {},
+      "statusString": null
+    }
+  },
+  {
+    "case": "submodule_default_open_beats_is_collapsed",
+    "element": "Submodule",
+    "expected": {
+      "name": "pump_details",
+      "type": "uiSubmodule",
+      "displayString": "Pump Details",
+      "showActivity": true,
+      "position": 51,
+      "hidden": false,
+      "children": {},
+      "defaultOpen": true
+    }
+  },
+  {
+    "case": "submodule_default_open_tag",
+    "element": "Submodule",
+    "expected": {
+      "name": "pump_details",
+      "type": "uiSubmodule",
+      "displayString": "Pump Details",
+      "showActivity": true,
+      "position": 51,
+      "hidden": false,
+      "children": {},
+      "defaultOpen": "$tag.app().pump_open:boolean:false"
+    }
+  },
+  {
+    "case": "tabs_plain",
+    "element": "TabContainer",
+    "expected": {
+      "name": "views",
+      "type": "uiTabs",
+      "displayString": "Views",
+      "showActivity": true,
+      "position": 53,
+      "hidden": false,
+      "children": {
+        "speed": {
+          "name": "speed",
+          "type": "uiVariable",
+          "displayString": "Speed",
+          "showActivity": true,
+          "position": 51,
+          "hidden": false,
+          "varType": "float",
+          "currentValue": "$tag.app().speed:number:null",
+          "live": true
+        },
+        "reset": {
+          "name": "reset",
+          "type": "uiButton",
+          "displayString": "Reset",
+          "position": 52,
+          "hidden": false,
+          "currentValue": "$cmds.app().reset"
+        }
+      }
+    }
+  },
+  {
+    "case": "tabs_default_page",
+    "element": "TabContainer",
+    "expected": {
+      "name": "views",
+      "type": "uiTabs",
+      "displayString": "Views",
+      "showActivity": true,
+      "position": 52,
+      "hidden": false,
+      "children": {
+        "a": {
+          "name": "a",
+          "type": "uiVariable",
+          "displayString": "A",
+          "showActivity": true,
+          "position": 51,
+          "hidden": false,
+          "varType": "string",
+          "currentValue": null
+        }
+      },
+      "defaultPage": 1
+    }
+  },
+  {
+    "case": "remote_component_plain",
+    "element": "RemoteComponent",
+    "expected": {
+      "name": "widget",
+      "type": "uiRemoteComponent",
+      "displayString": "Widget",
+      "showActivity": true,
+      "componentUrl": "https://example.com/c.js",
+      "position": 51,
+      "hidden": false,
+      "children": {}
+    }
+  },
+  {
+    "case": "remote_component_extras",
+    "element": "RemoteComponent",
+    "expected": {
+      "name": "widget",
+      "type": "uiRemoteComponent",
+      "displayString": "Widget",
+      "showActivity": true,
+      "componentUrl": "https://example.com/c.js",
+      "position": 52,
+      "hidden": false,
+      "children": {
+        "go": {
+          "name": "go",
+          "type": "uiButton",
+          "displayString": "Go",
+          "position": 51,
+          "hidden": false,
+          "currentValue": "$cmds.app().go"
+        }
+      },
+      "foo": "bar",
+      "answer": 42
+    }
+  },
+  {
+    "case": "camera_live_view",
+    "element": "CameraLiveView",
+    "expected": {
+      "name": "live_view",
+      "type": "uiCameraLiveView",
+      "displayString": "Live View",
+      "showActivity": true,
+      "position": 51,
+      "hidden": false,
+      "cameraName": "front",
+      "streamName": "hls",
+      "ptzControl": true,
+      "presets": [],
+      "activePreset": null
+    }
+  },
+  {
+    "case": "camera_live_view_named",
+    "element": "CameraLiveView",
+    "expected": {
+      "name": "front_camera",
+      "type": "uiCameraLiveView",
+      "displayString": "Front Camera",
+      "showActivity": true,
+      "position": 51,
+      "hidden": false,
+      "cameraName": "front",
+      "streamName": "rtsp",
+      "ptzControl": false,
+      "presets": [],
+      "activePreset": null
+    }
+  },
+  {
+    "case": "camera_history",
+    "element": "CameraHistory",
+    "expected": {
+      "name": "history",
+      "type": "uiCameraHistory",
+      "displayString": "History",
+      "showActivity": true,
+      "position": 51,
+      "hidden": false,
+      "cameraName": "front",
+      "ptzControl": true,
+      "presets": [],
+      "activePreset": null
+    }
+  },
+  {
+    "case": "camera_history_named",
+    "element": "CameraHistory",
+    "expected": {
+      "name": "back_history",
+      "type": "uiCameraHistory",
+      "displayString": "Back History",
+      "showActivity": true,
+      "position": 51,
+      "hidden": false,
+      "cameraName": "back",
+      "ptzControl": true,
+      "presets": [],
+      "activePreset": null
+    }
+  },
+  {
+    "case": "connection_info_default",
+    "element": "ConnectionInfo",
+    "expected": {
+      "name": "connectionInfo",
+      "type": "uiConnectionInfo",
+      "connectionType": "constant"
+    }
+  },
+  {
+    "case": "connection_info_periodic_full",
+    "element": "ConnectionInfo",
+    "expected": {
+      "name": "connectionInfo",
+      "type": "uiConnectionInfo",
+      "connectionType": "periodic",
+      "connectionPeriod": 600,
+      "nextConnection": 300,
+      "offlineAfter": 3600,
+      "allowedMisses": 3
+    }
+  },
+  {
+    "case": "connection_info_offline_after_only",
+    "element": "ConnectionInfo",
+    "expected": {
+      "name": "connectionInfo",
+      "type": "uiConnectionInfo",
+      "connectionType": "constant",
+      "offlineAfter": 7200
+    }
+  },
+  {
+    "case": "multiplot_minimal",
+    "element": "Multiplot",
+    "expected": {
+      "name": "trends",
+      "type": "uiMultiPlot",
+      "displayString": "Trends",
+      "showActivity": true,
+      "position": 51,
+      "hidden": false,
+      "series": {
+        "level": {
+          "name": "level",
+          "displayString": "Level",
+          "dataType": "unknown",
+          "lookup": "$tag.app().level:number:null"
+        }
+      },
+      "title": "Trends"
+    }
+  },
+  {
+    "case": "multiplot_full",
+    "element": "Multiplot",
+    "expected": {
+      "name": "trends",
+      "type": "uiMultiPlot",
+      "displayString": "Trends",
+      "showActivity": true,
+      "position": 51,
+      "hidden": false,
+      "series": {
+        "level": {
+          "name": "level",
+          "displayString": "Level",
+          "dataType": "number",
+          "lookup": "$tag.app().level:number:null",
+          "active": true,
+          "colour": "blue",
+          "icon": "droplet",
+          "sharedAxis": true,
+          "units": "%",
+          "range": {
+            "min": 0,
+            "max": "auto"
+          },
+          "ranges": [
+            {
+              "min": 0,
+              "max": 15.0,
+              "colour": "blue",
+              "show_on_graph": true,
+              "label": "Low"
+            }
+          ],
+          "thresholds": [
+            {
+              "label": "High",
+              "value": 80,
+              "colour": "red"
+            }
+          ],
+          "live": true
+        },
+        "pump_series": {
+          "name": "pump_series",
+          "displayString": "Pump State",
+          "dataType": "boolean",
+          "lookup": "$tag.app().pump:boolean",
+          "sharedAxis": "left",
+          "stepLabels": [
+            "Off",
+            "On"
+          ]
+        },
+        "no_lookup": {
+          "name": "no_lookup",
+          "displayString": "No Lookup",
+          "dataType": "unknown"
+        }
+      },
+      "defaultZoom": "7d",
+      "defaultRangeView": "zone",
+      "title": "Trends",
+      "earliestDataDate": 1767323045
+    }
+  },
+  {
+    "case": "timestamp_unset",
+    "element": "Timestamp",
+    "expected": {
+      "name": "last_seen",
+      "type": "uiTimestamp",
+      "displayString": "Last Seen",
+      "showActivity": true,
+      "position": 51,
+      "hidden": false,
+      "varType": "timestamp"
+    }
+  },
+  {
+    "case": "timestamp_int_ms",
+    "element": "Timestamp",
+    "expected": {
+      "name": "last_seen",
+      "type": "uiTimestamp",
+      "displayString": "Last Seen",
+      "showActivity": true,
+      "position": 51,
+      "hidden": false,
+      "varType": "timestamp",
+      "currentValue": 1700000000000
+    }
+  },
+  {
+    "case": "timestamp_datetime",
+    "element": "Timestamp",
+    "expected": {
+      "name": "last_seen",
+      "type": "uiTimestamp",
+      "displayString": "Last Seen",
+      "showActivity": true,
+      "position": 51,
+      "hidden": false,
+      "varType": "timestamp",
+      "currentValue": 1767323045000
+    }
+  },
+  {
+    "case": "timestamp_precision_quirk",
+    "element": "Timestamp",
+    "expected": {
+      "name": "next_run",
+      "type": "uiTimestamp",
+      "displayString": "Next Run",
+      "showActivity": true,
+      "position": 51,
+      "hidden": false,
+      "varType": "timestamp",
+      "currentValue": 1700000000000,
+      "decPrecision": "second",
+      "precision": "second",
+      "absoluteFormat": "%Y-%m-%d %H:%M"
+    }
+  },
+  {
+    "case": "timestamp_tag_live",
+    "element": "Timestamp",
+    "expected": {
+      "name": "last_report",
+      "type": "uiTimestamp",
+      "displayString": "Last Report",
+      "showActivity": true,
+      "position": 51,
+      "hidden": false,
+      "varType": "timestamp",
+      "currentValue": "$tag.app().last_report:number:null",
+      "live": true
+    }
+  },
+  {
+    "case": "float_input_plain",
+    "element": "FloatInput",
+    "expected": {
+      "name": "target_level",
+      "type": "uiFloatInput",
+      "displayString": "Target Level",
+      "position": 51,
+      "hidden": false,
+      "currentValue": "$cmds.app().target_level"
+    }
+  },
+  {
+    "case": "float_input_bounds_flavours",
+    "element": "FloatInput",
+    "expected": {
+      "name": "target_level",
+      "type": "uiFloatInput",
+      "displayString": "Target Level",
+      "position": 51,
+      "hidden": false,
+      "currentValue": "$cmds.app().target_level",
+      "min": 0,
+      "max": 1.5
+    }
+  },
+  {
+    "case": "float_input_full_interaction",
+    "element": "FloatInput",
+    "expected": {
+      "name": "target_level",
+      "type": "uiFloatInput",
+      "displayString": "Target Level",
+      "showActivity": false,
+      "position": 51,
+      "hidden": false,
+      "units": "%",
+      "currentValue": "$cmds.app().target_level::42",
+      "requiresConfirm": true,
+      "default": 42,
+      "min": -10.5,
+      "max": 100
+    }
+  },
+  {
+    "case": "text_input_plain",
+    "element": "TextInput",
+    "expected": {
+      "name": "notes",
+      "type": "uiTextInput",
+      "displayString": "Notes",
+      "position": 51,
+      "hidden": false,
+      "currentValue": "$cmds.app().notes",
+      "isTextArea": false
+    }
+  },
+  {
+    "case": "text_input_area",
+    "element": "TextInput",
+    "expected": {
+      "name": "notes",
+      "type": "uiTextInput",
+      "displayString": "Notes",
+      "position": 51,
+      "hidden": false,
+      "currentValue": "$cmds.app().notes",
+      "isTextArea": true
+    }
+  },
+  {
+    "case": "datetime_input_plain",
+    "element": "DatetimeInput",
+    "expected": {
+      "name": "start_at",
+      "type": "uiDatetimeInput",
+      "displayString": "Start At",
+      "position": 51,
+      "hidden": false,
+      "currentValue": "$cmds.app().start_at"
+    }
+  },
+  {
+    "case": "datetime_input_full",
+    "element": "DatetimeInput",
+    "expected": {
+      "name": "start_at",
+      "type": "uiDatetimeInput",
+      "displayString": "Start At",
+      "position": 51,
+      "hidden": false,
+      "currentValue": "$cmds.app().start_at",
+      "pickers": [
+        "date"
+      ],
+      "direction": "past",
+      "maxPast": 604800000,
+      "maxFuture": 3600000
+    }
+  },
+  {
+    "case": "time_input_plain",
+    "element": "TimeInput",
+    "expected": {
+      "name": "run_at",
+      "type": "uiTimeInput",
+      "displayString": "Run At",
+      "position": 51,
+      "hidden": false,
+      "currentValue": "$cmds.app().run_at"
+    }
+  },
+  {
+    "case": "numeric_variable_full",
+    "element": "NumericVariable",
+    "expected": {
+      "name": "level",
+      "type": "uiVariable",
+      "displayString": "Level",
+      "showActivity": true,
+      "form": "radialGauge",
+      "position": 51,
+      "hidden": false,
+      "units": "%",
+      "varType": "float",
+      "currentValue": "$tag.app().level:number:null",
+      "decPrecision": 1,
+      "ranges": [
+        {
+          "min": 0,
+          "max": 15.0,
+          "colour": "blue",
+          "show_on_graph": true,
+          "label": "Low"
+        }
+      ],
+      "live": true
+    }
+  },
+  {
+    "case": "button_with_default",
+    "element": "Button",
+    "expected": {
+      "name": "pump",
+      "type": "uiButton",
+      "displayString": "Pump",
+      "position": 51,
+      "hidden": false,
+      "currentValue": "$cmds.app().pump::True",
+      "default": true,
+      "disabled": false
+    }
+  },
+  {
+    "case": "slider_defaults",
+    "element": "Slider",
+    "expected": {
+      "name": "speed_limit",
+      "type": "uiSlider",
+      "displayString": "Speed Limit",
+      "position": 51,
+      "hidden": false,
+      "currentValue": "$cmds.app().speed_limit",
+      "min": 0,
+      "max": 100,
+      "stepSize": 0.1,
+      "dualSlider": true,
+      "isInverted": true
+    }
+  },
+  {
+    "case": "select_options",
+    "element": "Select",
+    "expected": {
+      "name": "mode",
+      "type": "uiSelect",
+      "displayString": "Mode",
+      "position": 51,
+      "hidden": false,
+      "currentValue": "$cmds.app().mode",
+      "options": {
+        "fast_mode": {
+          "name": "fast_mode",
+          "displayString": "Fast Mode",
+          "type": "uiElement"
+        },
+        "slow_mode": {
+          "name": "slow_mode",
+          "displayString": "Slow Mode",
+          "type": "uiElement"
+        }
+      }
+    }
+  },
+  {
+    "case": "warning_indicator",
+    "element": "WarningIndicator",
+    "expected": {
+      "name": "low_level",
+      "type": "uiWarningIndicator",
+      "displayString": "Low Level",
+      "position": 51,
+      "hidden": false,
+      "currentValue": "$cmds.app().low_level",
+      "can_cancel": true
+    }
+  }
+]

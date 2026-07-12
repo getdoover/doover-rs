@@ -1,0 +1,89 @@
+[
+  {
+    "payload": {
+      "ok": 1
+    },
+    "valid": true
+  },
+  {
+    "payload": {
+      "a-b_1": {
+        "nested": [
+          1,
+          "s",
+          true,
+          null
+        ]
+      }
+    },
+    "valid": true
+  },
+  {
+    "payload": {
+      "bad key": 1
+    },
+    "valid": false
+  },
+  {
+    "payload": {
+      "dots.bad": 1
+    },
+    "valid": false
+  },
+  {
+    "payload": {
+      "": 1
+    },
+    "valid": false
+  },
+  {
+    "payload": {
+      "a": {
+        "bad key": 1
+      }
+    },
+    "valid": false
+  },
+  {
+    "payload": {
+      "a": [
+        {
+          "bad key": 1
+        }
+      ]
+    },
+    "valid": false
+  },
+  {
+    "payload": [
+      1,
+      2,
+      3
+    ],
+    "valid": false
+  },
+  {
+    "payload": "string-root",
+    "valid": false
+  },
+  {
+    "payload": 5,
+    "valid": false
+  },
+  {
+    "payload": null,
+    "valid": false
+  },
+  {
+    "payload": {
+      "unicode_ok": "价值"
+    },
+    "valid": true
+  },
+  {
+    "payload": {
+      "ключ": 1
+    },
+    "valid": false
+  }
+]

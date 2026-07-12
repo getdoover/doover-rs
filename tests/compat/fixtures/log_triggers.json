@@ -1,0 +1,649 @@
+[
+  {
+    "case": "cross_initial_above_logs",
+    "tag_type": "number",
+    "triggers": [
+      {
+        "kind": "cross",
+        "thresholds": [
+          100
+        ]
+      }
+    ],
+    "values": [
+      120
+    ],
+    "fired": [
+      true
+    ]
+  },
+  {
+    "case": "cross_initial_below_silent",
+    "tag_type": "number",
+    "triggers": [
+      {
+        "kind": "cross",
+        "thresholds": [
+          100
+        ]
+      }
+    ],
+    "values": [
+      80
+    ],
+    "fired": [
+      false
+    ]
+  },
+  {
+    "case": "cross_up_then_down",
+    "tag_type": "number",
+    "triggers": [
+      {
+        "kind": "cross",
+        "thresholds": [
+          100
+        ]
+      }
+    ],
+    "values": [
+      80,
+      120,
+      70
+    ],
+    "fired": [
+      false,
+      true,
+      true
+    ]
+  },
+  {
+    "case": "cross_no_relog_while_above",
+    "tag_type": "number",
+    "triggers": [
+      {
+        "kind": "cross",
+        "thresholds": [
+          100
+        ]
+      }
+    ],
+    "values": [
+      120,
+      130,
+      110
+    ],
+    "fired": [
+      true,
+      false,
+      false
+    ]
+  },
+  {
+    "case": "cross_deadband_suppresses_oscillation",
+    "tag_type": "number",
+    "triggers": [
+      {
+        "kind": "cross",
+        "thresholds": [
+          50,
+          100
+        ],
+        "deadband": 4
+      }
+    ],
+    "values": [
+      40,
+      51,
+      49,
+      53,
+      49,
+      47
+    ],
+    "fired": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      true
+    ]
+  },
+  {
+    "case": "cross_multiple_thresholds_independent",
+    "tag_type": "number",
+    "triggers": [
+      {
+        "kind": "cross",
+        "thresholds": [
+          50,
+          100
+        ],
+        "deadband": 4
+      }
+    ],
+    "values": [
+      60,
+      110,
+      95,
+      40
+    ],
+    "fired": [
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "case": "cross_explicit_log_combines",
+    "tag_type": "number",
+    "triggers": [
+      {
+        "kind": "cross",
+        "thresholds": [
+          100
+        ]
+      }
+    ],
+    "values": [
+      50
+    ],
+    "explicit_log": [
+      true
+    ],
+    "fired": [
+      true
+    ]
+  },
+  {
+    "case": "cross_float_int_mix",
+    "tag_type": "number",
+    "triggers": [
+      {
+        "kind": "cross",
+        "thresholds": [
+          15.0
+        ],
+        "deadband": 1.0
+      }
+    ],
+    "values": [
+      14.4,
+      15.6,
+      15.2,
+      14.4,
+      15
+    ],
+    "fired": [
+      false,
+      true,
+      false,
+      true,
+      false
+    ]
+  },
+  {
+    "case": "cross_ignores_non_numeric",
+    "tag_type": "number",
+    "triggers": [
+      {
+        "kind": "cross",
+        "thresholds": [
+          10
+        ]
+      }
+    ],
+    "values": [
+      null,
+      15,
+      null,
+      5
+    ],
+    "fired": [
+      false,
+      true,
+      false,
+      true
+    ]
+  },
+  {
+    "case": "rise_only_fires_up",
+    "tag_type": "number",
+    "triggers": [
+      {
+        "kind": "rise",
+        "thresholds": [
+          100
+        ]
+      }
+    ],
+    "values": [
+      80,
+      120,
+      80,
+      120
+    ],
+    "fired": [
+      false,
+      true,
+      false,
+      true
+    ]
+  },
+  {
+    "case": "fall_only_fires_down",
+    "tag_type": "number",
+    "triggers": [
+      {
+        "kind": "fall",
+        "thresholds": [
+          10
+        ]
+      }
+    ],
+    "values": [
+      50,
+      5,
+      50,
+      5
+    ],
+    "fired": [
+      false,
+      true,
+      false,
+      true
+    ]
+  },
+  {
+    "case": "rise_initial_above_fires",
+    "tag_type": "number",
+    "triggers": [
+      {
+        "kind": "rise",
+        "thresholds": [
+          100
+        ]
+      }
+    ],
+    "values": [
+      120
+    ],
+    "fired": [
+      true
+    ]
+  },
+  {
+    "case": "fall_initial_below_silent",
+    "tag_type": "number",
+    "triggers": [
+      {
+        "kind": "fall",
+        "thresholds": [
+          10
+        ]
+      }
+    ],
+    "values": [
+      5
+    ],
+    "fired": [
+      false
+    ]
+  },
+  {
+    "case": "rise_and_fall_composed",
+    "tag_type": "number",
+    "triggers": [
+      {
+        "kind": "rise",
+        "thresholds": [
+          100
+        ]
+      },
+      {
+        "kind": "fall",
+        "thresholds": [
+          10
+        ]
+      }
+    ],
+    "values": [
+      50,
+      150,
+      5
+    ],
+    "fired": [
+      false,
+      true,
+      true
+    ]
+  },
+  {
+    "case": "delta_first_set_seeds_baseline",
+    "tag_type": "number",
+    "triggers": [
+      {
+        "kind": "delta",
+        "amount": 5
+      }
+    ],
+    "values": [
+      80
+    ],
+    "fired": [
+      true
+    ]
+  },
+  {
+    "case": "delta_absolute_swing",
+    "tag_type": "number",
+    "triggers": [
+      {
+        "kind": "delta",
+        "amount": 5
+      }
+    ],
+    "values": [
+      80,
+      82,
+      83,
+      86,
+      89,
+      80
+    ],
+    "fired": [
+      true,
+      false,
+      false,
+      true,
+      false,
+      true
+    ]
+  },
+  {
+    "case": "delta_percent_swing",
+    "tag_type": "number",
+    "triggers": [
+      {
+        "kind": "delta",
+        "percent": 10
+      }
+    ],
+    "values": [
+      100,
+      105,
+      110,
+      115,
+      99
+    ],
+    "fired": [
+      true,
+      false,
+      true,
+      false,
+      true
+    ]
+  },
+  {
+    "case": "delta_percent_zero_baseline",
+    "tag_type": "number",
+    "triggers": [
+      {
+        "kind": "delta",
+        "percent": 10
+      }
+    ],
+    "values": [
+      0,
+      0,
+      5,
+      5
+    ],
+    "fired": [
+      true,
+      false,
+      true,
+      false
+    ]
+  },
+  {
+    "case": "delta_baseline_advances_only_on_fire",
+    "tag_type": "number",
+    "triggers": [
+      {
+        "kind": "delta",
+        "amount": 5
+      }
+    ],
+    "values": [
+      80,
+      82,
+      83,
+      85
+    ],
+    "fired": [
+      true,
+      false,
+      false,
+      true
+    ]
+  },
+  {
+    "case": "any_change_each_transition",
+    "tag_type": "boolean",
+    "triggers": [
+      {
+        "kind": "any_change"
+      }
+    ],
+    "values": [
+      true,
+      false,
+      true
+    ],
+    "fired": [
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "case": "any_change_repeat_is_silent",
+    "tag_type": "boolean",
+    "triggers": [
+      {
+        "kind": "any_change"
+      }
+    ],
+    "values": [
+      true,
+      true,
+      false,
+      false
+    ],
+    "fired": [
+      true,
+      false,
+      true,
+      false
+    ]
+  },
+  {
+    "case": "any_change_default_matches_first_set",
+    "tag_type": "boolean",
+    "default": false,
+    "triggers": [
+      {
+        "kind": "any_change"
+      }
+    ],
+    "values": [
+      false,
+      true
+    ],
+    "fired": [
+      false,
+      true
+    ]
+  },
+  {
+    "case": "enter_exit_bidirectional_bool",
+    "tag_type": "boolean",
+    "triggers": [
+      {
+        "kind": "enter",
+        "value": true
+      },
+      {
+        "kind": "exit",
+        "value": true
+      }
+    ],
+    "values": [
+      true,
+      false,
+      false
+    ],
+    "fired": [
+      true,
+      true,
+      false
+    ]
+  },
+  {
+    "case": "enter_only_fires_on_entry",
+    "tag_type": "string",
+    "triggers": [
+      {
+        "kind": "enter",
+        "value": "error"
+      }
+    ],
+    "values": [
+      "error",
+      "warn"
+    ],
+    "fired": [
+      true,
+      false
+    ]
+  },
+  {
+    "case": "exit_only_fires_on_exit",
+    "tag_type": "string",
+    "triggers": [
+      {
+        "kind": "exit",
+        "value": "ok"
+      }
+    ],
+    "values": [
+      "ok",
+      "warn"
+    ],
+    "fired": [
+      false,
+      true
+    ]
+  },
+  {
+    "case": "enter_exit_multi_value_composition",
+    "tag_type": "string",
+    "triggers": [
+      {
+        "kind": "enter",
+        "value": "error"
+      },
+      {
+        "kind": "exit",
+        "value": "error"
+      },
+      {
+        "kind": "enter",
+        "value": "ok"
+      },
+      {
+        "kind": "exit",
+        "value": "ok"
+      }
+    ],
+    "values": [
+      "error",
+      "warn",
+      "ok",
+      "warn"
+    ],
+    "fired": [
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "case": "composite_asymmetric_enter_exit",
+    "tag_type": "string",
+    "triggers": [
+      {
+        "kind": "enter",
+        "value": "error"
+      },
+      {
+        "kind": "exit",
+        "value": "ok"
+      }
+    ],
+    "values": [
+      "ok",
+      "warn",
+      "error",
+      "warn"
+    ],
+    "fired": [
+      false,
+      true,
+      true,
+      false
+    ]
+  },
+  {
+    "case": "exit_with_default_prev",
+    "tag_type": "string",
+    "default": "ok",
+    "triggers": [
+      {
+        "kind": "exit",
+        "value": "ok"
+      }
+    ],
+    "values": [
+      "warn",
+      "ok",
+      "warn"
+    ],
+    "fired": [
+      true,
+      false,
+      true
+    ]
+  },
+  {
+    "case": "string_repeat_set_is_silent",
+    "tag_type": "string",
+    "triggers": [
+      {
+        "kind": "enter",
+        "value": "error"
+      }
+    ],
+    "values": [
+      "error",
+      "error"
+    ],
+    "fired": [
+      true,
+      false
+    ]
+  }
+]

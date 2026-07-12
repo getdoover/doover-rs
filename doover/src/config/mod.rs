@@ -388,12 +388,96 @@ impl FromConfigValue for GroupRef {
     }
 }
 
-// TODO: port pydoover's `config.TagRef` (an Object of reference_name /
-// agent_id / app_name / tag_name with `format: doover-tag-reference`) once
-// RemoteTag/cross-app tag resolution lands in the tags runtime — its schema
-// shape depends on `ApplicationInstall` and only makes sense with that
-// runtime support. `config.ApplicationInstall`, `config.DevicesConfig`,
-// `config.GroupsConfig` and `config.LLMAPIKey` are similarly deferred.
+/// pydoover `config.TagRef` — a reference to a tag published by **another**
+/// application, the config half of cross-app (remote) tag resolution. Embed
+/// it as a field in your `#[derive(Config)]` schema; the operator picks which
+/// app + tag it points at, and at runtime you resolve it into a
+/// [`RemoteTag`](crate::tags::RemoteTag) (see [`crate::tags::RemoteTag::resolve`]).
+///
+/// It exports as an Object with `format: doover-tag-reference` and four
+/// sub-fields, matching pydoover so the same operator UI renders it:
+/// - `reference_name` — a local handle (defaults to the field name), hidden.
+/// - `agent_id` — the agent that owns the upstream tag (cross-agent is not
+///   resolved yet; leave blank for this agent).
+/// - `app_name` — the upstream application's app key.
+/// - `tag_name` — the upstream tag's name within that app.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct TagRef {
+    /// Local handle for this reference (pydoover `reference_name`).
+    pub reference_name: String,
+    /// Agent that owns the upstream tag; `None` == this agent. Cross-agent
+    /// references are not yet resolved.
+    pub agent_id: Option<String>,
+    /// The upstream application's app key (pydoover `app_name`).
+    pub app_name: String,
+    /// The upstream tag name within that app.
+    pub tag_name: String,
+}
+
+impl TagRef {
+    /// Whether the operator has pointed this reference at a concrete
+    /// app + tag (both filled). Unconfigured references are the pydoover
+    /// `optional=True` remote-tag case.
+    pub fn is_configured(&self) -> bool {
+        !self.app_name.is_empty() && !self.tag_name.is_empty()
+    }
+
+    /// The `(app_key, tag_name)` this reference resolves to, if configured.
+    pub fn target(&self) -> Option<(&str, &str)> {
+        self.is_configured().then_some((self.app_name.as_str(), self.tag_name.as_str()))
+    }
+}
+
+impl ConfigElementBuild for TagRef {
+    fn element(title: &str, name: &str) -> ElementSchema {
+        let mut reference_name = ElementSchema::string("Reference Name", "reference_name");
+        reference_name.hidden = true;
+        reference_name.description =
+            Some("Local handle for this tag. Match this in your `RemoteTag` declaration.".into());
+        // Default the handle to the field name so each TagRef references
+        // itself without the operator touching a hidden field.
+        reference_name.default = Some(Value::String(name.to_string()));
+        reference_name.position = Some(1);
+
+        let mut agent_id = ElementSchema::string("Agent", "agent_id");
+        agent_id.format = Some("doover-resource-device".into());
+        agent_id.description =
+            Some("Agent that owns the upstream tag. Leave blank to use this agent.".into());
+        agent_id.default = Some(Value::Null);
+        agent_id.position = Some(2);
+
+        let mut app_name = ElementSchema::string("Application", "app_name");
+        app_name.format = Some("doover-application".into());
+        app_name.description = Some("Application that publishes the upstream tag.".into());
+        app_name.position = Some(3);
+
+        let mut tag_name = ElementSchema::string("Tag Name", "tag_name");
+        tag_name.description = Some("Name of the upstream tag within the chosen application.".into());
+        tag_name.position = Some(4);
+
+        let mut el = ElementSchema::object(title, name, vec![reference_name, agent_id, app_name, tag_name]);
+        el.format = Some("doover-tag-reference".into());
+        el.description = Some("Reference to a tag in another application.".into());
+        el
+    }
+}
+
+impl FromConfigValue for TagRef {
+    fn from_config_value(v: &Value) -> Result<Self> {
+        if v.is_null() {
+            return Ok(Self::default());
+        }
+        Ok(Self {
+            reference_name: field_or(v, "reference_name", String::new())?,
+            agent_id: field_optional(v, "agent_id")?,
+            app_name: field_or(v, "app_name", String::new())?,
+            tag_name: field_or(v, "tag_name", String::new())?,
+        })
+    }
+}
+
+// TODO: `config.ApplicationInstall`, `config.DevicesConfig`,
+// `config.GroupsConfig` and `config.LLMAPIKey` remain deferred.
 
 #[cfg(test)]
 mod tests {
@@ -415,6 +499,54 @@ mod tests {
             serde_json::to_string(&el.to_json()).unwrap(),
             r#"{"title":"Position","x-name":"dv_app_position","x-hidden":true,"type":["integer","null"],"x-required":false,"description":"Position of Application in UI Structure. Smaller numbers are closer to the top.","default":100,"minimum":0}"#
         );
+    }
+
+    #[test]
+    fn tag_ref_element_matches_pydoover_shape() {
+        let el = TagRef::element("Sensor Source", "sensor_source");
+        let v = el.to_json();
+        // The object carries the doover-tag-reference format.
+        assert_eq!(v["x-name"], json!("sensor_source"));
+        assert_eq!(v["format"], json!("doover-tag-reference"));
+        assert_eq!(v["type"], json!("object"));
+        let props = &v["properties"];
+        // Four sub-fields, matching pydoover config.TagRef.
+        assert_eq!(props["reference_name"]["x-hidden"], json!(true));
+        // reference_name defaults to the field name (auto-handle).
+        assert_eq!(props["reference_name"]["default"], json!("sensor_source"));
+        assert_eq!(props["agent_id"]["format"], json!("doover-resource-device"));
+        assert_eq!(props["app_name"]["format"], json!("doover-application"));
+        assert_eq!(props["tag_name"]["x-name"], json!("tag_name"));
+    }
+
+    #[test]
+    fn tag_ref_parses_and_resolves() {
+        // Unconfigured (operator hasn't picked a target).
+        assert!(!TagRef::default().is_configured());
+        assert_eq!(TagRef::default().target(), None);
+
+        let parsed = TagRef::from_config_value(&json!({
+            "reference_name": "sensor_source",
+            "agent_id": null,
+            "app_name": "platform_interface_1",
+            "tag_name": "ai_reading",
+        }))
+        .unwrap();
+        assert!(parsed.is_configured());
+        assert_eq!(parsed.target(), Some(("platform_interface_1", "ai_reading")));
+        assert_eq!(parsed.agent_id, None);
+
+        // A half-filled reference is treated as unconfigured.
+        let half = TagRef::from_config_value(&json!({"app_name": "x"})).unwrap();
+        assert!(!half.is_configured());
+
+        // A cross-agent reference parses its agent_id (resolution is refused
+        // later, in RemoteTag::resolve).
+        let cross = TagRef::from_config_value(&json!({
+            "app_name": "a", "tag_name": "t", "agent_id": "12345"
+        }))
+        .unwrap();
+        assert_eq!(cross.agent_id.as_deref(), Some("12345"));
     }
 
     #[test]

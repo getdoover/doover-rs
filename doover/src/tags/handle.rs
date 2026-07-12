@@ -20,10 +20,12 @@ use std::sync::Arc;
 
 use serde_json::Value;
 
+use crate::config::TagRef;
 use crate::error::{DooverError, Result};
 
+use super::runtime::TagCallback;
 use super::triggers::validate_log_on;
-use super::{LogTrigger, SetTagOptions, TagsRuntime};
+use super::{KeyPath, LogTrigger, SetTagOptions, TagsRuntime};
 
 /// A Rust type that can live in a tag slot, with its pydoover tag-type
 /// string (the `tag_type` argument of a pydoover `Tag` declaration).
@@ -146,6 +148,11 @@ pub struct Tag<T> {
     /// on attach.
     log_on: Vec<LogTrigger>,
     runtime: Option<Arc<TagsRuntime>>,
+    /// Cross-app resolution: when set, this handle reads another app's
+    /// namespace (`tag_values.<remote_app_key>.<name>`) instead of the
+    /// runtime's own app key. Remote handles are read-only — see
+    /// [`Tag::attached_remote`].
+    remote_app_key: Option<Arc<str>>,
     // `fn() -> T` keeps Tag<T> Send + Sync without requiring it of T.
     _marker: PhantomData<fn() -> T>,
 }
@@ -158,6 +165,7 @@ impl<T> Clone for Tag<T> {
             default: self.default.clone(),
             log_on: self.log_on.clone(),
             runtime: self.runtime.clone(),
+            remote_app_key: self.remote_app_key.clone(),
             _marker: PhantomData,
         }
     }
@@ -179,7 +187,15 @@ impl<T: TagValue> Tag<T> {
     /// Declare a detached tag (pydoover `Tag(tag_type, default=…, live=…)`;
     /// the type comes from `T`). Used by `#[derive(Tags)]`.
     pub fn declared(name: &'static str, live: bool, default: Option<Value>) -> Self {
-        Self { name, live, default, log_on: Vec::new(), runtime: None, _marker: PhantomData }
+        Self {
+            name,
+            live,
+            default,
+            log_on: Vec::new(),
+            runtime: None,
+            remote_app_key: None,
+            _marker: PhantomData,
+        }
     }
 
     /// Declare auto-logging rules (pydoover `log_on=`): when any trigger
@@ -215,6 +231,33 @@ impl<T: TagValue> Tag<T> {
         self
     }
 
+    /// Bind this declaration to a runtime but scoped to **another app's**
+    /// namespace (`app_key`) — cross-app resolution. The resulting handle is
+    /// read-only: [`get`](Self::get) reads `tag_values.<app_key>.<name>` from
+    /// the runtime's live cache (the runtime already subscribes to the whole
+    /// `tag_values` channel, so remote values stay fresh), and any
+    /// [`set`](Self::set) errors rather than clobbering another app's tag.
+    ///
+    /// `log_on` triggers are *not* registered for remote tags — we don't own
+    /// them, so we don't log their transitions.
+    pub fn attached_remote(mut self, runtime: Arc<TagsRuntime>, app_key: impl Into<Arc<str>>) -> Self {
+        self.remote_app_key = Some(app_key.into());
+        self.runtime = Some(runtime);
+        self
+    }
+
+    /// Whether this handle points at another app's namespace
+    /// (cross-app / remote — read-only).
+    pub fn is_remote(&self) -> bool {
+        self.remote_app_key.is_some()
+    }
+
+    /// The app key this handle reads from: the explicit remote key when set,
+    /// else the runtime's own app key.
+    fn effective_app_key<'a>(&'a self, rt: &'a TagsRuntime) -> &'a str {
+        self.remote_app_key.as_deref().unwrap_or_else(|| rt.app_key())
+    }
+
     /// The tag name — the key inside this app's `tag_values` namespace.
     pub fn name(&self) -> &'static str {
         self.name
@@ -247,7 +290,10 @@ impl<T: TagValue> Tag<T> {
     /// to the declared default (pydoover `BoundTag.get`). Detached handles
     /// only see the default.
     pub fn get(&self) -> Option<T> {
-        let raw = self.runtime.as_ref().and_then(|rt| rt.get_tag(rt.app_key(), self.name));
+        let raw = self
+            .runtime
+            .as_ref()
+            .and_then(|rt| rt.get_tag(self.effective_app_key(rt), self.name));
         match raw {
             Some(v) if !v.is_null() => T::from_value(&v),
             _ => self.default.as_ref().filter(|v| !v.is_null()).and_then(T::from_value),
@@ -268,11 +314,176 @@ impl<T: TagValue> Tag<T> {
     }
 
     async fn set_with(&self, value: T, opts: &SetTagOptions) -> Result<()> {
+        if let Some(app_key) = &self.remote_app_key {
+            return Err(DooverError::Other(format!(
+                "tag '{}': remote (cross-app) tag on '{app_key}' is read-only",
+                self.name
+            )));
+        }
         let rt = self
             .runtime
             .as_ref()
             .ok_or_else(|| DooverError::Other(format!("tag '{}': tags not attached", self.name)))?;
         rt.set_tag(rt.app_key(), self.name, value.to_value(), opts).await
+    }
+}
+
+/// A typed, read-only handle on a tag published by **another** application —
+/// the port of pydoover's `RemoteTag`. Its app key and tag name are resolved
+/// at runtime (from a [`config::TagRef`](crate::config::TagRef) the operator
+/// fills in, or supplied directly), so — unlike [`Tag<T>`] whose name is
+/// fixed at compile time — the target can vary per deployment.
+///
+/// Reads come from the runtime's live `tag_values` cache: the runtime already
+/// subscribes to the whole channel, so a `RemoteTag` on any app key stays
+/// fresh without extra wiring. There is no `set` — you don't own another
+/// app's tags.
+///
+/// ```no_run
+/// # use std::sync::Arc;
+/// # use doover::tags::{RemoteTag, TagsRuntime};
+/// # use doover::config::TagRef;
+/// # fn demo(rt: Arc<TagsRuntime>, source: &TagRef) {
+/// // `source` is a TagRef field on your #[derive(Config)] struct.
+/// if let Some(level) = RemoteTag::<f64>::resolve(rt, source, None) {
+///     let value = level.get(); // Option<f64> from the upstream app
+///     # let _ = value;
+/// }
+/// # }
+/// ```
+pub struct RemoteTag<T> {
+    app_key: String,
+    tag_name: String,
+    default: Option<Value>,
+    runtime: Arc<TagsRuntime>,
+    _marker: PhantomData<fn() -> T>,
+}
+
+impl<T> Clone for RemoteTag<T> {
+    fn clone(&self) -> Self {
+        Self {
+            app_key: self.app_key.clone(),
+            tag_name: self.tag_name.clone(),
+            default: self.default.clone(),
+            runtime: self.runtime.clone(),
+            _marker: PhantomData,
+        }
+    }
+}
+
+impl<T> std::fmt::Debug for RemoteTag<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("RemoteTag")
+            .field("app_key", &self.app_key)
+            .field("tag_name", &self.tag_name)
+            .field("default", &self.default)
+            .finish()
+    }
+}
+
+impl<T: TagValue> RemoteTag<T> {
+    /// Bind to an explicit upstream `(app_key, tag_name)` — the cross-app
+    /// resolution done by hand. Prefer [`resolve`](Self::resolve) when the
+    /// target comes from a [`TagRef`](crate::config::TagRef) config element.
+    pub fn from_parts(
+        runtime: Arc<TagsRuntime>,
+        app_key: impl Into<String>,
+        tag_name: impl Into<String>,
+        default: Option<Value>,
+    ) -> Self {
+        Self {
+            app_key: app_key.into(),
+            tag_name: tag_name.into(),
+            default,
+            runtime,
+            _marker: PhantomData,
+        }
+    }
+
+    /// Resolve a `TagRef` config binding into a live remote handle. Returns
+    /// `None` when the operator hasn't pointed the reference at an app + tag
+    /// yet (pydoover's `optional=True` remote tag) — callers treat that as
+    /// "no upstream configured". Cross-*agent* references (a set `agent_id`)
+    /// also resolve to `None`, mirroring pydoover's not-yet-implemented
+    /// cross-agent path.
+    pub fn resolve(runtime: Arc<TagsRuntime>, tag_ref: &TagRef, default: Option<Value>) -> Option<Self> {
+        if tag_ref.agent_id.is_some() {
+            tracing::warn!(
+                "remote tag '{}': cross-agent references are not supported yet; ignoring",
+                tag_ref.reference_name
+            );
+            return None;
+        }
+        let (app_key, tag_name) = tag_ref.target()?;
+        Some(Self::from_parts(runtime, app_key, tag_name, default))
+    }
+
+    /// The resolved upstream app key.
+    pub fn app_key(&self) -> &str {
+        &self.app_key
+    }
+
+    /// The resolved upstream tag name.
+    pub fn tag_name(&self) -> &str {
+        &self.tag_name
+    }
+
+    /// Current value from the upstream app's `tag_values` slot, falling back
+    /// to the declared default (pydoover `RemoteTag.value`).
+    pub fn get(&self) -> Option<T> {
+        match self.runtime.get_tag(&self.app_key, &self.tag_name) {
+            Some(v) if !v.is_null() => T::from_value(&v),
+            _ => self.default.as_ref().filter(|v| !v.is_null()).and_then(T::from_value),
+        }
+    }
+
+    /// Invoke `callback` with the decoded value whenever the upstream tag
+    /// changes (built on [`TagsRuntime::subscribe_to_tag`]). A change that
+    /// clears the tag delivers the declared default (or `None`).
+    pub fn subscribe(&self, callback: impl Fn(Option<T>) + Send + Sync + 'static) {
+        let default = self.default.clone();
+        let cb: TagCallback = Arc::new(move |_path: &KeyPath, value: Option<&Value>| {
+            let decoded = match value {
+                Some(v) if !v.is_null() => T::from_value(v),
+                _ => default.as_ref().filter(|v| !v.is_null()).and_then(T::from_value),
+            };
+            callback(decoded);
+        });
+        self.runtime.subscribe_to_tag(&self.app_key, &self.tag_name, cb);
+    }
+
+    /// Mirror the upstream tag into *this* app's namespace under `local_name`
+    /// (pydoover `RemoteTag(republish_locally=True)`): seed the current value
+    /// and re-publish every subsequent change, so this app's own UI/tags can
+    /// consume it as a local tag. Best-effort; returns the seeded value.
+    pub async fn republish_locally(&self, local_name: &'static str) -> Result<Option<T>> {
+        let own_key = self.runtime.app_key().to_string();
+        // Re-publish on every upstream change.
+        let rt = self.runtime.clone();
+        let key = own_key.clone();
+        self.subscribe_raw(move |value| {
+            if let Some(v) = value.cloned() {
+                let rt = rt.clone();
+                let key = key.clone();
+                tokio::spawn(async move {
+                    let _ = rt.set_tag(&key, local_name, v, &SetTagOptions::default()).await;
+                });
+            }
+        });
+        // Seed the current value.
+        let current = self.get();
+        if let Some(v) = self.runtime.get_tag(&self.app_key, &self.tag_name) {
+            if !v.is_null() {
+                self.runtime.set_tag(&own_key, local_name, v, &SetTagOptions::default()).await?;
+            }
+        }
+        Ok(current)
+    }
+
+    /// Subscribe with the raw JSON value (used by [`republish_locally`]).
+    fn subscribe_raw(&self, callback: impl Fn(Option<&Value>) + Send + Sync + 'static) {
+        let cb: TagCallback = Arc::new(move |_path: &KeyPath, value: Option<&Value>| callback(value));
+        self.runtime.subscribe_to_tag(&self.app_key, &self.tag_name, cb);
     }
 }
 
@@ -282,6 +493,12 @@ impl<T: TagValue> Tag<T> {
 pub trait TagsCollection: Sized {
     /// Bind every declared tag to the runtime.
     fn attach(runtime: Arc<TagsRuntime>) -> Self;
+
+    /// Bind every declared tag to the runtime but scoped to **another app's**
+    /// key (`app_key`) — cross-app resolution for a whole known schema (e.g.
+    /// reading another instance of the same `#[derive(Tags)]` type). The
+    /// resulting handles are read-only; see [`Tag::attached_remote`].
+    fn attach_remote(runtime: Arc<TagsRuntime>, app_key: &str) -> Self;
 
     /// Declaration-only instance (for UI schema export — `set` errors).
     fn detached() -> Self;
@@ -298,6 +515,8 @@ pub trait TagsCollection: Sized {
 /// Tag-less apps (`type Tags = ()`).
 impl TagsCollection for () {
     fn attach(_runtime: Arc<TagsRuntime>) -> Self {}
+
+    fn attach_remote(_runtime: Arc<TagsRuntime>, _app_key: &str) -> Self {}
 
     fn detached() -> Self {}
 

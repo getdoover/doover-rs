@@ -27,7 +27,7 @@ use tokio::sync::mpsc;
 use tokio::time::{Instant, MissedTickBehavior};
 
 use crate::channel_backend::ChannelBackend;
-use crate::config::{write_config_schema, write_ui_schema, Config, ConfigSchema};
+use crate::config::{write_config_schema, write_ui_schema, Config, ConfigSchema, TagRef};
 use crate::docker::device_agent::{AggregateOptions, DeviceAgentClient};
 use crate::docker::healthcheck::{spawn_healthcheck_server, HealthState};
 use crate::docker::subscriptions::SubscriptionHub;
@@ -35,7 +35,7 @@ use crate::error::Result;
 use crate::events::{Event, EventSubscription};
 use crate::models::{Notification, NOTIFICATIONS_CHANNEL};
 use crate::rpc::RpcManager;
-use crate::tags::{KeyPath, SetTagOptions, TagsCollection, TagsRuntime};
+use crate::tags::{KeyPath, RemoteTag, SetTagOptions, TagValue, TagsCollection, TagsRuntime};
 use crate::ui::runtime::resolve_config_refs;
 use crate::ui::{UiApplicationInfo, UiBuild, UiCommand, UiRuntime, UiTree};
 
@@ -251,6 +251,34 @@ impl AppContext {
     /// namespaced under this app_key.
     pub fn get_tag(&self, name: &str) -> Option<Value> {
         self.tags.get_tag(&self.app_key, name)
+    }
+
+    /// Read a single tag published by **another** app by its app key — the
+    /// imperative cross-app read (pydoover `get_tag(tag_key, app_key=…)`).
+    /// Served from the local `tag_values` cache; the runtime subscribes to
+    /// the whole channel, so remote values stay fresh.
+    pub fn get_remote_tag(&self, app_key: &str, name: &str) -> Option<Value> {
+        self.tags.get_tag(app_key, name)
+    }
+
+    /// Resolve a [`TagRef`] config binding into a typed, read-only
+    /// [`RemoteTag`] — the declarative cross-app tag (pydoover `RemoteTag` +
+    /// `config.TagRef`). `None` when the operator hasn't configured the
+    /// reference. `default` is the fallback value when the upstream tag is
+    /// absent/null.
+    pub fn remote_tag<T: TagValue>(
+        &self,
+        tag_ref: &TagRef,
+        default: Option<Value>,
+    ) -> Option<RemoteTag<T>> {
+        RemoteTag::resolve(self.tags.clone(), tag_ref, default)
+    }
+
+    /// Bind another app's entire declared tag schema (a `#[derive(Tags)]`
+    /// type) to its app key, read-only — for reading a known sibling app
+    /// (e.g. another instance of the same app) whose key you already have.
+    pub fn remote_tags<C: TagsCollection>(&self, app_key: &str) -> C {
+        C::attach_remote(self.tags.clone(), app_key)
     }
 
     /// Extract `applications.<app_key>` from a `deployment_config` aggregate

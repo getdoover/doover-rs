@@ -924,6 +924,20 @@ fn expand_tags(input: DeriveInput) -> syn::Result<TokenStream2> {
                     }
                 }
 
+                fn attach_remote(
+                    __rt: ::std::sync::Arc<::doover::tags::TagsRuntime>,
+                    __app_key: &str,
+                ) -> Self {
+                    let __key: ::std::sync::Arc<str> = ::std::sync::Arc::from(__app_key);
+                    Self {
+                        #(#field_idents: #declarations
+                            .attached_remote(
+                                ::std::sync::Arc::clone(&__rt),
+                                ::std::sync::Arc::clone(&__key),
+                            ),)*
+                    }
+                }
+
                 fn detached() -> Self {
                     Self {
                         #(#field_idents: #declarations,)*

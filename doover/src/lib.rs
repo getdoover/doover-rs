@@ -93,8 +93,14 @@
 //! feature exposes the underlying [`api::DataClient`] (also a
 //! [`ChannelBackend`]) on its own.
 //!
-//! Not yet ported (see the repo README roadmap): tag `log_on` triggers,
-//! Submodule/Camera/Multiplot UI elements, auth profiles/OIDC, and
+//! ## Cross-app (remote) tags
+//!
+//! Read tags published by another application with [`RemoteTag`] — resolve a
+//! [`config::TagRef`] the operator filled in (pydoover's `RemoteTag` +
+//! `config.TagRef`), or bind an explicit `app_key`/`tag_name`. See
+//! [`AppContext::remote_tag`](docker::application::AppContext::remote_tag).
+//!
+//! Not yet ported (see the repo README roadmap): cloud auth profiles/OIDC and
 //! declarative processor-config authoring.
 
 #[cfg(feature = "cloud-api")]
@@ -129,7 +135,7 @@ pub use error::{DooverError, Result};
 pub use events::{Event, EventSubscription};
 pub use models::{Notification, NotificationSeverity};
 pub use rpc::{RpcContext, RpcError, RpcManager};
-pub use tags::{Tag, TagsCollection};
+pub use tags::{RemoteTag, Tag, TagsCollection};
 pub use ui::{UiCommand, UiRuntime};
 
 // The derive macros. These live in the macro namespace, so e.g.

@@ -305,13 +305,19 @@ Done (declarative gap-fill):
     (FloatInput/TextInput/DatetimeInput/TimeInput) — serialization
     byte-checked, key order included, against pydoover-generated fixtures
     (`tests/compat/fixtures/ui_elements.json`).
+18. ~~**Remote/cross-app tag references**~~ — `config.TagRef` (the
+    `doover-tag-reference` object element) plus a read-only `RemoteTag<T>`
+    that resolves a `TagRef` (or an explicit `app_key`/`tag_name`) against the
+    shared `tag_values` cache, `TagsCollection::attach_remote` to bind a whole
+    declared schema to another app's key, `RemoteTag::republish_locally`
+    mirroring, and `AppContext::{get_remote_tag, remote_tag, remote_tags}`.
+    Cross-*agent* references parse but resolve to `None` (as in pydoover).
 
 Still to port:
 
-1. **Remote/cross-app tag references** (`config.TagRef` + `RemoteTag`).
-2. **Cloud auth beyond bearer tokens** — `~/.doover` profiles, refresh-token
+1. **Cloud auth beyond bearer tokens** — `~/.doover` profiles, refresh-token
    / OIDC flows (`pydoover/api/auth/`); processors don't need them.
-3. **Declarative processor-config authoring** — the `dv_proc_config` schema
+2. **Declarative processor-config authoring** — the `dv_proc_config` schema
    elements (`SubscriptionConfig`/`ScheduleConfig`/`IngestionEndpointConfig`
    /`ExtendedPermissionsConfig`); doover-rs currently only *deserializes*
    `dv_proc_config` at runtime. Also processor-side declarative UI (the

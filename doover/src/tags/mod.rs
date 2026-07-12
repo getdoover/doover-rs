@@ -15,7 +15,7 @@ mod runtime;
 mod triggers;
 
 pub(crate) use handle::tag_ref_lookup;
-pub use handle::{ui_tag_type, Tag, TagValue, TagsCollection};
+pub use handle::{ui_tag_type, RemoteTag, Tag, TagValue, TagsCollection};
 pub use runtime::{SetTagOptions, TagsRuntime};
 pub use triggers::{IntoThresholds, LogTrigger, TriggerSet, TriggerState};
 

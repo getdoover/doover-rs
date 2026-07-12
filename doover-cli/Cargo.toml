@@ -1,0 +1,19 @@
+[package]
+name = "doover-cli"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+description = "Command-line client for the Doover device sidecars (device agent, platform interface, modbus interface)"
+
+[[bin]]
+name = "doover"
+path = "src/main.rs"
+
+[dependencies]
+# The CLI only drives the gRPC clients; the config/derive machinery is not needed.
+doover = { path = "../doover", default-features = false }
+clap = { version = "4", features = ["derive", "env"] }
+tokio = { workspace = true }
+serde_json = { workspace = true }
+futures-util = { version = "0.3", default-features = false, features = ["std"] }
+tracing-subscriber = "0.3"

@@ -1,60 +1,263 @@
-//! The analog level sensor, rewritten in Rust — a faithful port of the Python
-//! `analog-level-sensor`: read an analog-input pin (mA) from the platform
-//! interface, convert to level (m) / percentage / volume using the deployment
-//! config, and publish them as tags. A reading below `sensor_minimum_ma`
-//! (default 4 mA) is treated as a disconnected/faulted sensor and skipped.
+//! The analog level sensor, rewritten on the full declarative framework — a
+//! faithful port of the Python `analog-level-sensor`
+//! (`app_config.py` / `app_tags.py` / `app_ui.py` / `application.py`):
+//! read an analog-input pin (mA) from the platform interface, convert to
+//! level (m) / filled percentage / volume via the typed deployment config
+//! (including the volume curve), and publish them as declared tags that the
+//! declared UI references. The UI mirrors `AnalogLevelSensorUI.setup`'s
+//! volume-promotion logic at runtime.
 //!
-//! Config comes from the `deployment_config` channel (keyed by `APP_KEY`) in
-//! production, exactly like the Python app — no config file needed.
+//! Export its `doover_config.json` schemas without connecting to anything:
 //!
-//! Run:
+//!   cargo run --example level_sensor -- export /tmp/doover_config.json --app-name analog_level_sensor
+//!
+//! Run against a live agent:
+//!
 //!   DDA_URI=127.0.0.1:50051 PLT_URI=127.0.0.1:50053 APP_KEY=analog_level_sensor_1 \
 //!     cargo run --release --example level_sensor
+//!
+//! Set SIMULATE_AI=1 to synthesise a noisy 4–20 mA signal instead of reading
+//! the platform interface.
 
 use std::time::Duration;
 
+use doover::config::ApplicationPosition;
 use doover::error::Result;
-use doover::{run_app, AppContext, Application, PlatformClient};
-use serde_json::json;
+use doover::tags::Tag;
+use doover::ui::{Colour, NumericVariable, Range, UiBuild, Widget};
+use doover::{AppContext, Application, Config, ConfigEnum, ConfigObject, PlatformClient, Tags, Ui};
 
-/// Linear map, clamped to the output range (pydoover `_map_value`).
-fn map_value(x: f64, in_min: f64, in_max: f64, out_min: f64, out_max: f64) -> f64 {
-    if (in_max - in_min).abs() < f64::EPSILON {
-        return out_min;
-    }
-    let y = out_min + (x - in_min) * (out_max - out_min) / (in_max - in_min);
-    let (lo, hi) = if out_min <= out_max { (out_min, out_max) } else { (out_max, out_min) };
-    y.clamp(lo, hi)
+/// Boundary between the "Low" and "Good" colour bands, as a fraction of the
+/// gauge's full-scale value (`app_ui.py` `_LOW_BAND`).
+const LOW_BAND: f64 = 0.15;
+
+// ---------------------------------------------------------------------------
+// app_config.py — AnalogLevelSensorConfig
+// ---------------------------------------------------------------------------
+
+/// pydoover `VolumeCurvePoint(config.Object)`.
+#[derive(Debug, ConfigObject)]
+struct VolumeCurvePoint {
+    /// Level / depth in metres
+    level: f64,
+    /// Volume in configured volume units
+    volume: f64,
 }
 
-#[derive(Default)]
-struct Cfg {
-    ai_pin: i32,
-    sensor_min_ma: f64,
-    sensor_max_ma: f64,
-    sensor_min_m: f64,
-    sensor_max_m: f64,
-    empty_level: f64,
+/// pydoover `config.Enum(choices=["Submersible", "Radar", "Radar Inverted"])`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ConfigEnum)]
+enum SensorType {
+    Submersible,
+    Radar,
+    RadarInverted,
+}
+
+/// pydoover `AnalogLevelSensorConfig(config.Schema)`.
+#[derive(Debug, Config)]
+struct AnalogLevelSensorConfig {
+    /// Analog input pin number
+    #[config(title = "AI Pin")]
+    ai_pin: i64,
+    /// Maximum sensor depth (m)
+    sensor_maximum_metres: f64,
+    /// Level reading when full (m)
     full_level: f64,
-    max_volume: f64,
+    /// Minimum sensor output (mA)
+    #[config(title = "Sensor Minimum mA", default = 4.0)]
+    sensor_minimum_ma: f64,
+    /// Maximum sensor output (mA)
+    #[config(title = "Sensor Maximum mA", default = 20.0)]
+    sensor_maximum_ma: f64,
+    /// Minimum sensor depth (m)
+    #[config(default = 0.0)]
+    sensor_minimum_metres: f64,
+    /// Level reading when empty (m)
+    #[config(default = 0.0)]
+    empty_level: f64,
+    /// Digital output pin to power the sensor
+    power_pin: Option<i64>,
+    /// How often to poll the sensor (Hz)
+    #[config(default = 1.0)]
+    polling_frequency: f64,
+    /// Type of sensor. Radar inverted reads like a submersible sensor.
+    #[config(default = SensorType::Submersible)]
+    sensor_type: SensorType,
+    #[config(item_title = "Volume Curve Point")]
+    volume_curve: Vec<VolumeCurvePoint>,
+    /// Whether to hide the tank volume in the UI
+    #[config(default = true)]
     hide_volume: bool,
-    volume_precision: i64,
-    polling_hz: f64,
+    /// Maximum tank volume in the configured volume units, used when no volume curve is configured
+    #[config(default = 100000.0)]
+    max_volume: f64,
+    /// Units to display the volume reading in (e.g. L, kL, gal)
+    #[config(default = "L")]
+    volume_units: String,
+    /// Number of decimal places to show for the volume reading
+    #[config(default = 0)]
+    volume_decimal_precision: i64,
+    // Only read at deploy time (drives the app's slot in the UI); a doc
+    // comment here would override ApplicationPosition's canonical description.
+    #[allow(dead_code)]
+    position: ApplicationPosition,
 }
+
+// ---------------------------------------------------------------------------
+// app_tags.py — AnalogLevelSensorTags
+// ---------------------------------------------------------------------------
+
+#[derive(Tags)]
+struct AnalogLevelSensorTags {
+    #[tag(live, default = None)]
+    level_filled_percentage: Tag<f64>,
+    #[tag(live, default = None)]
+    level_reading: Tag<f64>,
+    #[tag(default = None)]
+    raw_level_reading: Tag<f64>,
+    #[tag(default = None)]
+    level_volume: Tag<f64>,
+}
+
+// ---------------------------------------------------------------------------
+// app_ui.py — AnalogLevelSensorUI (class body)
+// ---------------------------------------------------------------------------
+
+#[derive(Ui)]
+struct AnalogLevelSensorUi {
+    percentage: NumericVariable,
+    level_reading: NumericVariable,
+    volume: NumericVariable,
+}
+
+impl UiBuild for AnalogLevelSensorUi {
+    type Tags = AnalogLevelSensorTags;
+
+    fn build(tags: &AnalogLevelSensorTags) -> Self {
+        Self {
+            percentage: NumericVariable::new("Level")
+                .units("%")
+                .value(&tags.level_filled_percentage)
+                .precision(1)
+                .form(Widget::RADIAL)
+                .ranges(vec![
+                    Range::new("Low", 0, LOW_BAND * 100.0, Colour::BLUE),
+                    Range::new("Good", LOW_BAND * 100.0, 100, Colour::GREEN),
+                ]),
+            level_reading: NumericVariable::new("Level Reading")
+                .units("m")
+                .value(&tags.level_reading)
+                .precision(2),
+            volume: NumericVariable::new("Volume")
+                .units("L")
+                .value(&tags.level_volume)
+                .precision(0)
+                .hidden(true),
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// application.py — AnalogLevelSensorApplication
+// ---------------------------------------------------------------------------
 
 struct AnalogLevelSensor {
-    plt_uri: String,
-    cfg: Cfg,
+    config: AnalogLevelSensorConfig,
+    tags: AnalogLevelSensorTags,
+    ui: AnalogLevelSensorUi,
     plt: Option<PlatformClient>,
-    /// Test mode: synthesise a noisy in-range mA value instead of reading the
-    /// (slow, ~200ms serial round-trip) platform interface, to expose the loop
-    /// / live-mode ceiling. Set via the SIMULATE_AI env var.
+    /// SIMULATE_AI: synthesise a noisy in-range mA value instead of reading
+    /// the platform interface.
     simulate: bool,
     rng: u64,
     t: u64,
 }
 
 impl AnalogLevelSensor {
+    /// Sorted `(level, volume)` float pairs (Python `_get_volume`'s `points`).
+    fn curve_points(&self) -> Vec<(f64, f64)> {
+        let mut points: Vec<(f64, f64)> =
+            self.config.volume_curve.iter().map(|p| (p.level, p.volume)).collect();
+        points.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+        points
+    }
+
+    /// Python `_map_value`: linear map, inverted for Radar sensors when
+    /// `invert` is requested.
+    fn map_value(&self, value: f64, low_a: f64, high_a: f64, low_b: f64, high_b: f64, invert: bool) -> f64 {
+        if invert && self.config.sensor_type == SensorType::Radar {
+            return (high_b - low_b) - ((value - low_a) / (high_a - low_a)) * (high_b - low_b);
+        }
+        ((value - low_a) / (high_a - low_a)) * (high_b - low_b) + low_b
+    }
+
+    fn sensor_percentage(&self, reading: f64) -> f64 {
+        self.map_value(
+            reading,
+            self.config.sensor_minimum_ma,
+            self.config.sensor_maximum_ma,
+            0.0,
+            100.0,
+            true,
+        )
+    }
+
+    fn level_reading(&self, reading: f64) -> f64 {
+        let perc = self.sensor_percentage(reading);
+        self.map_value(
+            perc,
+            0.0,
+            100.0,
+            self.config.sensor_minimum_metres,
+            self.config.sensor_maximum_metres,
+            false,
+        )
+    }
+
+    fn filled_percentage(&self, reading: f64) -> Option<f64> {
+        let lev = self.level_reading(reading);
+        let points = self.curve_points();
+        if points.len() < 2 {
+            return Some(self.map_value(
+                lev,
+                self.config.empty_level,
+                self.config.full_level,
+                0.0,
+                100.0,
+                false,
+            ));
+        }
+        let vol = interpolate_volume(lev, &points)?;
+        let max_vol = points.iter().map(|p| p.1).fold(f64::NEG_INFINITY, f64::max);
+        Some((vol / max_vol * 100.0 * 1000.0).round() / 1000.0)
+    }
+
+    fn volume(&self, reading: f64) -> Option<f64> {
+        let points = self.curve_points();
+        if points.len() >= 2 {
+            return interpolate_volume(self.level_reading(reading), &points);
+        }
+        let perc = self.filled_percentage(reading)?;
+        Some(self.config.max_volume * (perc / 100.0))
+    }
+
+    /// Full-scale value for the volume gauge (`app_ui.py _gauge_max_volume`):
+    /// the top of the volume curve when configured, else the max volume.
+    fn gauge_max_volume(&self) -> f64 {
+        let points = self.curve_points();
+        if points.len() >= 2 {
+            points.iter().map(|p| p.1).fold(f64::NEG_INFINITY, f64::max)
+        } else {
+            self.config.max_volume
+        }
+    }
+
+    async fn set_power_pin(&self, high: bool) -> Result<()> {
+        if let (Some(pin), Some(plt)) = (self.config.power_pin, &self.plt) {
+            plt.set_do(pin as i32, high).await?;
+        }
+        Ok(())
+    }
+
     /// Cheap xorshift64 in [0,1) — enough entropy for visible sensor noise.
     fn next_rand(&mut self) -> f64 {
         let mut x = self.rng;
@@ -65,7 +268,7 @@ impl AnalogLevelSensor {
         (x >> 11) as f64 / (1u64 << 53) as f64
     }
 
-    /// A plausible 4–20 mA signal: mid-range base + slow drift + per-loop noise.
+    /// A plausible 4–20 mA signal: mid-range base + slow drift + noise.
     fn simulated_ma(&mut self) -> f64 {
         self.t = self.t.wrapping_add(1);
         let drift = 6.0 * (self.t as f64 * 0.01).sin();
@@ -74,120 +277,139 @@ impl AnalogLevelSensor {
     }
 }
 
+/// Python `_get_volume`: interpolate within the curve, extrapolating off the
+/// nearest end segment outside it (so misconfiguration shows up rather than
+/// being hidden).
+fn interpolate_volume(level: f64, points: &[(f64, f64)]) -> Option<f64> {
+    if points.is_empty() {
+        return None;
+    }
+    for pair in points.windows(2) {
+        let ((x1, y1), (x2, y2)) = (pair[0], pair[1]);
+        if x1 <= level && level <= x2 {
+            return Some(y1 + (level - x1) * (y2 - y1) / (x2 - x1));
+        }
+    }
+    let ((x1, y1), (x2, y2)) = if level < points[0].0 {
+        (points[0], points[1])
+    } else {
+        (points[points.len() - 2], points[points.len() - 1])
+    };
+    Some(y1 + (level - x1) * (y2 - y1) / (x2 - x1))
+}
+
 #[doover::async_trait]
 impl Application for AnalogLevelSensor {
+    type Config = AnalogLevelSensorConfig;
+    type Tags = AnalogLevelSensorTags;
+    type Ui = AnalogLevelSensorUi;
+
+    fn create(
+        config: AnalogLevelSensorConfig,
+        tags: AnalogLevelSensorTags,
+        ui: AnalogLevelSensorUi,
+    ) -> Self {
+        let simulate =
+            std::env::var("SIMULATE_AI").map(|v| v != "0" && !v.is_empty()).unwrap_or(false);
+        let seed = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos() as u64 | 1)
+            .unwrap_or(0x9E3779B97F4A7C15);
+        Self { config, tags, ui, plt: None, simulate, rng: seed, t: 0 }
+    }
+
+    fn ui(&self) -> Option<&AnalogLevelSensorUi> {
+        Some(&self.ui)
+    }
+
+    fn ui_mut(&mut self) -> Option<&mut AnalogLevelSensorUi> {
+        Some(&mut self.ui)
+    }
+
     fn loop_target_period(&self) -> Duration {
-        Duration::from_secs_f64(1.0 / self.cfg.polling_hz.max(0.01))
-    }
-
-    // Tags that stream at the loop rate when a user opens them in live mode.
-    // (The Python app marks level_reading + level_filled_percentage live;
-    // raw_level_reading is added so live mode is observable even when the
-    // sensor is disconnected and only the raw reading is published.)
-    fn live_tags(&self) -> Vec<String> {
-        vec![
-            "raw_level_reading".into(),
-            "level_reading".into(),
-            "level_filled_percentage".into(),
-        ]
-    }
-
-    async fn setup(&mut self, ctx: &AppContext) -> Result<()> {
-        let c = ctx.config();
-        // Read the deployment config (same keys as the Python app), each with
-        // the Python app's default.
-        self.cfg = Cfg {
-            ai_pin: c.get_i64("ai_pin").unwrap_or(1) as i32,
-            sensor_min_ma: c.get_f64("sensor_minimum_ma").unwrap_or(4.0),
-            sensor_max_ma: c.get_f64("sensor_maximum_ma").unwrap_or(20.0),
-            sensor_min_m: c.get_f64("sensor_minimum_metres").unwrap_or(0.0),
-            sensor_max_m: c.get_f64("sensor_maximum_metres").unwrap_or(20.0),
-            empty_level: c.get_f64("empty_level").unwrap_or(0.0),
-            full_level: c.get_f64("full_level").unwrap_or(5.0),
-            max_volume: c.get_f64("max_volume").unwrap_or(100_000.0),
-            hide_volume: c.get_bool("hide_volume").unwrap_or(true),
-            volume_precision: c.get_i64("volume_decimal_precision").unwrap_or(0),
-            polling_hz: c.get_f64("polling_frequency").unwrap_or(1.0),
-        };
-
-        if self.simulate {
-            tracing::warn!("SIMULATE_AI set: synthesising noisy AI values (platform interface NOT read)");
-            return Ok(());
+        // Python setup: `self.loop_target_period = 1 / freq` when freq > 0.
+        let freq = self.config.polling_frequency;
+        if freq > 0.0 {
+            Duration::from_secs_f64(1.0 / freq)
+        } else {
+            Duration::from_secs(1)
         }
-        tracing::info!("connecting to platform interface at {}", self.plt_uri);
-        let plt = PlatformClient::connect(format!("http://{}", self.plt_uri)).await?;
-        plt.test_comms("hello from doover-rs level_sensor").await?;
-        self.plt = Some(plt);
-        tracing::info!(
-            "level sensor ready (AI pin {}, {}..{} mA -> {}..{} m, full_level {} m, poll {} Hz)",
-            self.cfg.ai_pin, self.cfg.sensor_min_ma, self.cfg.sensor_max_ma,
-            self.cfg.sensor_min_m, self.cfg.sensor_max_m, self.cfg.full_level, self.cfg.polling_hz
-        );
+    }
+
+    async fn setup(&mut self, _ctx: &AppContext) -> Result<()> {
+        if !self.simulate {
+            let plt_uri =
+                std::env::var("PLT_URI").unwrap_or_else(|_| "127.0.0.1:50053".to_string());
+            tracing::info!("connecting to platform interface at {plt_uri}");
+            self.plt = Some(PlatformClient::connect(format!("http://{plt_uri}")).await?);
+        } else {
+            tracing::warn!("SIMULATE_AI set: synthesising AI values (platform interface NOT read)");
+        }
+
+        // Python `AnalogLevelSensorApplication.setup`.
+        self.set_power_pin(true).await?;
+
+        // Python `AnalogLevelSensorUI.setup` — runtime UI mutations.
+        self.ui.volume.common.units = Some(self.config.volume_units.clone());
+        if !self.config.hide_volume {
+            // Volume display enabled -> promote volume to the primary radial
+            // gauge, demote the percentage level to a plain reading below it.
+            let max_vol = self.gauge_max_volume();
+            self.ui.volume.common.hidden = Some(serde_json::Value::Bool(false));
+            self.ui.volume.precision = Some(self.config.volume_decimal_precision);
+            self.ui.volume.common.form = Some(Widget::RADIAL.to_string());
+            self.ui.volume.ranges = Some(vec![
+                Range::new("Low", 0, LOW_BAND * max_vol, Colour::BLUE),
+                Range::new("Good", LOW_BAND * max_vol, max_vol, Colour::GREEN),
+            ]);
+            self.ui.volume.common.position = Some(10);
+
+            self.ui.percentage.common.form = None;
+            self.ui.percentage.ranges = None;
+            self.ui.percentage.common.position = Some(20);
+
+            self.ui.level_reading.common.position = Some(30);
+        }
         Ok(())
     }
 
-    async fn main_loop(&mut self, ctx: &AppContext) -> Result<()> {
-        let t0 = std::time::Instant::now();
-        let ma = if self.simulate {
+    async fn main_loop(&mut self, _ctx: &AppContext) -> Result<()> {
+        let reading = if self.simulate {
             self.simulated_ma()
         } else {
-            let pin = self.cfg.ai_pin;
+            let pin = self.config.ai_pin as i32;
             self.plt.as_ref().expect("platform connected in setup").fetch_ai(pin).await? as f64
         };
-        let t_ai = t0.elapsed();
-        let c = &self.cfg;
+        tracing::info!("Level sensor reading: {reading}");
 
-        // Always publish the raw reading so the round-trip is observable even
-        // when the sensor is disconnected (~0 mA on an unwired pin).
-        let t1 = std::time::Instant::now();
-        ctx.set_tag("raw_level_reading", json!((ma * 1000.0).round() / 1000.0)).await?;
-        tracing::info!(
-            "Level sensor reading: {ma:.3} mA (AI pin {}) | fetch_ai {:.1}ms set_tag {:.1}ms",
-            c.ai_pin, t_ai.as_secs_f64() * 1000.0, t1.elapsed().as_secs_f64() * 1000.0
-        );
-
-        // Faithful to the Python app: below the mA floor = no sensor / fault.
-        if ma < c.sensor_min_ma {
-            tracing::info!(
-                "reading below {} mA floor — treating as disconnected, skipping level tags",
-                c.sensor_min_ma
-            );
+        // Python: below the mA floor = no sensor / fault; skip the tags.
+        if reading < self.config.sensor_minimum_ma {
             return Ok(());
         }
 
-        // mA -> depth (m) over the sensor range, then depth -> % over empty..full.
-        let depth_m = map_value(ma, c.sensor_min_ma, c.sensor_max_ma, c.sensor_min_m, c.sensor_max_m);
-        let pct = map_value(depth_m, c.empty_level, c.full_level, 0.0, 100.0);
-        let mut tags = vec![
-            ("level_filled_percentage".to_string(), json!((pct * 10.0).round() / 10.0)),
-            ("level_reading".to_string(), json!((depth_m * 100.0).round() / 100.0)),
-        ];
-        if !c.hide_volume {
-            let volume = pct / 100.0 * c.max_volume;
-            let f = 10f64.powi(c.volume_precision as i32);
-            tags.push(("level_volume".to_string(), json!((volume * f).round() / f)));
+        self.set_power_pin(true).await?;
+
+        if let Some(pct) = self.filled_percentage(reading) {
+            self.tags.level_filled_percentage.set(pct).await?;
         }
-        ctx.set_tags(tags).await?;
+        self.tags.level_reading.set(self.level_reading(reading)).await?;
+        self.tags.raw_level_reading.set(reading).await?;
+        if !self.config.hide_volume {
+            if let Some(volume) = self.volume(reading) {
+                self.tags.level_volume.set(volume).await?;
+            }
+        }
         Ok(())
+    }
+
+    async fn on_shutdown(&mut self, _ctx: &AppContext) -> Result<()> {
+        // Python `on_shutdown_at`: de-power the sensor.
+        self.set_power_pin(false).await
     }
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
     tracing_subscriber::fmt().with_max_level(tracing::Level::INFO).init();
-    let plt_uri = std::env::var("PLT_URI").unwrap_or_else(|_| "127.0.0.1:50053".to_string());
-    let simulate = std::env::var("SIMULATE_AI").map(|v| v != "0" && !v.is_empty()).unwrap_or(false);
-    let seed = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_nanos() as u64 | 1)
-        .unwrap_or(0x9E3779B97F4A7C15);
-    run_app(AnalogLevelSensor {
-        plt_uri,
-        cfg: Cfg { ai_pin: 1, sensor_min_ma: 4.0, sensor_max_ma: 20.0, polling_hz: 1.0, ..Default::default() },
-        plt: None,
-        simulate,
-        rng: seed,
-        t: 0,
-    })
-    .await
+    doover::run::<AnalogLevelSensor>().await
 }

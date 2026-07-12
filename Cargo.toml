@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["doover-proto", "doover"]
+members = ["doover-proto", "doover", "doover-macros", "doover-cli"]
 
 [workspace.package]
 edition = "2021"

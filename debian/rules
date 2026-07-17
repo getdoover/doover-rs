@@ -1,0 +1,49 @@
+#! /usr/bin/make -f
+
+# This packages a PREBUILT binary; it does not compile anything.
+#
+# Every architecture is cross-compiled ahead of time by docker buildx +
+# cargo-zigbuild (see Dockerfile, mirroring ../doover-device-agent), which
+# drops the result at debian/prebuilt/$(DEB_HOST_ARCH)/doover. That keeps a
+# single native rustc building every arch with no QEMU, and means the apt CI
+# image needs no Rust toolchain. The tradeoff: `debuild` alone in a clean
+# checkout will fail here -- run the docker step first (see
+# .github/workflows/push_to_apt.yml).
+
+DEB_HOST_ARCH ?= $(shell dpkg-architecture -qDEB_HOST_ARCH)
+PREBUILT = debian/prebuilt/$(DEB_HOST_ARCH)/doover
+
+%:
+	dh $@
+
+# Nothing to build or test here -- cargo already did both.
+override_dh_auto_build:
+override_dh_auto_test:
+
+override_dh_auto_install:
+	@test -f $(PREBUILT) || { \
+	  echo "ERROR: $(PREBUILT) is missing."; \
+	  echo "Build it first, e.g.:"; \
+	  echo "  docker buildx build --platform linux/arm64 --target bin \\"; \
+	  echo "    --output type=local,dest=debian/prebuilt/$(DEB_HOST_ARCH) ."; \
+	  exit 1; \
+	}
+	install -D -m 0755 $(PREBUILT) debian/doover-grpc/usr/bin/doover-grpc
+	# The same binary answers to the CLI name pydoover used to ship. clap takes
+	# its usage line from argv[0], so `pydoover --help` still prints "pydoover".
+	ln -sf doover-grpc debian/doover-grpc/usr/bin/pydoover
+
+# The binary is statically linked (musl), so there are no dynamic dependencies
+# to scan for and dh_shlibdeps has nothing to work with.
+override_dh_shlibdeps:
+
+# We ship an executable, not a library, so there are no shlibs to compute --
+# and dh_makeshlibs would shell out to $arch-linux-gnu-objdump, which does not
+# exist when packaging a foreign-arch prebuilt binary (`dpkg-buildpackage -a`).
+override_dh_makeshlibs:
+
+# Nothing to compress: the binary carries no debug info to split out.
+override_dh_dwz:
+
+# cargo-zigbuild already stripped it; dh_strip would only warn.
+override_dh_strip:

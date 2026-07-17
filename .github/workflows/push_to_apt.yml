@@ -1,0 +1,154 @@
+name: Release Package to APT Repository
+
+# Mirrors pydoover's push_to_apt.yml, with one structural difference: pydoover
+# is Architecture: all and builds in a single step, whereas a Rust binary is
+# per-architecture. So this runs in two jobs:
+#
+#   build    -- cross-compiles each arch with docker buildx + cargo-zigbuild on
+#               the runner (needs docker, which the apt CI container lacks)
+#   publish  -- packages + uploads inside spaneng/doover-apt-cicd-base, which is
+#               where debhelper/deb-s3/gpg live
+#
+# The builder always runs natively on the runner and only the Rust target triple
+# changes, so there is no QEMU here despite the arm targets.
+
+on:
+  release:
+    types: [ created ]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build:
+    name: Cross-compile ${{ matrix.deb_arch }}
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        include:
+          - deb_arch: arm64
+            platform: linux/arm64
+          - deb_arch: amd64
+            platform: linux/amd64
+          - deb_arch: armhf
+            platform: linux/arm/v7
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+
+      # No setup-qemu-action on purpose: the build stage runs on $BUILDPLATFORM
+      # and cross-compiles, and the `bin` stage is FROM scratch with no RUN, so
+      # nothing ever executes a foreign binary.
+      - name: Cross-compile the CLI
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: bin
+          platforms: ${{ matrix.platform }}
+          outputs: type=local,dest=debian/prebuilt/${{ matrix.deb_arch }}
+          cache-from: type=gha,scope=${{ matrix.deb_arch }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.deb_arch }}
+
+      - name: Check the binary is the arch we asked for
+        run: |
+          set -eux
+          file debian/prebuilt/${{ matrix.deb_arch }}/doover
+          # A silently-wrong arch here would only surface on a device, so fail loudly now.
+          case "${{ matrix.deb_arch }}" in
+            arm64) file debian/prebuilt/arm64/doover | grep -q 'ARM aarch64' ;;
+            amd64) file debian/prebuilt/amd64/doover | grep -q 'x86-64'      ;;
+            armhf) file debian/prebuilt/armhf/doover | grep -q 'ARM'         ;;
+          esac
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: binary-${{ matrix.deb_arch }}
+          path: debian/prebuilt/${{ matrix.deb_arch }}/doover
+          retention-days: 1
+
+  publish:
+    name: Build .debs and publish to apt
+    needs: build
+    runs-on: ubuntu-22.04
+    container:
+      image: spaneng/doover-apt-cicd-base:latest
+
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ vars.AWS_DEFAULT_REGION }}
+          role-to-assume: ${{ vars.AWS_APT_DEPLOY_ROLE_ARN }}
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: binary-*
+          path: debian/prebuilt/
+      # download-artifact nests each artifact under its own name; flatten
+      # binary-<arch>/doover back to the <arch>/doover layout debian/rules wants.
+      - name: Arrange prebuilt binaries
+        run: |
+          set -eux
+          cd debian/prebuilt
+          for d in binary-*; do
+            mv "$d" "${d#binary-}"
+          done
+          chmod +x */doover
+          find . -type f
+
+      - name: Generate changelog entry
+        run: |
+          # The apt version comes from the top changelog entry. Generate it from
+          # the workspace version so the changelog is never hand-edited (pydoover
+          # does the same from __version__).
+          VERSION=$(grep -m1 -oP '^version\s*=\s*"\K[^"]+' Cargo.toml)
+          echo "Building doover-grpc ${VERSION}"
+          printf 'doover-rs (%s) focal jammy; urgency=medium\n\n  * Release v%s. See docs.doover.com for release notes.\n\n -- Doover Team <developers@doover.com>  %s\n' \
+            "${VERSION}" "${VERSION}" "$(date -R)" > debian/changelog
+          head -5 debian/changelog
+
+      - name: Install build dependencies
+        run: |
+          echo 'y' | mk-build-deps -i ${GITHUB_WORKSPACE}/debian/control
+
+      - name: Build .deb per architecture
+        run: |
+          set -eux
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          mkdir -p debian/build
+          for ARCH in arm64 amd64 armhf; do
+            # -b (binary-only) and -a $ARCH: nothing is compiled here, so this
+            # needs no cross-toolchain -- dh just packages the prebuilt binary.
+            dpkg-buildpackage -a "$ARCH" -b -us -uc
+            mv ../doover-grpc_*_"${ARCH}".deb debian/build/
+          done
+          ls -l debian/build/
+
+      - name: Publish packages
+        if: github.event_name != 'workflow_dispatch' || (github.event_name == 'workflow_dispatch' && github.event.inputs.confirmation != 'false')
+        env:
+          REPO_SIGNING_KEY_ID: ${{ vars.APT_RELEASE_REPO_SIGNING_KEY_ID }}
+          REPO_SIGNING_KEY_PASSPHRASE: ${{ secrets.APT_RELEASE_REPO_SIGNING_KEY_PASSPHRASE }}
+        run: |
+          set -eux
+          export GPG_TTY=`tty`
+          aws s3 cp s3://doover-apt-repo-private/apt_gpg_private.backup - | \
+            gpg --import --pinentry-mode=loopback --no-tty --batch --yes --passphrase ${REPO_SIGNING_KEY_PASSPHRASE}
+
+          aws s3 cp debian/build/ s3://doover-apt-packages/doover-grpc/ --recursive --exclude '*' --include '*.deb'
+
+          # --lock serializes repo-index updates; upload arches one at a time so
+          # the three .debs can't race each other for it.
+          for DEB in debian/build/*.deb; do
+            deb-s3 upload \
+              "${DEB}" \
+              --lock \
+              --bucket "apt.u.doover.com" \
+              --s3-region "${AWS_DEFAULT_REGION}" \
+              --sign "${REPO_SIGNING_KEY_ID}" \
+              --gpg-options "\-\-pinentry-mode=loopback \-\-no-tty \-\-batch \-\-yes \-\-passphrase ${REPO_SIGNING_KEY_PASSPHRASE}"
+          done

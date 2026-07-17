@@ -373,6 +373,7 @@ dependencies = [
 name = "doover-cli"
 version = "0.1.0"
 dependencies = [
+ "base64",
  "clap",
  "doover",
  "futures-util",

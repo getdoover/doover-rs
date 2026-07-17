@@ -1,8 +1,11 @@
 //! `doover device_agent <cmd>` — mirrors the `@cli_command`-decorated surface
 //! of pydoover's `DeviceAgentInterface` (`docker/device_agent/device_agent.py`).
 
+use std::io::{IsTerminal, Write};
+use std::path::PathBuf;
 use std::time::Duration;
 
+use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
 use clap::Subcommand;
 use futures_util::StreamExt;
 use serde_json::{json, Value};
@@ -10,6 +13,7 @@ use serde_json::{json, Value};
 use doover::docker::device_agent::{
     AggregateOptions, DeviceAgentClient, ListMessagesOptions, Message, UpdateMessageOptions,
 };
+use doover::proto::device_agent as pb;
 
 use crate::{normalize_uri, parse, print_json, CliResult};
 
@@ -146,6 +150,26 @@ pub enum DeviceAgentCmd {
         clear_attachments: bool,
     },
 
+    /// Download an attachment from its URL.
+    ///
+    /// With no output path, ASCII attachments are written to stdout as text.
+    /// Binary attachments are written raw when stdout is redirected, and
+    /// refused at an interactive terminal unless --base64 is given.
+    #[command(name = "fetch_message_attachment", alias = "fetch-message-attachment")]
+    FetchMessageAttachment {
+        /// Attachment URL returned by a message or aggregate.
+        url: String,
+        /// File path at which to save the downloaded attachment.
+        #[arg(long, conflicts_with = "base64")]
+        output: Option<PathBuf>,
+        /// Overwrite the output file if it already exists.
+        #[arg(long)]
+        force: bool,
+        /// Write the attachment to stdout as Base64-encoded ASCII text.
+        #[arg(long)]
+        base64: bool,
+    },
+
     /// Fetch WebRTC TURN credentials for camera streaming.
     #[command(name = "fetch_turn_token", alias = "fetch-turn-token")]
     FetchTurnToken {
@@ -164,6 +188,42 @@ pub enum DeviceAgentCmd {
         /// Name of channel to listen to.
         channel_name: String,
     },
+}
+
+/// Write a downloaded attachment out, per pydoover's `_cli_fetch_message_attachment`:
+/// base64 to stdout, or a file, or stdout directly (text if ASCII, raw bytes if
+/// piped, refused at a terminal).
+fn write_attachment(file: pb::File, output: Option<PathBuf>, base64: bool) -> CliResult {
+    if base64 {
+        println!("{}", BASE64.encode(&file.data));
+        return Ok(());
+    }
+
+    let Some(path) = output else {
+        if file.data.is_ascii() {
+            // is_ascii() proved this is valid UTF-8.
+            print!("{}", std::str::from_utf8(&file.data)?);
+            std::io::stdout().flush()?;
+            return Ok(());
+        }
+        if std::io::stdout().is_terminal() {
+            return Err("Binary attachment cannot be written to an interactive terminal; \
+                        use --output PATH, --base64, or redirect stdout"
+                .into());
+        }
+        let mut stdout = std::io::stdout().lock();
+        stdout.write_all(&file.data)?;
+        stdout.flush()?;
+        return Ok(());
+    };
+
+    std::fs::write(&path, &file.data)?;
+    print_json(&json!({
+        "path": path.display().to_string(),
+        "content_type": file.content_type,
+        "size": file.data.len(),
+    }));
+    Ok(())
 }
 
 fn message_json(m: &Message) -> Value {
@@ -252,6 +312,27 @@ pub async fn run(uri: &str, app_key: &str, cmd: DeviceAgentCmd) -> CliResult {
             let opts = UpdateMessageOptions { replace_data, clear_attachments };
             let message = client.update_message(&channel_name, message_id, &data, &opts).await?;
             print_json(&message_json(&message));
+        }
+        DeviceAgentCmd::FetchMessageAttachment { url, output, force, base64 } => {
+            if let Some(path) = &output {
+                if path.exists() && !force {
+                    return Err(
+                        format!("{} already exists; use --force to overwrite it", path.display())
+                            .into(),
+                    );
+                }
+            }
+            // FetchAttachment only reads the URL, so the remaining fields are
+            // harmless placeholders — callers needn't reproduce metadata they
+            // already received alongside the URL.
+            let attachment = pb::Attachment {
+                filename: "attachment".to_string(),
+                content_type: "application/octet-stream".to_string(),
+                size_bytes: 0,
+                url,
+            };
+            let file = client.fetch_message_attachment(attachment).await?;
+            write_attachment(file, output, base64)?;
         }
         DeviceAgentCmd::FetchTurnToken { camera_name } => {
             let c = client.fetch_turn_token(&camera_name).await?;

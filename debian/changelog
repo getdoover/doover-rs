@@ -1,0 +1,6 @@
+doover-rs (0.1.0) focal jammy; urgency=medium
+
+  * Initial Debian build of the Rust CLI (doover-grpc). Takes over
+    /usr/bin/pydoover from doover-pydoover (<< 1.11).
+
+ -- Doover Team <developers@doover.com>  Fri, 17 Jul 2026 09:00:00 +1000

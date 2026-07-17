@@ -309,6 +309,45 @@ mod tests {
     }
 
     #[test]
+    fn fetch_message_attachment_takes_url_positionally() {
+        // pydoover maps defaulted params to flags and the rest to positionals,
+        // so `url` is positional there and must stay positional here.
+        let cli = parse(&[
+            "doover",
+            "device_agent",
+            "fetch_message_attachment",
+            "https://x/a.bin",
+            "--output",
+            "/tmp/a.bin",
+            "--force",
+        ]);
+        let Section::DeviceAgent {
+            cmd: device_agent::DeviceAgentCmd::FetchMessageAttachment { url, output, force, base64 },
+            ..
+        } = cli.section
+        else {
+            panic!("expected fetch_message_attachment");
+        };
+        assert_eq!(url, "https://x/a.bin");
+        assert_eq!(output.as_deref(), Some(std::path::Path::new("/tmp/a.bin")));
+        assert!(force && !base64);
+    }
+
+    #[test]
+    fn attachment_output_and_base64_are_mutually_exclusive() {
+        assert!(Cli::try_parse_from([
+            "doover",
+            "device_agent",
+            "fetch_message_attachment",
+            "https://x/a.bin",
+            "--output",
+            "/tmp/a.bin",
+            "--base64",
+        ])
+        .is_err());
+    }
+
+    #[test]
     fn normalize_uri_adds_scheme() {
         assert_eq!(normalize_uri("localhost:50051"), "http://localhost:50051");
         assert_eq!(normalize_uri("http://x:1"), "http://x:1");

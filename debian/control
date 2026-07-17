@@ -1,0 +1,21 @@
+Source: doover-rs
+Section: misc
+Priority: extra
+Maintainer: Doover Team <developers@doover.com>
+Build-Depends: debhelper-compat (= 13)
+Homepage: https://doover.com
+Standards-Version: 4.7.0
+
+Package: doover-grpc
+Architecture: any
+Depends: ${misc:Depends}
+Replaces: doover-pydoover (<< 1.10.1)
+Breaks: doover-pydoover (<< 1.10.1)
+Description: Command-line client for the Doover device sidecars
+ Interacts with the device agent, platform interface and modbus interface over
+ gRPC. This is the Rust implementation of the CLI that pydoover shipped as
+ /usr/bin/pydoover; it installs that same path, so existing scripts keep
+ working, alongside its own /usr/bin/doover-grpc name.
+ .
+ The Python library itself remains in doover-pydoover -- this package replaces
+ only the command-line entry point, not `import pydoover`.

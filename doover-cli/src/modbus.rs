@@ -12,6 +12,23 @@ use doover::proto::modbus_iface as pb;
 use crate::parse::{parse_int_list, IntList};
 use crate::{normalize_uri, print_json, CliResult};
 
+/// Register-access arguments pydoover accepted that no longer select anything.
+/// The sidecar identifies a bus by its configured connection settings and opens
+/// it on demand, so `bus_id` was already documented as deprecated-and-ignored
+/// there, `configure_bus` is now unconditional, and `bus` was a Python object
+/// that never had a command-line spelling. Accepted and ignored so existing
+/// scripts keep parsing.
+#[derive(clap::Args, Debug)]
+pub struct BusCompat {
+    #[arg(long = "bus_id", alias = "bus-id", hide = true)]
+    bus_id: Option<String>,
+    #[arg(long = "configure_bus", alias = "configure-bus", num_args = 0..=1,
+          default_missing_value = "true", hide = true)]
+    configure_bus: Option<String>,
+    #[arg(long, hide = true)]
+    bus: Option<String>,
+}
+
 #[derive(Subcommand, Debug)]
 pub enum ModbusCmd {
     /// Liveness echo against the modbus interface.
@@ -83,6 +100,8 @@ pub enum ModbusCmd {
     /// Read a range of registers from a modbus device.
     #[command(name = "read_registers", alias = "read-registers")]
     ReadRegisters {
+        #[command(flatten)]
+        compat: BusCompat,
         /// The modbus id of the target device.
         #[arg(long = "modbus_id", alias = "modbus-id", default_value_t = 1)]
         modbus_id: i32,
@@ -103,9 +122,15 @@ pub enum ModbusCmd {
     /// Write values to registers starting at an address.
     #[command(name = "write_registers", alias = "write-registers")]
     WriteRegisters {
-        /// Value(s) to write: '5' or '[1,2,3]'.
-        #[arg(value_parser = parse_int_list)]
-        values: IntList,
+        /// Value(s) to write: '5' or '[1,2,3]'. Also accepted as --values.
+        #[arg(value_parser = parse_int_list, required_unless_present = "values_flag",
+              conflicts_with = "values_flag")]
+        values: Option<IntList>,
+        /// Value(s) to write: '5' or '[1,2,3]' (pydoover spelling).
+        #[arg(long = "values", alias = "value", value_parser = parse_int_list, hide = true)]
+        values_flag: Option<IntList>,
+        #[command(flatten)]
+        compat: BusCompat,
         /// The modbus id of the target device.
         #[arg(long = "modbus_id", alias = "modbus-id", default_value_t = 1)]
         modbus_id: i32,
@@ -212,6 +237,7 @@ pub async fn run(uri: &str, cmd: ModbusCmd) -> CliResult {
             print_json(&Value::Array(buses.iter().map(bus_status_json).collect()));
         }
         ModbusCmd::ReadRegisters {
+            compat: _,
             modbus_id,
             start_address,
             num_registers,
@@ -236,11 +262,17 @@ pub async fn run(uri: &str, cmd: ModbusCmd) -> CliResult {
         }
         ModbusCmd::WriteRegisters {
             values,
+            values_flag,
+            compat: _,
             modbus_id,
             start_address,
             register_type,
             retries,
         } => {
+            // clap's `required_unless_present` guarantees one of the two is set.
+            let values = values
+                .or(values_flag)
+                .expect("write_registers requires values positionally or via --values");
             let range = RegisterRange {
                 modbus_id,
                 register_type,

@@ -20,6 +20,24 @@ use crate::{normalize_uri, parse, print_json, CliResult};
 /// pydoover's default comms-check message.
 const DEFAULT_COMMS_MESSAGE: &str = "Comms Check Message";
 
+/// pydoover exposed a `--files` argument on the message/aggregate writes. Its
+/// argparse type was the annotation `list[File]`, which mangled whatever it was
+/// given, so no caller could have passed an attachment through it. Accepted and
+/// ignored here so scripts that set it keep parsing.
+#[derive(clap::Args, Debug)]
+pub struct FilesCompat {
+    #[arg(long, hide = true)]
+    files: Option<String>,
+}
+
+impl FilesCompat {
+    fn warn_if_set(&self) {
+        if self.files.is_some() {
+            eprintln!("warning: --files is not supported and was ignored");
+        }
+    }
+}
+
 #[derive(Subcommand, Debug)]
 pub enum DeviceAgentCmd {
     /// Liveness echo against the device agent.
@@ -76,6 +94,16 @@ pub enum DeviceAgentCmd {
         /// old (seconds). 0 publishes immediately.
         #[arg(long = "max_age_secs", alias = "max-age-secs", default_value_t = 0.0)]
         max_age_secs: f32,
+        /// Don't print the resulting aggregate (skips the agent's echo).
+        #[arg(
+            long = "return_aggregate",
+            alias = "return-aggregate",
+            action = clap::ArgAction::SetFalse,
+            help = "Don't print the resulting aggregate (skips the agent's echo)."
+        )]
+        return_aggregate: bool,
+        #[command(flatten)]
+        files: FilesCompat,
     },
 
     /// Append a message to a channel log; prints the minted message id.
@@ -86,9 +114,12 @@ pub enum DeviceAgentCmd {
         /// Inline JSON object for the message body, e.g. '{"level": 42}'.
         #[arg(value_parser = parse::parse_json)]
         data: Value,
-        /// Unix-millisecond timestamp to stamp the message with (default: now).
-        #[arg(long)]
+        /// Unix-millisecond timestamp or ISO-8601 datetime to stamp the
+        /// message with (default: now).
+        #[arg(long, value_parser = parse::parse_timestamp_ms)]
         timestamp: Option<u64>,
+        #[command(flatten)]
+        files: FilesCompat,
     },
 
     /// Send an ephemeral one-shot message (requires the agent to be online).
@@ -102,6 +133,10 @@ pub enum DeviceAgentCmd {
         /// Inline JSON object for the message body.
         #[arg(value_parser = parse::parse_json)]
         data: Value,
+        /// Unix-millisecond timestamp or ISO-8601 datetime to stamp the
+        /// message with (default: the agent's clock).
+        #[arg(long, value_parser = parse::parse_timestamp_ms)]
+        timestamp: Option<u64>,
     },
 
     /// Fetch a single message by id.
@@ -118,11 +153,11 @@ pub enum DeviceAgentCmd {
     ListMessages {
         /// Name of channel to list messages from.
         channel_name: String,
-        /// Only messages with an id below this snowflake.
-        #[arg(long)]
+        /// Only messages below this snowflake id (or ISO-8601 datetime).
+        #[arg(long, value_parser = parse::parse_snowflake_bound)]
         before: Option<u64>,
-        /// Only messages with an id above this snowflake.
-        #[arg(long)]
+        /// Only messages above this snowflake id (or ISO-8601 datetime).
+        #[arg(long, value_parser = parse::parse_snowflake_bound)]
         after: Option<u64>,
         /// Maximum number of messages to return.
         #[arg(long)]
@@ -148,6 +183,8 @@ pub enum DeviceAgentCmd {
         /// Clear the message's attachments.
         #[arg(long = "clear_attachments", alias = "clear-attachments")]
         clear_attachments: bool,
+        #[command(flatten)]
+        files: FilesCompat,
     },
 
     /// Download an attachment from its URL.
@@ -272,7 +309,10 @@ pub async fn run(uri: &str, app_key: &str, cmd: DeviceAgentCmd) -> CliResult {
             clear_attachments,
             save_log,
             max_age_secs,
+            return_aggregate,
+            files,
         } => {
+            files.warn_if_set();
             let opts = AggregateOptions {
                 max_age_secs,
                 save_log,
@@ -280,17 +320,27 @@ pub async fn run(uri: &str, app_key: &str, cmd: DeviceAgentCmd) -> CliResult {
                 clear_attachments,
                 ..Default::default()
             };
-            client.update_channel_aggregate(&channel_name, &data, &opts).await?;
+            if return_aggregate {
+                let aggregate =
+                    client.update_channel_aggregate_returning(&channel_name, &data, &opts).await?;
+                print_json(&aggregate.unwrap_or(Value::Null));
+            } else {
+                client.update_channel_aggregate(&channel_name, &data, &opts).await?;
+            }
         }
-        DeviceAgentCmd::CreateMessage { channel_name, data, timestamp } => {
+        DeviceAgentCmd::CreateMessage { channel_name, data, timestamp, files } => {
+            files.warn_if_set();
             let id = match timestamp {
                 Some(ts) => client.create_message_at(&channel_name, &data, ts).await?,
                 None => client.create_message(&channel_name, &data).await?,
             };
             print_json(&json!(id));
         }
-        DeviceAgentCmd::SendOneshotMessage { channel_name, data } => {
-            client.send_one_shot_message(&channel_name, &data).await?;
+        DeviceAgentCmd::SendOneshotMessage { channel_name, data, timestamp } => {
+            match timestamp {
+                Some(ts) => client.send_one_shot_message_at(&channel_name, &data, ts).await?,
+                None => client.send_one_shot_message(&channel_name, &data).await?,
+            }
             print_json(&json!(true));
         }
         DeviceAgentCmd::FetchMessage { channel_name, message_id } => {
@@ -308,7 +358,9 @@ pub async fn run(uri: &str, app_key: &str, cmd: DeviceAgentCmd) -> CliResult {
             data,
             replace_data,
             clear_attachments,
+            files,
         } => {
+            files.warn_if_set();
             let opts = UpdateMessageOptions { replace_data, clear_attachments };
             let message = client.update_message(&channel_name, message_id, &data, &opts).await?;
             print_json(&message_json(&message));
@@ -344,8 +396,7 @@ pub async fn run(uri: &str, app_key: &str, cmd: DeviceAgentCmd) -> CliResult {
                 "uris": c.uris,
             }));
         }
-        DeviceAgentCmd::ListenChannel { channel_name } =>
-
+        DeviceAgentCmd::ListenChannel { channel_name } => {
             // Reconnect forever, as pydoover's stream_channel_events does.
             loop {
                 match client.subscribe_events(&channel_name).await {
@@ -368,7 +419,8 @@ pub async fn run(uri: &str, app_key: &str, cmd: DeviceAgentCmd) -> CliResult {
                     Err(e) => eprintln!("failed to subscribe to '{channel_name}': {e}"),
                 }
                 tokio::time::sleep(Duration::from_secs(1)).await;
-            },
+            }
+        }
     }
     Ok(())
 }

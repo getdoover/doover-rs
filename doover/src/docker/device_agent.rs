@@ -191,6 +191,30 @@ impl DeviceAgentClient {
         data: &Value,
         opts: &AggregateOptions,
     ) -> Result<()> {
+        // most callers discard the echo — skip the encode.
+        self.update_aggregate_inner(channel, data, opts, false).await?;
+        Ok(())
+    }
+
+    /// As [`update_channel_aggregate`](Self::update_channel_aggregate), but
+    /// asks the agent to echo the resulting aggregate back (pydoover's
+    /// `return_aggregate=True` default). `None` when the agent sends no echo.
+    pub async fn update_channel_aggregate_returning(
+        &self,
+        channel: &str,
+        data: &Value,
+        opts: &AggregateOptions,
+    ) -> Result<Option<Value>> {
+        self.update_aggregate_inner(channel, data, opts, true).await
+    }
+
+    async fn update_aggregate_inner(
+        &self,
+        channel: &str,
+        data: &Value,
+        opts: &AggregateOptions,
+        return_aggregate: bool,
+    ) -> Result<Option<Value>> {
         validate_payload(data)?;
         if !opts.replace_keys.is_empty() {
             // Divergence from the HTTP backend: the device-agent proto has no
@@ -210,12 +234,11 @@ impl DeviceAgentClient {
             replace_data: Some(opts.replace_data),
             max_age_secs: opts.max_age_secs,
             save_log: opts.save_log,
-            // most callers discard the echo — skip the encode.
-            return_aggregate: Some(false),
+            return_aggregate: Some(return_aggregate),
         };
         let resp = self.inner.clone().update_aggregate(req).await?.into_inner();
         self.check_header(resp.response_header)?;
-        Ok(())
+        Ok(resp.aggregate.as_ref().map(decode_aggregate))
     }
 
     /// Fetch the current aggregate data for a channel, or `None` if it does
@@ -268,13 +291,33 @@ impl DeviceAgentClient {
 
     /// Send an ephemeral one-shot message (WSS-only; requires cloud).
     pub async fn send_one_shot_message(&self, channel: &str, data: &Value) -> Result<()> {
+        self.send_one_shot_inner(channel, data, None).await
+    }
+
+    /// As [`send_one_shot_message`](Self::send_one_shot_message), but stamped
+    /// with an explicit unix-millisecond time rather than the agent's clock.
+    pub async fn send_one_shot_message_at(
+        &self,
+        channel: &str,
+        data: &Value,
+        timestamp_ms: u64,
+    ) -> Result<()> {
+        self.send_one_shot_inner(channel, data, Some(timestamp_ms)).await
+    }
+
+    async fn send_one_shot_inner(
+        &self,
+        channel: &str,
+        data: &Value,
+        timestamp_ms: Option<u64>,
+    ) -> Result<()> {
         validate_payload(data)?;
         let req = pb::SendOneShotMessageRequest {
             header: self.header(),
             channel_name: channel.to_string(),
             data: None,
             data_json: serde_json::to_string(data)?,
-            timestamp: None,
+            timestamp: timestamp_ms,
         };
         let resp = self.inner.clone().send_one_shot_message(req).await?.into_inner();
         self.check_header(resp.response_header)?;

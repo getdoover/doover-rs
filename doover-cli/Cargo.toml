@@ -13,8 +13,18 @@ path = "src/main.rs"
 # The CLI only drives the gRPC clients; the config/derive machinery is not needed.
 doover = { path = "../doover", default-features = false }
 base64 = "0.22"
+# ISO-8601 parsing for the `--timestamp` / `--before` / `--after` arguments
+# pydoover accepted (`datetime.fromisoformat`).
+chrono = { version = "0.4", default-features = false, features = ["std", "clock"] }
 clap = { version = "4", features = ["derive", "env"] }
 tokio = { workspace = true }
 serde_json = { workspace = true }
 futures-util = { version = "0.3", default-features = false, features = ["std"] }
 tracing-subscriber = "0.3"
+
+[dev-dependencies]
+# `tests/cli_e2e.rs` drives the built binary against the `doover` crate's fake
+# device agent, which it includes directly (see the #[path] import there).
+doover-proto = { path = "../doover-proto" }
+tonic = { workspace = true }
+tokio-stream = { workspace = true }

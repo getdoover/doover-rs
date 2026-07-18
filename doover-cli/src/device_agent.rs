@@ -11,7 +11,8 @@ use futures_util::StreamExt;
 use serde_json::{json, Value};
 
 use doover::docker::device_agent::{
-    AggregateOptions, DeviceAgentClient, ListMessagesOptions, Message, UpdateMessageOptions,
+    AggregateOptions, DeviceAgentClient, ListMessagesOptions, Message, SubscribeOptions,
+    UpdateMessageOptions,
 };
 use doover::proto::device_agent as pb;
 
@@ -59,6 +60,18 @@ pub enum DeviceAgentCmd {
     /// Whether the device agent has reported cloud sync at least once.
     #[command(name = "get_has_dda_been_online", alias = "get-has-dda-been-online")]
     GetHasDdaBeenOnline,
+
+    /// List the agent's channels.
+    ///
+    /// Answered from the cloud when the agent can reach it, otherwise from the
+    /// channels it tracks locally — which is only those it has touched, so
+    /// possibly a subset. `from_cloud` in the output says which you got.
+    #[command(name = "list_channels", aliases = ["list-channels", "list_channel", "list-channel"])]
+    ListChannels {
+        /// Include each channel's aggregate data.
+        #[arg(long = "include_aggregate", alias = "include-aggregate")]
+        include_aggregate: bool,
+    },
 
     /// Fetch a channel's current aggregate payload.
     #[command(
@@ -224,6 +237,10 @@ pub enum DeviceAgentCmd {
     ListenChannel {
         /// Name of channel to listen to.
         channel_name: String,
+        /// Skip messages the agent replays after a reconnect (ones created
+        /// while it was offline) and print only live events.
+        #[arg(long = "no_replay", alias = "no-replay")]
+        no_replay: bool,
     },
 }
 
@@ -295,6 +312,17 @@ pub async fn run(uri: &str, app_key: &str, cmd: DeviceAgentCmd) -> CliResult {
         DeviceAgentCmd::GetHasDdaBeenOnline => {
             let _ = client.test_comms(DEFAULT_COMMS_MESSAGE).await;
             print_json(&json!(client.status().has_been_online()));
+        }
+        DeviceAgentCmd::ListChannels { include_aggregate } => {
+            let listing = client.list_channels(include_aggregate).await?;
+            print_json(&json!({
+                "from_cloud": listing.from_cloud,
+                "channels": listing
+                    .channels
+                    .iter()
+                    .map(|c| json!({"channel_name": c.name, "aggregate": c.aggregate}))
+                    .collect::<Vec<_>>(),
+            }));
         }
         DeviceAgentCmd::FetchChannelAggregate { channel_name } => {
             match client.fetch_channel_aggregate(&channel_name).await? {
@@ -396,10 +424,12 @@ pub async fn run(uri: &str, app_key: &str, cmd: DeviceAgentCmd) -> CliResult {
                 "uris": c.uris,
             }));
         }
-        DeviceAgentCmd::ListenChannel { channel_name } => {
+        DeviceAgentCmd::ListenChannel { channel_name, no_replay } => {
+            let opts = SubscribeOptions { replay_missed_messages: !no_replay };
+
             // Reconnect forever, as pydoover's stream_channel_events does.
             loop {
-                match client.subscribe_events(&channel_name).await {
+                match client.subscribe_events_with(&channel_name, &opts).await {
                     Ok(mut stream) => {
                         while let Some(item) = stream.next().await {
                             match item {

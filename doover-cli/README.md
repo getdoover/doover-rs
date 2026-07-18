@@ -39,6 +39,7 @@ JSON payload arguments are inline JSON strings:
 doover device_agent update_channel_aggregate tag_values '{"level": 42}' --save_log
 doover device_agent create_message my_channel '{"hello": "world"}'
 doover device_agent list_messages my_channel --limit 5
+doover device_agent list_channels --include_aggregate
 doover device_agent listen tag_values
 doover platform fetch_ai 0 1 2
 doover platform set_do '[0,1]' 1        # single value broadcasts to all pins
@@ -56,7 +57,7 @@ short aliases `get_aggregate`, `update_aggregate`, `send_oneshot` and
 Covered:
 
 - **device_agent**: `test_comms`*, `get_is_dda_available`, `get_is_dda_online`,
-  `get_has_dda_been_online`, `fetch_channel_aggregate`,
+  `get_has_dda_been_online`, `list_channels`*, `fetch_channel_aggregate`,
   `update_channel_aggregate`, `create_message`, `send_oneshot_message`,
   `fetch_message`, `list_messages`, `update_message`, `fetch_turn_token`,
   `listen_channel`.

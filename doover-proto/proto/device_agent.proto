@@ -1,6 +1,6 @@
 // Vendored VERBATIM from pydoover: protos/device_agent.proto
 // Source: /Users/josh/Coding/doover/pydoover/protos/device_agent.proto
-// pydoover version: 1.8.0 (proto last touched at commit 22d0f4d2032958ca204a113fd321d7fd4312b084)
+// pydoover version: 1.10.3 (proto last touched at commit 8a70952cd2dda3c19555986295c838a02c3612e6)
 // Do not edit here — re-vendor from pydoover when it changes (CI sync check planned).
 
 syntax = "proto3";
@@ -36,6 +36,7 @@ service deviceAgent {
   rpc UpdateAggregate (UpdateAggregateRequest) returns (UpdateAggregateResponse) {}
   rpc GetMessage (GetMessageRequest) returns (GetMessageResponse) {}
   rpc GetMessages (GetMessagesRequest) returns (GetMessagesResponse) {}
+  rpc ListChannels (ListChannelsRequest) returns (ListChannelsResponse) {}
   rpc FetchAttachment (FetchAttachmentRequest) returns (FetchAttachmentResponse) {}
 
   rpc SendOneShotMessage (SendOneShotMessageRequest) returns (SendOneShotMessageResponse) {}
@@ -313,6 +314,8 @@ message ChannelEventSubscriptionRequest {
   RequestHeader header = 2;
   string channel_name = 1;
   WireFormat wire_format = 3;  // default WIRE_FORMAT_BOTH keeps legacy behaviour
+  // Absent defaults to true in the server for backwards compatibility.
+  optional bool replay_missed_messages = 4;
 }
 
 message ChannelEventSubscriptionResponse {
@@ -331,6 +334,21 @@ message GetAggregateRequest {
 message GetAggregateResponse {
   ResponseHeader response_header = 1;
   Aggregate aggregate = 2;
+}
+
+message ListChannelsRequest {
+  RequestHeader header = 1;
+  // Populate each channel's `aggregate`. Off by default: the agent can list
+  // channel names without reading any aggregate body.
+  optional bool include_aggregate = 2;
+}
+
+message ListChannelsResponse {
+  ResponseHeader response_header = 1;
+  repeated ChannelDetails channels = 2;
+  // False when the agent could not reach the cloud and answered from the
+  // channels it tracks locally, which may be a subset of the agent's channels.
+  bool from_cloud = 3;
 }
 
 message FetchAttachmentRequest {

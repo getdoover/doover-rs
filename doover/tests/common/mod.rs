@@ -22,6 +22,16 @@ use doover_proto::device_agent as pb;
 use pb::device_agent_server::{DeviceAgent, DeviceAgentServer};
 
 // Recorded-call fields exist for assertions; not every test reads every one.
+/// An event subscription the fake received, so tests can assert on what the
+/// client actually asked the agent for.
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct RecordedSubscribe {
+    pub channel: String,
+    /// `None` when the client left it unset (the agent then replays).
+    pub replay_missed_messages: Option<bool>,
+}
+
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct RecordedAggregateWrite {
@@ -54,6 +64,7 @@ type EventSender = mpsc::Sender<Result<pb::ChannelEventSubscriptionResponse, Sta
 #[derive(Default)]
 pub struct FakeAgentState {
     pub aggregates: Mutex<HashMap<String, Value>>,
+    pub subscribe_requests: Mutex<Vec<RecordedSubscribe>>,
     pub aggregate_writes: Mutex<Vec<RecordedAggregateWrite>>,
     pub messages: Mutex<Vec<RecordedMessage>>,
     pub message_updates: Mutex<Vec<RecordedMessageUpdate>>,
@@ -170,6 +181,31 @@ impl DeviceAgent for FakeAgent {
         }))
     }
 
+    /// Lists the seeded aggregates, honouring `include_aggregate`. Always
+    /// `from_cloud: true` — a real agent's local-fallback path is a property of
+    /// the agent, not of this client, and is covered by the agent's own suite.
+    async fn list_channels(
+        &self,
+        request: Request<pb::ListChannelsRequest>,
+    ) -> Result<Response<pb::ListChannelsResponse>, Status> {
+        let include_aggregate = request.into_inner().include_aggregate.unwrap_or(false);
+        let aggregates = self.0.aggregates.lock().unwrap();
+        let mut channels: Vec<pb::ChannelDetails> = aggregates
+            .iter()
+            .map(|(name, data)| pb::ChannelDetails {
+                channel_name: name.clone(),
+                aggregate: include_aggregate.then(|| data.to_string()),
+            })
+            .collect();
+        // HashMap order is arbitrary; keep the fake deterministic.
+        channels.sort_by(|a, b| a.channel_name.cmp(&b.channel_name));
+        Ok(Response::new(pb::ListChannelsResponse {
+            response_header: Some(ok_header()),
+            channels,
+            from_cloud: true,
+        }))
+    }
+
     async fn get_aggregate(
         &self,
         request: Request<pb::GetAggregateRequest>,
@@ -273,9 +309,23 @@ impl DeviceAgent for FakeAgent {
         &self,
         request: Request<pb::ChannelEventSubscriptionRequest>,
     ) -> Result<Response<Self::ChannelEventSubscriptionStream>, Status> {
-        let channel = request.into_inner().channel_name;
+        let request = request.into_inner();
+        self.0
+            .subscribe_requests
+            .lock()
+            .unwrap()
+            .push(RecordedSubscribe {
+                channel: request.channel_name.clone(),
+                replay_missed_messages: request.replay_missed_messages,
+            });
         let (tx, rx) = mpsc::channel(64);
-        self.0.event_txs.lock().unwrap().entry(channel).or_default().push(tx);
+        self.0
+            .event_txs
+            .lock()
+            .unwrap()
+            .entry(request.channel_name)
+            .or_default()
+            .push(tx);
         Ok(Response::new(ReceiverStream::new(rx)))
     }
 

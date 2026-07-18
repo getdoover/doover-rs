@@ -55,6 +55,40 @@ async fn update_aggregate_prints_the_aggregate_and_return_flag_silences_it() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
+async fn list_channels_prints_the_listing_and_gates_aggregates() {
+    let (state, uri) = common::spawn_fake_agent().await;
+    state.seed_aggregate("alpha", json!({"level": 1}));
+    state.seed_aggregate("beta", json!({"level": 2}));
+
+    let (stdout, _, ok) = run_cli(&uri, &["device_agent", "list_channels", "--json"]);
+    assert!(ok, "list_channels should succeed");
+    let listing: Value = serde_json::from_str(stdout.trim()).expect("stdout should be JSON");
+    assert_eq!(listing["from_cloud"], json!(true));
+    assert_eq!(
+        listing["channels"],
+        json!([
+            {"channel_name": "alpha", "aggregate": null},
+            {"channel_name": "beta", "aggregate": null},
+        ]),
+        "aggregates are omitted unless asked for"
+    );
+
+    let (stdout, _, ok) = run_cli(
+        &uri,
+        &["device_agent", "list-channels", "--include_aggregate"],
+    );
+    assert!(ok);
+    let listing: Value = serde_json::from_str(stdout.trim()).expect("stdout should be JSON");
+    assert_eq!(
+        listing["channels"],
+        json!([
+            {"channel_name": "alpha", "aggregate": {"level": 1}},
+            {"channel_name": "beta", "aggregate": {"level": 2}},
+        ])
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
 async fn pydoover_compat_flags_reach_the_wire_unchanged() {
     let (state, uri) = common::spawn_fake_agent().await;
 

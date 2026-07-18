@@ -77,6 +77,42 @@ pub struct DeviceAgentClient {
     status: Arc<DdaStatus>,
 }
 
+/// Options for [`DeviceAgentClient::subscribe_events_with`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SubscribeOptions {
+    /// Whether to receive messages the agent replays after a reconnect — ones
+    /// created while it was offline. Defaults to `true`, matching the agent's
+    /// behaviour for a subscriber that doesn't ask. Set `false` for live-only
+    /// delivery, e.g. a control loop that should act on current state rather
+    /// than re-run a backlog of stale commands.
+    pub replay_missed_messages: bool,
+}
+
+impl Default for SubscribeOptions {
+    fn default() -> Self {
+        Self { replay_missed_messages: true }
+    }
+}
+
+/// One channel in a [`DeviceAgentClient::list_channels`] listing.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ChannelInfo {
+    pub name: String,
+    /// The channel's aggregate data, when the listing was asked to include it
+    /// and the agent had one to give.
+    pub aggregate: Option<Value>,
+}
+
+/// The result of [`DeviceAgentClient::list_channels`].
+#[derive(Debug, Clone, PartialEq)]
+pub struct ChannelList {
+    pub channels: Vec<ChannelInfo>,
+    /// Whether the agent answered from the cloud. `false` means it couldn't
+    /// reach the cloud and listed the channels it tracks locally instead —
+    /// only those it has touched, so possibly a subset.
+    pub from_cloud: bool,
+}
+
 /// A persisted channel message (pydoover `Message`, decoded from
 /// `data_json`).
 #[derive(Debug, Clone)]
@@ -239,6 +275,34 @@ impl DeviceAgentClient {
         let resp = self.inner.clone().update_aggregate(req).await?.into_inner();
         self.check_header(resp.response_header)?;
         Ok(resp.aggregate.as_ref().map(decode_aggregate))
+    }
+
+    /// List the agent's channels. The agent answers from the cloud when it can
+    /// reach it, and from the channels it tracks locally when it can't — the
+    /// returned `from_cloud` says which, since a local answer may be a subset.
+    ///
+    /// `include_aggregate` populates each channel's data; leave it off to list
+    /// names without pulling every aggregate body over.
+    pub async fn list_channels(&self, include_aggregate: bool) -> Result<ChannelList> {
+        let req = pb::ListChannelsRequest {
+            header: self.header(),
+            include_aggregate: Some(include_aggregate),
+        };
+        let resp = self.inner.clone().list_channels(req).await?.into_inner();
+        self.check_header(resp.response_header)?;
+        Ok(ChannelList {
+            from_cloud: resp.from_cloud,
+            channels: resp
+                .channels
+                .into_iter()
+                .map(|c| ChannelInfo {
+                    name: c.channel_name,
+                    // The agent sends the aggregate as a JSON string, as it
+                    // does for every other payload (see `decode_aggregate`).
+                    aggregate: c.aggregate.and_then(|a| serde_json::from_str(&a).ok()),
+                })
+                .collect(),
+        })
     }
 
     /// Fetch the current aggregate data for a channel, or `None` if it does
@@ -425,10 +489,21 @@ impl DeviceAgentClient {
         &self,
         channel: &str,
     ) -> Result<impl Stream<Item = Result<Event>>> {
+        self.subscribe_events_with(channel, &SubscribeOptions::default()).await
+    }
+
+    /// As [`subscribe_events`](Self::subscribe_events), with control over what
+    /// the agent delivers — see [`SubscribeOptions`].
+    pub async fn subscribe_events_with(
+        &self,
+        channel: &str,
+        opts: &SubscribeOptions,
+    ) -> Result<impl Stream<Item = Result<Event>>> {
         let req = pb::ChannelEventSubscriptionRequest {
             header: self.header(),
             channel_name: channel.to_string(),
             wire_format: pb::WireFormat::JsonOnly as i32,
+            replay_missed_messages: Some(opts.replay_missed_messages),
         };
         let stream = self.inner.clone().channel_event_subscription(req).await?.into_inner();
         let channel = channel.to_string();

@@ -15,6 +15,7 @@ use tokio::time::timeout;
 
 use common::spawn_fake_agent;
 use doover::tags::{KeyPath, SetTagOptions, TagsRuntime};
+use doover::docker::SubscribeOptions;
 use doover::{DeviceAgentClient, Event, EventSubscription, SubscriptionHub};
 
 const WAIT: Duration = Duration::from_secs(5);
@@ -25,6 +26,28 @@ async fn recv_event(rx: &mut mpsc::UnboundedReceiver<Event>) -> Event {
 
 fn now_ms() -> f64 {
     SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as f64
+}
+
+#[tokio::test]
+async fn subscribe_replay_preference_reaches_the_agent() {
+    let (state, uri) = spawn_fake_agent().await;
+    let client = DeviceAgentClient::connect(uri).await.unwrap().with_app_id("test_app");
+
+    // The default asks for replay explicitly rather than leaving it unset, so
+    // the agent's behaviour doesn't depend on its own default.
+    let _default = client.subscribe_events("ch").await.unwrap();
+    // Opting out is what a control loop wants: act on current state, not on a
+    // backlog of stale commands replayed after a reconnect.
+    let _live_only = client
+        .subscribe_events_with("ch", &SubscribeOptions { replay_missed_messages: false })
+        .await
+        .unwrap();
+
+    let requests = state.subscribe_requests.lock().unwrap();
+    assert_eq!(
+        requests.iter().map(|r| r.replay_missed_messages).collect::<Vec<_>>(),
+        vec![Some(true), Some(false)]
+    );
 }
 
 #[tokio::test]

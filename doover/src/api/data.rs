@@ -646,7 +646,7 @@ fn map_status(status: u16, text: String) -> DooverError {
 /// duck typing).
 #[async_trait::async_trait]
 impl ChannelBackend for DataClient {
-    async fn fetch_channel_aggregate(&self, channel: &str) -> Result<Option<Value>> {
+    async fn fetch_channel_data(&self, channel: &str) -> Result<Option<Value>> {
         match self.fetch_channel_aggregate_raw(channel, None).await {
             Ok(payload) => Ok(payload.get("data").cloned()),
             Err(DooverError::NotFound(_)) => Ok(None),

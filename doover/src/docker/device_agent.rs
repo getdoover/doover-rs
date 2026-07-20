@@ -24,7 +24,9 @@ use crate::events::Event;
 
 // Re-exported from their new home so existing `doover::docker::device_agent`
 // (and `doover::AggregateOptions`) paths keep working.
-pub use crate::channel_backend::{AggregateOptions, UpdateMessageOptions};
+pub use crate::channel_backend::{
+    AggregateOptions, Attachment, ChannelAggregate, UpdateMessageOptions,
+};
 
 const DEFAULT_MAX_MESSAGE_SIZE: usize = 16 * 1024 * 1024;
 
@@ -240,7 +242,7 @@ impl DeviceAgentClient {
         channel: &str,
         data: &Value,
         opts: &AggregateOptions,
-    ) -> Result<Option<Value>> {
+    ) -> Result<Option<ChannelAggregate>> {
         self.update_aggregate_inner(channel, data, opts, true).await
     }
 
@@ -250,7 +252,7 @@ impl DeviceAgentClient {
         data: &Value,
         opts: &AggregateOptions,
         return_aggregate: bool,
-    ) -> Result<Option<Value>> {
+    ) -> Result<Option<ChannelAggregate>> {
         validate_payload(data)?;
         if !opts.replace_keys.is_empty() {
             // Divergence from the HTTP backend: the device-agent proto has no
@@ -305,9 +307,10 @@ impl DeviceAgentClient {
         })
     }
 
-    /// Fetch the current aggregate data for a channel, or `None` if it does
-    /// not exist.
-    pub async fn fetch_channel_aggregate(&self, channel: &str) -> Result<Option<Value>> {
+    /// Fetch a channel's aggregate — data, attachments and update stamp — or
+    /// `None` if the channel does not exist (pydoover `fetch_channel_aggregate`,
+    /// which likewise returns the whole `Aggregate`).
+    pub async fn fetch_channel_aggregate(&self, channel: &str) -> Result<Option<ChannelAggregate>> {
         let req = pb::GetAggregateRequest {
             header: self.header(),
             channel_name: channel.to_string(),
@@ -318,6 +321,12 @@ impl DeviceAgentClient {
             Err(DooverError::NotFound(_)) => Ok(None),
             Err(e) => Err(e),
         }
+    }
+
+    /// Just the payload of a channel's aggregate — the common case for callers
+    /// that don't care about attachments or the update stamp.
+    pub async fn fetch_channel_data(&self, channel: &str) -> Result<Option<Value>> {
+        Ok(self.fetch_channel_aggregate(channel).await?.map(|a| a.data))
     }
 
     /// Append a message to a channel log stamped now; returns the minted
@@ -539,8 +548,8 @@ impl DeviceAgentClient {
 /// a persistent (streaming) connection.
 #[async_trait::async_trait]
 impl crate::channel_backend::ChannelBackend for DeviceAgentClient {
-    async fn fetch_channel_aggregate(&self, channel: &str) -> Result<Option<Value>> {
-        DeviceAgentClient::fetch_channel_aggregate(self, channel).await
+    async fn fetch_channel_data(&self, channel: &str) -> Result<Option<Value>> {
+        DeviceAgentClient::fetch_channel_data(self, channel).await
     }
 
     async fn update_channel_aggregate(
@@ -587,13 +596,29 @@ fn check_header(header: Option<pb::ResponseHeader>) -> Result<()> {
     }
 }
 
-fn decode_aggregate(a: &pb::Aggregate) -> Value {
-    if !a.data_json.is_empty() {
+fn decode_aggregate(a: &pb::Aggregate) -> ChannelAggregate {
+    let data = if !a.data_json.is_empty() {
         serde_json::from_str(&a.data_json).unwrap_or(Value::Null)
     } else {
         // No lossless field: the caller is on an old agent. We do not decode
         // the lossy Struct here (ints >2^53 are already corrupted); return null.
         Value::Null
+    };
+    ChannelAggregate {
+        data,
+        attachments: a
+            .attachments
+            .iter()
+            .map(|at| Attachment {
+                filename: at.filename.clone(),
+                // The proto has no presence on this field, so an empty string
+                // is how "unknown" arrives.
+                content_type: (!at.content_type.is_empty()).then(|| at.content_type.clone()),
+                size: at.size_bytes.max(0) as u64,
+                url: at.url.clone(),
+            })
+            .collect(),
+        last_updated: a.last_updated,
     }
 }
 

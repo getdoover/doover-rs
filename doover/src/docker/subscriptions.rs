@@ -78,14 +78,16 @@ impl SubscriptionHub {
         self.state.lock().unwrap().aggregates.get(channel).cloned()
     }
 
-    /// Fetch a channel's aggregate — from the cache when the channel is
+    /// Fetch a channel's aggregate data — from the cache when the channel is
     /// subscribed, falling back to a gRPC call (pydoover
-    /// `fetch_channel_aggregate`).
-    pub async fn fetch_channel_aggregate(&self, channel: &str) -> Result<Option<Value>> {
+    /// `fetch_channel_aggregate`). Data only: the cache is fed by aggregate
+    /// update events, which carry no attachments. For the whole aggregate, go
+    /// to [`DeviceAgentClient::fetch_channel_aggregate`].
+    pub async fn fetch_channel_data(&self, channel: &str) -> Result<Option<Value>> {
         if let Some(v) = self.cached_aggregate(channel) {
             return Ok(Some(v));
         }
-        self.client.fetch_channel_aggregate(channel).await
+        self.client.fetch_channel_data(channel).await
     }
 
     /// Whether a subscribed channel has completed its initial sync
@@ -124,7 +126,7 @@ impl SubscriptionHub {
 
     async fn run_channel_stream(self, channel: String) {
         // Seed the aggregate cache, creating the channel if it doesn't exist.
-        let seeded: Option<Value> = match self.client.fetch_channel_aggregate(&channel).await {
+        let seeded: Option<Value> = match self.client.fetch_channel_data(&channel).await {
             Ok(Some(v)) => Some(v),
             Ok(None) => {
                 tracing::info!("channel '{channel}' not found, creating with empty aggregate");

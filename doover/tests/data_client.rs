@@ -94,7 +94,7 @@ async fn aggregate_404_maps_to_not_found_and_backend_none() {
     assert!(matches!(err, DooverError::NotFound(_)), "got {err:?}");
 
     // Through the ChannelBackend trait a missing channel reads as None.
-    let agg = ChannelBackend::fetch_channel_aggregate(&c, "missing").await.unwrap();
+    let agg = ChannelBackend::fetch_channel_data(&c, "missing").await.unwrap();
     assert_eq!(agg, None);
 }
 

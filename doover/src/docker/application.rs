@@ -144,10 +144,10 @@ impl AppContext {
         );
     }
 
-    /// Fetch a channel aggregate — served from the subscription cache when
-    /// the channel is subscribed, else a gRPC round-trip.
-    pub async fn fetch_channel_aggregate(&self, channel: &str) -> Result<Option<Value>> {
-        self.hub.fetch_channel_aggregate(channel).await
+    /// Fetch a channel's aggregate data — served from the subscription cache
+    /// when the channel is subscribed, else a gRPC round-trip.
+    pub async fn fetch_channel_data(&self, channel: &str) -> Result<Option<Value>> {
+        self.hub.fetch_channel_data(channel).await
     }
 
     /// Wait for subscribed channels to complete their initial sync.
@@ -672,7 +672,7 @@ pub async fn run_with<A: Application>(opts: RunOptions) -> Result<()> {
             );
             hub.wait_for_channels_sync(&[channels::DEPLOYMENT_CONFIG], Duration::from_secs(5))
                 .await;
-            match hub.fetch_channel_aggregate(channels::DEPLOYMENT_CONFIG).await {
+            match hub.fetch_channel_data(channels::DEPLOYMENT_CONFIG).await {
                 Ok(Some(agg)) => ctx.apply_deployment_config(&agg),
                 _ => tracing::warn!("no initial deployment config available from DDA"),
             }

@@ -18,7 +18,7 @@ use tokio::sync::mpsc;
 use tokio_stream::wrappers::{ReceiverStream, TcpListenerStream};
 use tonic::{Request, Response, Status};
 
-use doover_proto::device_agent as pb;
+pub use doover_proto::device_agent as pb;
 use pb::device_agent_server::{DeviceAgent, DeviceAgentServer};
 
 // Recorded-call fields exist for assertions; not every test reads every one.
@@ -64,6 +64,9 @@ type EventSender = mpsc::Sender<Result<pb::ChannelEventSubscriptionResponse, Sta
 #[derive(Default)]
 pub struct FakeAgentState {
     pub aggregates: Mutex<HashMap<String, Value>>,
+    /// Attachments + `last_updated` for a seeded aggregate, when a test cares
+    /// about the envelope around `data`.
+    pub aggregate_meta: Mutex<HashMap<String, (Vec<pb::Attachment>, u64)>>,
     pub subscribe_requests: Mutex<Vec<RecordedSubscribe>>,
     pub aggregate_writes: Mutex<Vec<RecordedAggregateWrite>>,
     pub messages: Mutex<Vec<RecordedMessage>>,
@@ -80,6 +83,16 @@ impl FakeAgentState {
     /// Pre-seed a channel aggregate before the client connects.
     pub fn seed_aggregate(&self, channel: &str, data: Value) {
         self.aggregates.lock().unwrap().insert(channel.to_string(), data);
+    }
+
+    /// Attach the envelope fields a real agent returns alongside `data`.
+    pub fn seed_aggregate_meta(
+        &self,
+        channel: &str,
+        attachments: Vec<pb::Attachment>,
+        last_updated: u64,
+    ) {
+        self.aggregate_meta.lock().unwrap().insert(channel.to_string(), (attachments, last_updated));
     }
 
     /// How many event-subscription streams have been opened for a channel
@@ -212,13 +225,14 @@ impl DeviceAgent for FakeAgent {
     ) -> Result<Response<pb::GetAggregateResponse>, Status> {
         let channel = request.into_inner().channel_name;
         let aggregates = self.0.aggregates.lock().unwrap();
+        let meta = self.0.aggregate_meta.lock().unwrap().get(&channel).cloned();
         let resp = match aggregates.get(&channel) {
             Some(data) => pb::GetAggregateResponse {
                 response_header: Some(ok_header()),
                 aggregate: Some(pb::Aggregate {
                     data: None,
-                    attachments: vec![],
-                    last_updated: None,
+                    attachments: meta.clone().map(|(a, _)| a).unwrap_or_default(),
+                    last_updated: meta.map(|(_, ts)| ts),
                     data_json: data.to_string(),
                 }),
             },

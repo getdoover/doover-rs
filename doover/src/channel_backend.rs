@@ -6,9 +6,59 @@
 //! are written once.
 
 use async_trait::async_trait;
-use serde_json::Value;
+use serde_json::{json, Value};
 
 use crate::error::Result;
+
+/// A file attached to an aggregate or message (pydoover `Attachment`).
+#[derive(Debug, Clone, PartialEq)]
+pub struct Attachment {
+    pub filename: String,
+    /// Absent when the agent doesn't know the type.
+    pub content_type: Option<String>,
+    pub size: u64,
+    pub url: String,
+}
+
+impl Attachment {
+    /// The pydoover `Attachment.to_dict()` shape — note `size`, not the
+    /// proto's `size_bytes`.
+    pub fn to_json(&self) -> Value {
+        json!({
+            "filename": self.filename,
+            "content_type": self.content_type,
+            "size": self.size,
+            "url": self.url,
+        })
+    }
+}
+
+/// A channel aggregate: the whole object, not just its payload. `data` is the
+/// current state; `attachments` and `last_updated` are part of the aggregate
+/// too, and pydoover's `Aggregate` carries all three.
+///
+/// Managers that only ever want the payload take the
+/// [`ChannelBackend::fetch_channel_data`] path instead.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ChannelAggregate {
+    pub data: Value,
+    pub attachments: Vec<Attachment>,
+    /// Unix epoch milliseconds of the last write, as the agent reports it.
+    pub last_updated: Option<u64>,
+}
+
+impl ChannelAggregate {
+    /// The pydoover `Aggregate.to_dict()` shape, which the CLI prints verbatim.
+    /// `last_updated` is a float there (a `datetime` scaled to milliseconds),
+    /// so it stays a float here.
+    pub fn to_json(&self) -> Value {
+        json!({
+            "data": self.data,
+            "attachments": self.attachments.iter().map(Attachment::to_json).collect::<Vec<_>>(),
+            "last_updated": self.last_updated.map(|ms| ms as f64),
+        })
+    }
+}
 
 /// Options for an aggregate write (`update_channel_aggregate`).
 #[derive(Debug, Clone, Default)]
@@ -47,8 +97,13 @@ pub struct UpdateMessageOptions {
 /// the same managers later.
 #[async_trait]
 pub trait ChannelBackend: Send + Sync {
-    /// Current aggregate data for a channel, or `None` if it doesn't exist.
-    async fn fetch_channel_aggregate(&self, channel: &str) -> Result<Option<Value>>;
+    /// Current aggregate *data* for a channel, or `None` if it doesn't exist.
+    ///
+    /// Only the payload: the managers behind this trait never need the
+    /// attachments or update stamp, and the subscription cache backing some
+    /// implementations only holds data. For the whole aggregate, use
+    /// [`DeviceAgentClient::fetch_channel_aggregate`](crate::DeviceAgentClient::fetch_channel_aggregate).
+    async fn fetch_channel_data(&self, channel: &str) -> Result<Option<Value>>;
 
     /// Merge-write (or replace, per `opts`) a channel aggregate.
     async fn update_channel_aggregate(

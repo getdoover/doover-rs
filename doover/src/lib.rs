@@ -122,7 +122,9 @@ pub mod utils;
 
 #[cfg(feature = "cloud-api")]
 pub use api::DataClient;
-pub use channel_backend::{AggregateOptions, ChannelBackend, UpdateMessageOptions};
+pub use channel_backend::{
+    AggregateOptions, Attachment, ChannelAggregate, ChannelBackend, UpdateMessageOptions,
+};
 pub use config::{Config, ConfigSchema};
 pub use docker::application::{
     channels, run, run_with, write_export, AppContext, Application, RunOptions,

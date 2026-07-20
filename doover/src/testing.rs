@@ -91,7 +91,7 @@ fn merge(base: &mut Value, diff: &Value) {
 
 #[async_trait::async_trait]
 impl ChannelBackend for MockBackend {
-    async fn fetch_channel_aggregate(&self, channel: &str) -> Result<Option<Value>> {
+    async fn fetch_channel_data(&self, channel: &str) -> Result<Option<Value>> {
         Ok(self.aggregates.lock().unwrap().get(channel).cloned())
     }
 

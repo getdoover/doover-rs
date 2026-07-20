@@ -325,8 +325,11 @@ pub async fn run(uri: &str, app_key: &str, cmd: DeviceAgentCmd) -> CliResult {
             }));
         }
         DeviceAgentCmd::FetchChannelAggregate { channel_name } => {
+            // pydoover printed the whole `Aggregate`, and callers read
+            // `last_updated`/`attachments` off it — print the envelope, not
+            // just the payload.
             match client.fetch_channel_aggregate(&channel_name).await? {
-                Some(data) => print_json(&data),
+                Some(aggregate) => print_json(&aggregate.to_json()),
                 None => return Err(format!("channel '{channel_name}' not found").into()),
             }
         }
@@ -351,7 +354,7 @@ pub async fn run(uri: &str, app_key: &str, cmd: DeviceAgentCmd) -> CliResult {
             if return_aggregate {
                 let aggregate =
                     client.update_channel_aggregate_returning(&channel_name, &data, &opts).await?;
-                print_json(&aggregate.unwrap_or(Value::Null));
+                print_json(&aggregate.map_or(Value::Null, |a| a.to_json()));
             } else {
                 client.update_channel_aggregate(&channel_name, &data, &opts).await?;
             }

@@ -119,7 +119,7 @@ async fn main() -> Result<()> {
 
     // Read mode: fetch one channel aggregate and print it (round-trip proof).
     if let Some(ch) = &args.read {
-        match client.fetch_channel_aggregate(ch).await? {
+        match client.fetch_channel_data(ch).await? {
             Some(data) => println!("{}", serde_json::to_string_pretty(&data).unwrap_or_default()),
             None => println!("(channel {ch} not found)"),
         }

@@ -254,14 +254,6 @@ impl DeviceAgentClient {
         return_aggregate: bool,
     ) -> Result<Option<ChannelAggregate>> {
         validate_payload(data)?;
-        if !opts.replace_keys.is_empty() {
-            // Divergence from the HTTP backend: the device-agent proto has no
-            // replace-keys field, so the write degrades to a plain merge.
-            tracing::warn!(
-                "AggregateOptions.replace_keys is not supported by the device agent; \
-                 merging normally on '{channel}'"
-            );
-        }
         let req = pb::UpdateAggregateRequest {
             header: self.header(),
             channel_name: channel.to_string(),
@@ -273,6 +265,9 @@ impl DeviceAgentClient {
             max_age_secs: opts.max_age_secs,
             save_log: opts.save_log,
             return_aggregate: Some(return_aggregate),
+            // The device agent now honours replace_keys: each named subtree is
+            // replaced wholesale locally and forwarded to the cloud as `?replace=`.
+            replace_keys: opts.replace_keys.clone(),
         };
         let resp = self.inner.clone().update_aggregate(req).await?.into_inner();
         self.check_header(resp.response_header)?;

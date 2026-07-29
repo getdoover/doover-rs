@@ -254,6 +254,35 @@ def build_cases():
             ),
         ),
         ("warning_indicator", lambda: ui.WarningIndicator("Low Level")),
+        # ---- command audit / retry (pydoover 3765fb8) ----
+        (
+            "button_command_retry_timeout",
+            lambda: ui.Button(
+                "Restart",
+                command_timeout=timedelta(seconds=10),
+                command_retry_timeout=timedelta(seconds=30),
+            ),
+        ),
+        (
+            "button_confirm_audit_flag",
+            lambda: ui.Button(
+                "Reset",
+                requires_confirm=ui.ConfirmDialog(title="Sure?", audit=True),
+            ),
+        ),
+        (
+            "switch_confirm_audit_config",
+            lambda: ui.Switch(
+                "Bypass",
+                requires_confirm=ui.ConfirmDialog(
+                    title="Bypass interlock?",
+                    warning_reason="This disables a safety interlock.",
+                    audit=ui.AuditConfig(
+                        required=True, label="Why?", placeholder="e.g. leak test"
+                    ),
+                ),
+            ),
+        ),
     ]
 
 

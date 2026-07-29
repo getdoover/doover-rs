@@ -377,7 +377,9 @@ impl DataClient {
 
     /// `PATCH`/`PUT /agents/{agent_id}/channels/{name}/aggregate`.
     /// `opts.save_log` → `?log_update=true`, `opts.replace_keys` →
-    /// `?replace=<key>` (repeated), `opts.replace_data` → `PUT`.
+    /// `?replace=<key>` (repeated), `opts.suppress_response` →
+    /// `?suppress_response=true` (and `Ok(None)`, since the server sends no
+    /// aggregate back), `opts.replace_data` → `PUT`.
     /// `opts.max_age_secs` has no HTTP analogue (writes are immediate).
     pub async fn update_channel_aggregate_http(
         &self,
@@ -391,6 +393,9 @@ impl DataClient {
         let method = if opts.replace_data { reqwest::Method::PUT } else { reqwest::Method::PATCH };
         // pydoover filters falsy params out entirely.
         let mut query: Vec<(&str, String)> = Vec::new();
+        if opts.suppress_response {
+            query.push(("suppress_response", bool_param(true)));
+        }
         if opts.clear_attachments {
             query.push(("clear_attachments", bool_param(true)));
         }
@@ -400,13 +405,20 @@ impl DataClient {
         for key in &opts.replace_keys {
             query.push(("replace", key.clone()));
         }
-        self.request(
-            method,
-            &format!("/agents/{agent_id}/channels/{channel_name}/aggregate"),
-            Some(data),
-            &query,
-        )
-        .await
+        let result = self
+            .request(
+                method,
+                &format!("/agents/{agent_id}/channels/{channel_name}/aggregate"),
+                Some(data),
+                &query,
+            )
+            .await?;
+        // pydoover returns None on the suppressed path without inspecting the
+        // body — the server sends no aggregate to parse.
+        if opts.suppress_response {
+            return Ok(None);
+        }
+        Ok(result)
     }
 
     // -- Messages ------------------------------------------------------------
@@ -606,13 +618,13 @@ impl DataClient {
         notification: impl Into<Notification>,
         agent_id: Option<u64>,
     ) -> Result<Value> {
-        self.create_message_http(
-            NOTIFICATIONS_CHANNEL,
-            &notification.into().to_json(),
-            None,
-            agent_id,
-        )
-        .await
+        let notification = notification.into();
+        // Validate before the write: the server replaces a payload it cannot
+        // deserialise with one whose message is the raw JSON, so a bad payload
+        // surfaces as an unreadable phone notification rather than an error.
+        notification.validate()?;
+        self.create_message_http(NOTIFICATIONS_CHANNEL, &notification.to_json(), None, agent_id)
+            .await
     }
 }
 
@@ -661,7 +673,13 @@ impl ChannelBackend for DataClient {
         opts: &AggregateOptions,
     ) -> Result<()> {
         // max_age_secs has no meaning over HTTP (no local agent buffer).
-        self.update_channel_aggregate_http(channel, data, opts, None).await?;
+        //
+        // Suppress the echoed aggregate: this method discards it, so asking the
+        // server to build and send it is pure waste. pydoover reaches the same
+        // place from the other direction — `TagsManagerProcessor` passes
+        // `suppress_response=True` explicitly on its one commit per invocation.
+        let opts = AggregateOptions { suppress_response: true, ..opts.clone() };
+        self.update_channel_aggregate_http(channel, data, &opts, None).await?;
         Ok(())
     }
 

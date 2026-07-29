@@ -135,8 +135,8 @@ pub use docker::platform::PlatformClient;
 pub use docker::subscriptions::SubscriptionHub;
 pub use error::{DooverError, Result};
 pub use events::{Event, EventSubscription};
-pub use models::{Notification, NotificationSeverity};
-pub use rpc::{RpcContext, RpcError, RpcManager};
+pub use models::{Notification, NotificationSeverity, NotificationType};
+pub use rpc::{CallOptions, RpcContext, RpcError, RpcManager};
 pub use tags::{RemoteTag, Tag, TagsCollection};
 pub use ui::{UiCommand, UiRuntime};
 

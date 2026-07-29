@@ -349,8 +349,10 @@ pub async fn run(uri: &str, cmd: PlatformCmd) -> CliResult {
             print_json(&json!(client.fetch_system_temperature().await?));
         }
         PlatformCmd::FetchLocation => {
+            // `null` when the device has no fix, matching pydoover's CLI, which
+            // prints the `None` its `fetch_location` now returns.
             let location = client.fetch_location().await?;
-            print_json(&location_json(&location));
+            print_json(&location.as_ref().map_or(Value::Null, location_json));
         }
         PlatformCmd::Reboot => client.reboot().await?,
         PlatformCmd::Shutdown => client.shutdown().await?,

@@ -399,8 +399,11 @@ impl ModbusClient {
         let task = tokio::spawn(async move {
             loop {
                 // A stream-lifetime channel of its own, mirroring pydoover's
-                // per-subscription grpc.aio.insecure_channel.
-                let mut client = GenClient::new(shared.fresh_channel());
+                // per-subscription grpc.aio.insecure_channel — with the stream
+                // keepalive settings, without which a half-open connection
+                // surfaces nothing to the read loop below and this reconnect
+                // loop can never fire (pydoover `_STREAM_CHANNEL_OPTIONS`).
+                let mut client = GenClient::new(shared.stream_channel());
                 match client.read_register_subscription(req.clone()).await {
                     Ok(resp) => {
                         let mut stream = resp.into_inner();

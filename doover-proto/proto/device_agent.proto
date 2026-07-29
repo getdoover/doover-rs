@@ -1,6 +1,7 @@
 // Vendored VERBATIM from pydoover: protos/device_agent.proto
 // Source: /Users/josh/Coding/doover/pydoover/protos/device_agent.proto
-// pydoover version: 1.10.3 (proto last touched at commit 8a70952cd2dda3c19555986295c838a02c3612e6)
+// pydoover version: verified identical against 1.11.4 (proto last touched at
+// commit 8a70952cd2dda3c19555986295c838a02c3612e6)
 // Do not edit here — re-vendor from pydoover when it changes (CI sync check planned).
 
 syntax = "proto3";

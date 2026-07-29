@@ -20,7 +20,8 @@
 //! the cameras ([`CameraLiveView`], [`CameraHistory`]), plus [`Multiplot`] /
 //! [`Series`], [`ConnectionInfo`], and the support types [`Range`],
 //! [`Threshold`], [`Widget`], [`Colour`], [`RangeView`],
-//! [`ApplicationVariant`], [`SelectOption`], [`ConfirmDialog`].
+//! [`ApplicationVariant`], [`SelectOption`], [`ConfirmDialog`] /
+//! [`AuditConfig`].
 //!
 //! Deliberately not ported: pydoover's `BooleanParameter` (its constructor
 //! raises `NotImplementedError` — the site has no such element) and the
@@ -46,11 +47,11 @@ pub use interaction::{
     Button, Confirm, InteractionCommon, Select, Slider, Switch, WarningIndicator,
 };
 pub use misc::{
-    ApplicationVariant, Colour, ConfirmDialog, IntoNumber, Range, RangeView, SelectOption, Series,
-    Threshold, Widget,
+    ApplicationVariant, Audit, AuditConfig, Colour, ConfirmDialog, IntoNumber, Range, RangeView,
+    SelectOption, Series, Threshold, Widget,
 };
 pub use parameter::{DatetimeInput, FloatInput, TextInput, TimeInput};
-pub use runtime::{resolve_config_refs, UiCommand, UiRuntime};
+pub use runtime::{resolve_config_refs, UiCommand, UiRuntime, UI_CMDS_CHANNEL};
 pub use submodule::{Container, RemoteComponent, Submodule, TabContainer};
 pub use value::UiValue;
 pub use variable::{BooleanVariable, DateTimeVariable, NumericVariable, TextVariable, Timestamp};
@@ -129,11 +130,13 @@ impl Default for UiApplicationInfo {
         Self {
             display_name: Value::String("$config.app().APP_DISPLAY_NAME".into()),
             // pydoover `UI.__init_subclass__` appends ":boolean:false" to any
-            // string `hidden` — including its own default, which already ends
-            // in ":boolean:false" — so the exported reference carries a
-            // doubled suffix. Replicated verbatim: the golden
-            // doover_config.json files contain it.
-            hidden: Value::String("$config.app().hidden:boolean:false:boolean:false".into()),
+            // string `hidden`. Its default used to be
+            // "$config.app().hidden:boolean:false", which came out with a
+            // doubled suffix; it now points at the `interpreter_hidden` config
+            // key (pydoover commits 16962ab…cd82114 — see
+            // `config::ApplicationInterpreterHidden`), so the exported
+            // reference carries exactly one suffix.
+            hidden: Value::String("$config.app().interpreter_hidden:boolean:false".into()),
             position: Value::String("$config.app().dv_app_position:number:100".into()),
             default_open: Value::String("$config.app().dv_app_default_open:boolean".into()),
             icon: Value::Null,

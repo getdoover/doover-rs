@@ -767,5 +767,56 @@
       "currentValue": "$cmds.app().low_level",
       "can_cancel": true
     }
+  },
+  {
+    "case": "button_command_retry_timeout",
+    "element": "Button",
+    "expected": {
+      "name": "restart",
+      "type": "uiButton",
+      "displayString": "Restart",
+      "position": 51,
+      "hidden": false,
+      "currentValue": "$cmds.app().restart",
+      "commandTimeout": 10000,
+      "commandRetryTimeout": 30000
+    }
+  },
+  {
+    "case": "button_confirm_audit_flag",
+    "element": "Button",
+    "expected": {
+      "name": "reset",
+      "type": "uiButton",
+      "displayString": "Reset",
+      "position": 51,
+      "hidden": false,
+      "currentValue": "$cmds.app().reset",
+      "requiresConfirm": {
+        "title": "Sure?",
+        "audit": true
+      }
+    }
+  },
+  {
+    "case": "switch_confirm_audit_config",
+    "element": "Switch",
+    "expected": {
+      "name": "bypass",
+      "type": "uiSwitch",
+      "displayString": "Bypass",
+      "position": 51,
+      "hidden": false,
+      "currentValue": "$cmds.app().bypass",
+      "requiresConfirm": {
+        "title": "Bypass interlock?",
+        "warningReason": "This disables a safety interlock.",
+        "audit": {
+          "required": true,
+          "label": "Why?",
+          "placeholder": "e.g. leak test"
+        }
+      }
+    }
   }
 ]

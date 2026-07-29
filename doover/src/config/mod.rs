@@ -326,6 +326,56 @@ impl FromConfigValue for ApplicationDefaultOpen {
     }
 }
 
+/// pydoover `config.ApplicationInterpreterHidden()` — an advanced boolean under
+/// `interpreter_hidden` (default `false`) controlling whether the app is hidden
+/// in the interpreter.
+///
+/// This is the key a declarative UI's `hidden` root reference resolves against
+/// (see [`UiApplicationInfo`](crate::ui::UiApplicationInfo)), so an app that
+/// wants the interpreter to be able to hide it declares this element.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct ApplicationInterpreterHidden(pub bool);
+
+impl ConfigElementBuild for ApplicationInterpreterHidden {
+    fn element(_title: &str, _name: &str) -> ElementSchema {
+        let mut el = ElementSchema::boolean("Interpreter Hidden", "interpreter_hidden");
+        el.advanced = Some(true);
+        el.description = Some("Whether the application is hidden in the interpreter.".into());
+        el.default = Some(Value::Bool(false));
+        el
+    }
+}
+
+impl FromConfigValue for ApplicationInterpreterHidden {
+    fn from_config_value(v: &Value) -> Result<Self> {
+        bool::from_config_value(v).map(Self)
+    }
+}
+
+/// pydoover `config.ApplicationCockpitVisible()` — an advanced boolean under
+/// `cockpit_visible` (default `false`): whether the application's custom
+/// widgets are visible in a Cockpit tab.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct ApplicationCockpitVisible(pub bool);
+
+impl ConfigElementBuild for ApplicationCockpitVisible {
+    fn element(_title: &str, _name: &str) -> ElementSchema {
+        let mut el = ElementSchema::boolean("Cockpit Visible", "cockpit_visible");
+        el.advanced = Some(true);
+        el.description = Some(
+            "Whether the application's custom widgets are visible in a Cockpit tab.".into(),
+        );
+        el.default = Some(Value::Bool(false));
+        el
+    }
+}
+
+impl FromConfigValue for ApplicationCockpitVisible {
+    fn from_config_value(v: &Value) -> Result<Self> {
+        bool::from_config_value(v).map(Self)
+    }
+}
+
 /// pydoover `config.Application` — a string element rendered as an
 /// application picker (`format: doover-resource-application`).
 #[derive(Debug, Clone, Default, PartialEq, Eq)]

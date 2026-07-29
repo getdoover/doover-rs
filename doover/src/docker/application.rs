@@ -34,10 +34,10 @@ use crate::docker::subscriptions::SubscriptionHub;
 use crate::error::Result;
 use crate::events::{Event, EventSubscription};
 use crate::models::{Notification, NOTIFICATIONS_CHANNEL};
-use crate::rpc::RpcManager;
+use crate::rpc::{CallOptions, RpcManager};
 use crate::tags::{KeyPath, RemoteTag, SetTagOptions, TagValue, TagsCollection, TagsRuntime};
 use crate::ui::runtime::resolve_config_refs;
-use crate::ui::{UiApplicationInfo, UiBuild, UiCommand, UiRuntime, UiTree};
+use crate::ui::{UiApplicationInfo, UiBuild, UiCommand, UiRuntime, UiTree, UI_CMDS_CHANNEL};
 
 /// Identity handed to the app by the deployment config (pydoover sets
 /// `device_agent.agent_id` and `app_display_name` on every config update).
@@ -174,13 +174,35 @@ impl AppContext {
         &self.ui
     }
 
+    /// Issue a UI command as if a user had — pydoover's
+    /// `UICommandsManager.call`, which is just [`RpcManager::call_with`] with
+    /// the channel defaulted to `ui_cmds`. `method` is the interaction's name.
+    ///
+    /// Pass `opts` to carry the audit metadata (actor / reason / expiry); its
+    /// `channel` is honoured if you set it, and defaults to `ui_cmds`.
+    pub async fn call_ui_command(
+        &self,
+        method: &str,
+        params: Option<Value>,
+        opts: Option<CallOptions>,
+    ) -> Result<Value> {
+        let mut opts = opts.unwrap_or_else(|| CallOptions::on(UI_CMDS_CHANNEL));
+        if opts.channel == crate::rpc::RPC_CHANNEL {
+            opts.channel = UI_CMDS_CHANNEL.to_string();
+        }
+        self.rpc.call_with(method, params, &opts).await
+    }
+
     /// Send a notification via the `notifications` channel (pydoover
     /// `send_notification`); the cloud fans it out to matching subscriptions.
     /// Returns the created message id.
     pub async fn send_notification(&self, notification: impl Into<Notification>) -> Result<u64> {
-        self.client
-            .create_message(NOTIFICATIONS_CHANNEL, &notification.into().to_json())
-            .await
+        let notification = notification.into();
+        // Validate before the write — see `Notification::validate`: the server
+        // silently replaces a payload it cannot deserialise, so the mistake
+        // would otherwise surface as an unreadable phone notification.
+        notification.validate()?;
+        self.client.create_message(NOTIFICATIONS_CHANNEL, &notification.to_json()).await
     }
 
     /// Whether some user currently has `tag_name` open in live mode
@@ -207,7 +229,10 @@ impl AppContext {
             .await
     }
 
-    /// Merge-write with options (max-age coalescing, save_log, …).
+    /// Merge-write with options (max-age coalescing, `save_log`,
+    /// `replace_keys` — the dotted subtree paths replaced wholesale rather than
+    /// deep-merged, which is how you atomically swap a subtree in one write
+    /// instead of a clear+set pair that can be reordered on the wire).
     pub async fn update_channel_aggregate_with(
         &self,
         channel: &str,

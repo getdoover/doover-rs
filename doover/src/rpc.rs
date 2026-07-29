@@ -26,6 +26,7 @@ use tokio::sync::oneshot;
 use crate::channel_backend::{ChannelBackend, UpdateMessageOptions};
 use crate::error::{DooverError, Result};
 use crate::events::Event;
+use crate::utils::unix_millis_from_snowflake;
 
 /// The default RPC channel (pydoover `DEFAULT_CHANNEL` / `RPC_KEY`).
 pub const RPC_CHANNEL: &str = "dv-rpc";
@@ -64,6 +65,26 @@ fn now_unix_ms() -> i64 {
     SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_millis() as i64).unwrap_or(0)
 }
 
+/// The absolute expiry (unix ms) of an RPC command, or `None` if it never
+/// expires — pydoover `command_expires_at`.
+///
+/// Derived from the request message's creation time plus its `expires_after`
+/// (milliseconds). The creation time comes out of the snowflake id, exactly as
+/// pydoover's `Message.timestamp` does.
+pub fn command_expires_at(message_id: u64, data: &Value) -> Option<i64> {
+    let expires_after = data.get("expires_after")?.as_f64()?;
+    Some(unix_millis_from_snowflake(message_id) as i64 + expires_after as i64)
+}
+
+/// Whether an RPC command's expiry has passed — pydoover
+/// `command_is_expired`. A command with no `expires_after` never expires.
+pub fn command_is_expired(message_id: u64, data: &Value) -> bool {
+    match command_expires_at(message_id, data) {
+        Some(expires_at) => now_unix_ms() >= expires_at,
+        None => false,
+    }
+}
+
 /// Context handed to an RPC handler (pydoover `RPCContext`): identifies the
 /// request message and lets the handler send intermediate statuses.
 #[derive(Clone)]
@@ -72,10 +93,59 @@ pub struct RpcContext {
     pub channel: String,
     /// `None` for one-shot requests, which cannot be responded to.
     pub message_id: Option<u64>,
+    /// The request message's id, set for one-shots too (unlike
+    /// [`message_id`](Self::message_id), which gates responding).
+    pub request_message_id: Option<u64>,
+    /// The whole request message payload, backing the audit accessors below
+    /// (pydoover reads these off `RPCContext.message.data`).
+    pub data: Value,
     backend: Arc<dyn ChannelBackend>,
 }
 
 impl RpcContext {
+    /// Audit info (`{"id", "name", "email"}`) of who issued the command, if
+    /// any — pydoover `RPCContext.actor`.
+    pub fn actor(&self) -> Option<&Value> {
+        self.data.get("actor")
+    }
+
+    /// The audit reason supplied with this command, if any.
+    pub fn reason(&self) -> Option<&str> {
+        self.data.get("reason")?.as_str()
+    }
+
+    /// The value observed before this command was issued, if provided.
+    pub fn old_value(&self) -> Option<&Value> {
+        self.data.get("old_value")
+    }
+
+    /// Message id of the shorter-lived command this retry replaces, if any.
+    /// pydoover types this as a string, so it is returned verbatim.
+    pub fn retry_of(&self) -> Option<&str> {
+        self.data.get("retry_of")?.as_str()
+    }
+
+    /// Command lifetime from its creation timestamp, if set.
+    pub fn expires_after(&self) -> Option<Duration> {
+        let ms = self.data.get("expires_after")?.as_f64()?;
+        Some(Duration::from_millis(ms.max(0.0) as u64))
+    }
+
+    /// The absolute time (unix ms) this command expires, or `None` if it never
+    /// does / the request has no id to date it from.
+    pub fn expires_at(&self) -> Option<i64> {
+        command_expires_at(self.request_message_id?, &self.data)
+    }
+
+    /// Whether this command's expiry has passed. Always `false` for a command
+    /// with no `expires_after`.
+    pub fn is_expired(&self) -> bool {
+        match self.request_message_id {
+            Some(id) => command_is_expired(id, &self.data),
+            None => false,
+        }
+    }
+
     /// Mark the request as received but not yet complete — pydoover
     /// `RPCContext.acknowledge`, ms timestamp included.
     pub async fn acknowledge(&self) -> Result<()> {
@@ -112,6 +182,123 @@ impl RpcContext {
         self.backend
             .update_message(&self.channel, id, &payload, &UpdateMessageOptions::default())
             .await
+    }
+}
+
+/// Options for an outgoing RPC request — the keyword arguments of pydoover's
+/// `RPCManager.call`.
+///
+/// [`Default`] targets the [`RPC_CHANNEL`] with no app key, no audit metadata
+/// and the [`DEFAULT_CALL_TIMEOUT`], i.e. the bare `call(method, params)`.
+#[derive(Debug, Clone)]
+pub struct CallOptions {
+    /// Channel to send the request on.
+    pub channel: String,
+    /// Target a specific app on the receiving agent.
+    pub app_key: Option<String>,
+    /// Response deadline; `None` uses [`DEFAULT_CALL_TIMEOUT`]. Irrelevant to
+    /// [`send_with`](RpcManager::send_with), which never waits.
+    pub timeout: Option<Duration>,
+    /// Audit info (`{"id", "name", "email"}`) of who issued the command.
+    pub actor: Option<Value>,
+    /// An audit reason recorded alongside the command.
+    pub reason: Option<String>,
+    /// The value observed before this command was issued. `Some(Value::Null)`
+    /// sends an explicit `null`; `None` omits the key — pydoover distinguishes
+    /// the two with its `NOT_GIVEN` sentinel.
+    pub old_value: Option<Value>,
+    /// Command lifetime from its creation timestamp. A receiver refuses to act
+    /// on the command once `create time + expires_after` has passed.
+    pub expires_after: Option<Duration>,
+    /// Message id of the shorter-lived command this retry replaces.
+    pub retry_of: Option<String>,
+}
+
+impl Default for CallOptions {
+    fn default() -> Self {
+        Self {
+            channel: RPC_CHANNEL.to_string(),
+            app_key: None,
+            timeout: None,
+            actor: None,
+            reason: None,
+            old_value: None,
+            expires_after: None,
+            retry_of: None,
+        }
+    }
+}
+
+impl CallOptions {
+    /// Options targeting `channel` (e.g. `ui_cmds`), everything else default.
+    pub fn on(channel: impl Into<String>) -> Self {
+        Self { channel: channel.into(), ..Default::default() }
+    }
+
+    pub fn app_key(mut self, app_key: impl Into<String>) -> Self {
+        self.app_key = Some(app_key.into());
+        self
+    }
+
+    pub fn timeout(mut self, timeout: Duration) -> Self {
+        self.timeout = Some(timeout);
+        self
+    }
+
+    pub fn actor(mut self, actor: Value) -> Self {
+        self.actor = Some(actor);
+        self
+    }
+
+    pub fn reason(mut self, reason: impl Into<String>) -> Self {
+        self.reason = Some(reason.into());
+        self
+    }
+
+    pub fn old_value(mut self, old_value: Value) -> Self {
+        self.old_value = Some(old_value);
+        self
+    }
+
+    pub fn expires_after(mut self, expires_after: Duration) -> Self {
+        self.expires_after = Some(expires_after);
+        self
+    }
+
+    pub fn retry_of(mut self, retry_of: impl Into<String>) -> Self {
+        self.retry_of = Some(retry_of.into());
+        self
+    }
+
+    /// The exact pydoover request payload (and key order): `type, method,
+    /// request, status, response[, app_key][, actor][, reason][, old_value]
+    /// [, expires_after][, retry_of]`.
+    fn request_payload(&self, method: &str, params: Option<Value>) -> Value {
+        let mut data = Map::new();
+        data.insert("type".into(), json!("rpc"));
+        data.insert("method".into(), json!(method));
+        data.insert("request".into(), params.unwrap_or_else(|| json!({})));
+        data.insert("status".into(), json!({"code": "sent"}));
+        data.insert("response".into(), json!({}));
+        if let Some(app_key) = &self.app_key {
+            data.insert("app_key".into(), json!(app_key));
+        }
+        if let Some(actor) = &self.actor {
+            data.insert("actor".into(), actor.clone());
+        }
+        if let Some(reason) = &self.reason {
+            data.insert("reason".into(), json!(reason));
+        }
+        if let Some(old_value) = &self.old_value {
+            data.insert("old_value".into(), old_value.clone());
+        }
+        if let Some(expires_after) = self.expires_after {
+            data.insert("expires_after".into(), json!(expires_after.as_millis() as i64));
+        }
+        if let Some(retry_of) = &self.retry_of {
+            data.insert("retry_of".into(), json!(retry_of));
+        }
+        Value::Object(data)
     }
 }
 
@@ -215,7 +402,8 @@ impl RpcManager {
     /// Make an RPC call and wait for the response (pydoover `RPCManager.call`).
     ///
     /// `app_key` optionally targets a specific app on the receiving agent;
-    /// `timeout` defaults to [`DEFAULT_CALL_TIMEOUT`] when `None`.
+    /// `timeout` defaults to [`DEFAULT_CALL_TIMEOUT`] when `None`. For the
+    /// audit / expiry metadata, use [`call_with`](Self::call_with).
     pub async fn call(
         &self,
         method: &str,
@@ -224,25 +412,51 @@ impl RpcManager {
         app_key: Option<&str>,
         timeout: Option<Duration>,
     ) -> Result<Value> {
+        let opts = CallOptions {
+            channel: channel.to_string(),
+            app_key: app_key.map(str::to_string),
+            timeout,
+            ..Default::default()
+        };
+        self.call_with(method, params, &opts).await
+    }
+
+    /// Send an RPC request and return its message id *without* waiting for the
+    /// response — pydoover's `call(..., wait_for_response=False)`.
+    ///
+    /// The request is a normal one the handler still processes and replies to;
+    /// this side simply never registers or awaits the reply. Use it when the
+    /// caller doesn't care about the outcome and must not block on it. Unlike
+    /// [`fire_and_forget`](Self::fire_and_forget) this keeps `call`'s field
+    /// order and carries the audit metadata.
+    pub async fn send_with(
+        &self,
+        method: &str,
+        params: Option<Value>,
+        opts: &CallOptions,
+    ) -> Result<u64> {
+        // No response subscription needed — nothing is going to await one.
+        let data = opts.request_payload(method, params);
+        self.backend.create_message(&opts.channel, &data).await
+    }
+
+    /// Make an RPC call with the full pydoover option set (audit actor/reason,
+    /// `old_value`, command expiry, `retry_of`) and wait for the response.
+    pub async fn call_with(
+        &self,
+        method: &str,
+        params: Option<Value>,
+        opts: &CallOptions,
+    ) -> Result<Value> {
+        let channel = opts.channel.as_str();
         self.subscribe(channel);
 
-        // Exact pydoover request shape (and key order):
-        // type, method, request, status, response[, app_key].
-        let mut data = Map::new();
-        data.insert("type".into(), json!("rpc"));
-        data.insert("method".into(), json!(method));
-        data.insert("request".into(), params.unwrap_or_else(|| json!({})));
-        data.insert("status".into(), json!({"code": "sent"}));
-        data.insert("response".into(), json!({}));
-        if let Some(app_key) = app_key {
-            data.insert("app_key".into(), json!(app_key));
-        }
-
-        let message_id = self.backend.create_message(channel, &Value::Object(data)).await?;
+        let data = opts.request_payload(method, params);
+        let message_id = self.backend.create_message(channel, &data).await?;
         let (tx, rx) = oneshot::channel();
         self.state.lock().unwrap().pending.insert(message_id, tx);
 
-        let timeout = timeout.unwrap_or(DEFAULT_CALL_TIMEOUT);
+        let timeout = opts.timeout.unwrap_or(DEFAULT_CALL_TIMEOUT);
         let result = tokio::time::timeout(timeout, rx).await;
         self.state.lock().unwrap().pending.remove(&message_id);
         match result {
@@ -321,15 +535,31 @@ impl RpcManager {
             return;
         };
 
+        // Drop expired commands: if the message was created longer ago than its
+        // `expires_after` lifetime, it's stale and must not be acted upon
+        // (pydoover drops these before dispatch, and does not reply).
+        let request_message_id = event.message_id();
+        if let Some(id) = request_message_id {
+            if command_is_expired(id, data) {
+                tracing::info!(
+                    "skipping expired RPC command '{method}' (message {id}, expired at {:?})",
+                    command_expires_at(id, data)
+                );
+                return;
+            }
+        }
+
         let Some(handler) = self.get_handler(&event.channel, method) else { return };
 
         // One-shots are fire-and-forget: there is no persisted message to
         // update with a response (pydoover `can_respond`).
-        let message_id = if event.is_one_shot() { None } else { event.message_id() };
+        let message_id = if event.is_one_shot() { None } else { request_message_id };
         let ctx = RpcContext {
             method: method.to_string(),
             channel: event.channel.clone(),
             message_id,
+            request_message_id,
+            data: data.clone(),
             backend: self.backend.clone(),
         };
 
@@ -463,6 +693,71 @@ mod tests {
         assert_eq!(
             serde_json::to_string(&data).unwrap(),
             r#"{"status":{"code":"error","message":{"code":"INTERNAL_ERROR","message":"boom"}},"response":{}}"#
+        );
+    }
+
+    #[test]
+    fn audit_metadata_key_order_matches_pydoover() {
+        let opts = CallOptions::on("ui_cmds")
+            .app_key("pump_app")
+            .actor(json!({"id": 7, "name": "Jarrod", "email": "j@example.com"}))
+            .reason("manual override")
+            .old_value(json!(false))
+            .expires_after(Duration::from_secs(90))
+            .retry_of("123456789");
+        let payload = opts.request_payload("pump", Some(json!({"on": true})));
+        let keys: Vec<_> = payload.as_object().unwrap().keys().map(String::as_str).collect();
+        assert_eq!(
+            keys,
+            [
+                "type",
+                "method",
+                "request",
+                "status",
+                "response",
+                "app_key",
+                "actor",
+                "reason",
+                "old_value",
+                "expires_after",
+                "retry_of"
+            ]
+        );
+        // pydoover puts `expires_after` on the wire in milliseconds.
+        assert_eq!(payload["expires_after"], json!(90_000));
+        assert_eq!(payload["retry_of"], json!("123456789"));
+    }
+
+    #[test]
+    fn old_value_none_is_omitted_but_null_is_sent() {
+        // pydoover's NOT_GIVEN sentinel: `None` is a meaningful value, so only
+        // an unset `old_value` drops the key.
+        let bare = CallOptions::default().request_payload("m", None);
+        assert!(bare.get("old_value").is_none());
+        let explicit = CallOptions::default().old_value(Value::Null).request_payload("m", None);
+        assert_eq!(explicit["old_value"], Value::Null);
+    }
+
+    #[test]
+    fn expiry_is_message_timestamp_plus_lifetime() {
+        // A snowflake minted 10 minutes ago with a 60s lifetime is expired; the
+        // same id with an hour's lifetime is not.
+        let ten_min_ago = crate::utils::generate_snowflake_id_at(
+            (now_unix_ms() - 600_000) as u64,
+            crate::utils::SnowflakeType::Message,
+            0,
+            0,
+            false,
+        );
+        assert!(command_is_expired(ten_min_ago, &json!({"expires_after": 60_000})));
+        assert!(!command_is_expired(ten_min_ago, &json!({"expires_after": 3_600_000})));
+        // No `expires_after` at all: never expires (pydoover returns None).
+        assert!(!command_is_expired(ten_min_ago, &json!({})));
+        assert_eq!(command_expires_at(ten_min_ago, &json!({})), None);
+        // The absolute expiry is the creation stamp plus the lifetime.
+        assert_eq!(
+            command_expires_at(ten_min_ago, &json!({"expires_after": 60_000})),
+            Some(unix_millis_from_snowflake(ten_min_ago) as i64 + 60_000)
         );
     }
 

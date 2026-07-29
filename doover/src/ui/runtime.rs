@@ -372,9 +372,27 @@ mod tests {
     }
 
     #[test]
+    fn resolves_interpreter_hidden_default() {
+        // The current exported default (pydoover cd82114): one suffix, and the
+        // key is `interpreter_hidden`.
+        assert_eq!(
+            resolve_single_ref("$config.app().interpreter_hidden:boolean:false", &json!({})),
+            json!(false)
+        );
+        assert_eq!(
+            resolve_single_ref(
+                "$config.app().interpreter_hidden:boolean:false",
+                &json!({"interpreter_hidden": true})
+            ),
+            json!(true)
+        );
+    }
+
+    #[test]
     fn resolves_doubled_boolean_quirk() {
-        // The exported default carries pydoover's doubled suffix; the greedy
-        // `.+` default group swallows it and the boolean coercion yields false.
+        // Older exports (pre-cd82114) carry pydoover's doubled suffix, and
+        // deployed configs still contain them; the greedy `.+` default group
+        // swallows the extra suffix and the boolean coercion yields false.
         assert_eq!(
             resolve_single_ref(
                 "$config.app().hidden:boolean:false:boolean:false",

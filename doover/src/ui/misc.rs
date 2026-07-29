@@ -356,6 +356,79 @@ impl SelectOption {
     }
 }
 
+/// Configuration for the audit-reason field shown in a confirmation dialog
+/// (pydoover `ui.AuditConfig`).
+///
+/// Attach it to a [`ConfirmDialog`] with [`ConfirmDialog::audit`] to prompt the
+/// user for a reason, which is recorded alongside the issued command (and
+/// reaches the handler as [`RpcContext::reason`](crate::RpcContext::reason)).
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct AuditConfig {
+    /// The user must enter a non-empty reason before confirming.
+    pub required: Option<bool>,
+    /// The label shown above the audit-reason field.
+    pub label: Option<String>,
+    /// Placeholder text shown inside the empty audit-reason field.
+    pub placeholder: Option<String>,
+}
+
+impl AuditConfig {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn required(mut self, required: bool) -> Self {
+        self.required = Some(required);
+        self
+    }
+
+    pub fn label(mut self, label: impl Into<String>) -> Self {
+        self.label = Some(label.into());
+        self
+    }
+
+    pub fn placeholder(mut self, placeholder: impl Into<String>) -> Self {
+        self.placeholder = Some(placeholder.into());
+        self
+    }
+
+    /// pydoover `AuditConfig.to_dict()`: `required, label, placeholder` — set
+    /// keys only.
+    pub fn to_json(&self) -> Value {
+        let mut m = Map::new();
+        if let Some(v) = self.required {
+            m.insert("required".into(), Value::Bool(v));
+        }
+        if let Some(v) = &self.label {
+            m.insert("label".into(), Value::String(v.clone()));
+        }
+        if let Some(v) = &self.placeholder {
+            m.insert("placeholder".into(), Value::String(v.clone()));
+        }
+        Value::Object(m)
+    }
+}
+
+/// The `audit` slot on a [`ConfirmDialog`]: a bare flag for the default field
+/// or a customized [`AuditConfig`] (pydoover accepts `bool | AuditConfig`).
+#[derive(Debug, Clone, PartialEq)]
+pub enum Audit {
+    Flag(bool),
+    Config(AuditConfig),
+}
+
+impl From<bool> for Audit {
+    fn from(v: bool) -> Self {
+        Audit::Flag(v)
+    }
+}
+
+impl From<AuditConfig> for Audit {
+    fn from(v: AuditConfig) -> Self {
+        Audit::Config(v)
+    }
+}
+
 /// Configuration for an interaction's confirmation dialog (pydoover
 /// `ui.ConfirmDialog`) — pass to
 /// [`requires_confirm`](super::Button::requires_confirm).
@@ -367,6 +440,8 @@ pub struct ConfirmDialog {
     pub colour: Option<String>,
     pub help_text: Option<String>,
     pub icon: Option<String>,
+    /// Show an audit-reason field the user fills in before confirming.
+    pub audit: Option<Audit>,
 }
 
 impl ConfirmDialog {
@@ -404,8 +479,15 @@ impl ConfirmDialog {
         self
     }
 
+    /// Prompt for an audit reason before confirming: `true` for the default
+    /// field or an [`AuditConfig`] to customize it.
+    pub fn audit(mut self, audit: impl Into<Audit>) -> Self {
+        self.audit = Some(audit.into());
+        self
+    }
+
     /// pydoover `ConfirmDialog.to_dict()`: `title, subtitle, warningReason,
-    /// colour, helpText, icon` — set keys only.
+    /// colour, helpText, icon, audit` — set keys only.
     pub fn to_json(&self) -> Value {
         let mut m = Map::new();
         if let Some(v) = &self.title {
@@ -425,6 +507,13 @@ impl ConfirmDialog {
         }
         if let Some(v) = &self.icon {
             m.insert("icon".into(), Value::String(v.clone()));
+        }
+        if let Some(audit) = &self.audit {
+            let v = match audit {
+                Audit::Flag(b) => Value::Bool(*b),
+                Audit::Config(c) => c.to_json(),
+            };
+            m.insert("audit".into(), v);
         }
         Value::Object(m)
     }
@@ -475,5 +564,23 @@ mod tests {
             serde_json::to_string(&d.to_json()).unwrap(),
             r#"{"title":"Confirm","subtitle":"sub","icon":"warning"}"#
         );
+    }
+
+    #[test]
+    fn audit_flag_and_config_serialize() {
+        // `audit` lands last, after `icon` (pydoover's to_dict order).
+        let flag = ConfirmDialog::new().title("Sure?").audit(true);
+        assert_eq!(
+            serde_json::to_string(&flag.to_json()).unwrap(),
+            r#"{"title":"Sure?","audit":true}"#
+        );
+        let configured = ConfirmDialog::new()
+            .audit(AuditConfig::new().required(true).label("Why?").placeholder("e.g. leak"));
+        assert_eq!(
+            serde_json::to_string(&configured.to_json()).unwrap(),
+            r#"{"audit":{"required":true,"label":"Why?","placeholder":"e.g. leak"}}"#
+        );
+        // Unset fields are omitted, and an all-unset config is an empty object.
+        assert_eq!(serde_json::to_string(&AuditConfig::new().to_json()).unwrap(), "{}");
     }
 }

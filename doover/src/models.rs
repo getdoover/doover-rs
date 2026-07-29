@@ -11,6 +11,11 @@ pub const NOTIFICATIONS_CHANNEL: &str = "notifications";
 
 /// Notification severity (pydoover `NotificationSeverity`). Subscribers only
 /// receive notifications at or above their subscription severity.
+///
+/// The discriminants are the integers the database stores. The server has a
+/// hand-written deserialiser for severity that accepts *either* the integer or
+/// the variant name, so [`Notification::to_json`] keeps sending the historical
+/// integer; [`wire`](Self::wire) gives the name for the paths that need it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum NotificationSeverity {
     Trace = 3,
@@ -20,10 +25,134 @@ pub enum NotificationSeverity {
     Critical = 7,
 }
 
+impl NotificationSeverity {
+    pub const ALL: [Self; 5] = [Self::Trace, Self::Debug, Self::Info, Self::Warn, Self::Critical];
+
+    /// The variant name — how the API represents this member in JSON.
+    pub fn wire(self) -> &'static str {
+        match self {
+            Self::Trace => "Trace",
+            Self::Debug => "Debug",
+            Self::Info => "Info",
+            Self::Warn => "Warn",
+            Self::Critical => "Critical",
+        }
+    }
+
+    /// The stored integer discriminant.
+    pub fn value(self) -> i64 {
+        self as i64
+    }
+
+    /// Parse from the integer discriminant.
+    pub fn from_value(value: i64) -> Option<Self> {
+        Self::ALL.into_iter().find(|s| s.value() == value)
+    }
+}
+
+/// Parse a severity from its name, case-insensitively, plus the misspellings
+/// people reach for — pydoover `_NameWireEnum._missing_` and
+/// `NotificationSeverity._aliases`.
+///
+/// `Warn` and `Critical` are the two guessed wrong most often, since Python's
+/// logging module spells them `warning`/`critical` and most people write
+/// `error`. The server matches names exactly and rejects all three — and on the
+/// notifications channel that rejection is *silent*, the payload being replaced
+/// by its own raw JSON, which surfaces as an unreadable notification on a
+/// subscriber's phone. Resolving it here is what stops that.
+impl std::str::FromStr for NotificationSeverity {
+    type Err = crate::error::DooverError;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        let key = s.trim().to_ascii_lowercase();
+        if let Some(found) = Self::ALL.into_iter().find(|m| m.wire().to_lowercase() == key) {
+            return Ok(found);
+        }
+        match key.as_str() {
+            "warning" => Ok(Self::Warn),
+            "error" | "err" | "fatal" | "crit" => Ok(Self::Critical),
+            _ => Err(crate::error::DooverError::InvalidPayload(format!(
+                "{s:?} is not a valid NotificationSeverity — expected one of {}",
+                Self::ALL.map(Self::wire).join(", ")
+            ))),
+        }
+    }
+}
+
+/// The transport a notification endpoint delivers over (pydoover
+/// `NotificationType`).
+///
+/// Unlike [`NotificationSeverity`], the server has *no* integer deserialiser
+/// for this one — anything sent as a type must be the variant name, which is
+/// what [`wire`](Self::wire) returns. The discriminants are the database's
+/// internal storage only.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NotificationType {
+    Email = 1,
+    Sms = 2,
+    WebPush = 3,
+    Http = 4,
+    Placeholder = 5,
+    FirebasePush = 6,
+}
+
+impl NotificationType {
+    pub const ALL: [Self; 6] = [
+        Self::Email,
+        Self::Sms,
+        Self::WebPush,
+        Self::Http,
+        Self::Placeholder,
+        Self::FirebasePush,
+    ];
+
+    /// The value to put on the wire for this member — the variant name.
+    pub fn wire(self) -> &'static str {
+        match self {
+            Self::Email => "Email",
+            Self::Sms => "Sms",
+            Self::WebPush => "WebPush",
+            Self::Http => "Http",
+            Self::Placeholder => "Placeholder",
+            Self::FirebasePush => "FirebasePush",
+        }
+    }
+
+    /// The stored integer discriminant.
+    pub fn value(self) -> i64 {
+        self as i64
+    }
+
+    pub fn from_value(value: i64) -> Option<Self> {
+        Self::ALL.into_iter().find(|t| t.value() == value)
+    }
+}
+
+impl std::str::FromStr for NotificationType {
+    type Err = crate::error::DooverError;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        let key = s.trim().to_ascii_lowercase();
+        Self::ALL.into_iter().find(|m| m.wire().to_lowercase() == key).ok_or_else(|| {
+            crate::error::DooverError::InvalidPayload(format!(
+                "{s:?} is not a valid NotificationType — expected one of {}",
+                Self::ALL.map(Self::wire).join(", ")
+            ))
+        })
+    }
+}
+
 /// A notification message sent via the `notifications` channel — mirrors the
 /// server-side `NotificationChannelMessagePayload`. Publishing a message with
 /// this payload causes the Doover cloud to fan the notification out to
 /// matching subscriptions (email / SMS / web push / http).
+///
+/// Rust's types cover most of what pydoover has to check at runtime; what's
+/// left is [`validate`](Self::validate), which the send paths call. A payload
+/// the server cannot deserialise is *not* rejected — it is quietly replaced by
+/// one whose message is the raw JSON, surfacing as an unreadable notification on
+/// a subscriber's phone long after the fact. Failing before the write keeps the
+/// mistake in the application, where it is visible.
 #[derive(Debug, Clone)]
 pub struct Notification {
     /// The notification body. Required.
@@ -53,6 +182,24 @@ impl Notification {
     pub fn topic(mut self, topic: impl Into<String>) -> Self {
         self.topic = Some(topic.into());
         self
+    }
+
+    /// Reject a payload the server would silently mangle — pydoover validates
+    /// the same things in `Notification.__init__`. Called by the send paths
+    /// ([`AppContext::send_notification`](crate::AppContext::send_notification)
+    /// and the processor's), so applications rarely call it directly.
+    ///
+    /// The only runtime check Rust's types don't already make is an empty
+    /// message; severity is an enum here, and the string parse
+    /// ([`NotificationSeverity::from_str`](std::str::FromStr)) has already
+    /// failed loudly by this point.
+    pub fn validate(&self) -> crate::error::Result<()> {
+        if self.message.trim().is_empty() {
+            return Err(crate::error::DooverError::InvalidPayload(
+                "notification message must not be empty".into(),
+            ));
+        }
+        Ok(())
     }
 
     /// pydoover `Notification.to_dict()`: `message[, title][, severity][, topic]`
@@ -222,5 +369,52 @@ mod tests {
             serde_json::to_string(&Notification::new("hi").to_json()).unwrap(),
             r#"{"message":"hi"}"#
         );
+    }
+
+    #[test]
+    fn empty_message_is_rejected() {
+        assert!(Notification::new("hi").validate().is_ok());
+        assert!(Notification::new("").validate().is_err());
+        assert!(Notification::new("   ").validate().is_err());
+    }
+
+    #[test]
+    fn severity_parses_names_and_common_misspellings() {
+        use std::str::FromStr;
+        // Names, case-insensitively.
+        assert_eq!(NotificationSeverity::from_str("Warn").unwrap(), NotificationSeverity::Warn);
+        assert_eq!(NotificationSeverity::from_str(" info ").unwrap(), NotificationSeverity::Info);
+        // The aliases people actually reach for, which the server rejects.
+        for alias in ["warning", "WARNING"] {
+            assert_eq!(NotificationSeverity::from_str(alias).unwrap(), NotificationSeverity::Warn);
+        }
+        for alias in ["error", "err", "fatal", "crit", "critical"] {
+            assert_eq!(
+                NotificationSeverity::from_str(alias).unwrap(),
+                NotificationSeverity::Critical,
+                "{alias}"
+            );
+        }
+        assert!(NotificationSeverity::from_str("chatty").is_err());
+        // Severity goes on the wire as the historical integer, but `wire()`
+        // gives the name for the endpoints that need it.
+        assert_eq!(NotificationSeverity::Warn.value(), 6);
+        assert_eq!(NotificationSeverity::Warn.wire(), "Warn");
+        assert_eq!(NotificationSeverity::from_value(6), Some(NotificationSeverity::Warn));
+    }
+
+    #[test]
+    fn notification_type_is_name_on_the_wire() {
+        use std::str::FromStr;
+        // The server has no integer deserialiser for type — names only.
+        assert_eq!(NotificationType::WebPush.wire(), "WebPush");
+        assert_eq!(NotificationType::FirebasePush.wire(), "FirebasePush");
+        assert_eq!(NotificationType::FirebasePush.value(), 6);
+        assert_eq!(NotificationType::from_str("email").unwrap(), NotificationType::Email);
+        assert_eq!(
+            NotificationType::from_str("firebasepush").unwrap(),
+            NotificationType::FirebasePush
+        );
+        assert!(NotificationType::from_str("carrier-pigeon").is_err());
     }
 }

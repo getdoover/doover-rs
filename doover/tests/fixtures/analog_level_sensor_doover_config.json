@@ -267,7 +267,7 @@
         },
         "ui_schema": {
             "displayString": "$config.app().APP_DISPLAY_NAME",
-            "hidden": "$config.app().hidden:boolean:false:boolean:false",
+            "hidden": "$config.app().interpreter_hidden:boolean:false",
             "position": "$config.app().dv_app_position:number:100",
             "icon": null,
             "colour": null,

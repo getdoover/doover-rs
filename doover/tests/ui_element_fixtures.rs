@@ -15,11 +15,11 @@ use std::time::Duration;
 use serde_json::{json, Value};
 
 use doover::ui::{
-    assign_positions_depth_first, BooleanVariable, Button, CameraHistory, CameraLiveView, Colour,
-    ConnectionInfo, ConnectionType, Container, DatetimeInput, FloatInput, Multiplot,
-    NumericVariable, Range, RangeView, RemoteComponent, Select, SelectOption, Series, Slider,
-    Submodule, Switch, TabContainer, TextInput, TextVariable, Threshold, TimeInput, Timestamp,
-    UiElement, UiValue, WarningIndicator, Widget,
+    assign_positions_depth_first, AuditConfig, BooleanVariable, Button, CameraHistory,
+    CameraLiveView, Colour, ConfirmDialog, ConnectionInfo, ConnectionType, Container,
+    DatetimeInput, FloatInput, Multiplot, NumericVariable, Range, RangeView, RemoteComponent,
+    Select, SelectOption, Series, Slider, Submodule, Switch, TabContainer, TextInput, TextVariable,
+    Threshold, TimeInput, Timestamp, UiElement, UiValue, WarningIndicator, Widget,
 };
 
 fn fixture_cases() -> Vec<Value> {
@@ -205,6 +205,29 @@ fn build(case: &str) -> Option<Box<dyn UiElement>> {
                 .option(SelectOption::new("Slow Mode")),
         ),
         "warning_indicator" => Box::new(WarningIndicator::new("Low Level")),
+        // ---- command audit / retry (pydoover 3765fb8) ----
+        "button_command_retry_timeout" => Box::new(
+            Button::new("Restart")
+                .command_timeout(Duration::from_secs(10))
+                .command_retry_timeout(Duration::from_secs(30)),
+        ),
+        "button_confirm_audit_flag" => Box::new(
+            Button::new("Reset")
+                .requires_confirm(ConfirmDialog::new().title("Sure?").audit(true)),
+        ),
+        "switch_confirm_audit_config" => Box::new(
+            Switch::new("Bypass").requires_confirm(
+                ConfirmDialog::new()
+                    .title("Bypass interlock?")
+                    .warning_reason("This disables a safety interlock.")
+                    .audit(
+                        AuditConfig::new()
+                            .required(true)
+                            .label("Why?")
+                            .placeholder("e.g. leak test"),
+                    ),
+            ),
+        ),
         _ => return None,
     };
     Some(element)
@@ -213,7 +236,7 @@ fn build(case: &str) -> Option<Box<dyn UiElement>> {
 #[test]
 fn ui_elements_match_pydoover() {
     let cases = fixture_cases();
-    assert!(cases.len() >= 39, "fixture corpus unexpectedly small: {}", cases.len());
+    assert!(cases.len() >= 42, "fixture corpus unexpectedly small: {}", cases.len());
 
     for case in &cases {
         let id = case["case"].as_str().unwrap();

@@ -78,14 +78,19 @@ impl FromStr for Edge {
     }
 }
 
-/// A device location fix (pydoover `platform_types.Location`). All fields are
-/// optional: hardware without a GPS/modem fix leaves them unset.
+/// A device location fix (pydoover `platform_types.Location`).
+///
+/// Latitude and longitude are always present — a response missing either means
+/// the device has no fix, which
+/// [`fetch_location`](PlatformClient::fetch_location) reports as `None` rather
+/// than a `Location` sitting at the proto default `(0, 0)`. The rest of the
+/// fields are genuinely optional: not every modem reports them.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct Location {
     /// Latitude in degrees.
-    pub latitude: Option<f32>,
+    pub latitude: f32,
     /// Longitude in degrees.
-    pub longitude: Option<f32>,
+    pub longitude: f32,
     /// Altitude in meters above sea level.
     pub altitude_m: Option<f32>,
     /// Accuracy of the location in meters.
@@ -487,9 +492,14 @@ impl PlatformClient {
         Ok(resp.temperature)
     }
 
-    /// The device location. Doovits with 4G cards generally implement this
-    /// via ModemManager (pydoover `fetch_location`).
-    pub async fn fetch_location(&self) -> Result<Location> {
+    /// The device location, or `None` when the device has no fix. Doovits with
+    /// 4G cards generally implement this via ModemManager (pydoover
+    /// `fetch_location`).
+    ///
+    /// `getLocationResponse` carries the fix as flat optional fields, so a
+    /// missing latitude or longitude is "no fix" — never a `Location` at the
+    /// proto default `(0, 0)`, which reads as a real position off West Africa.
+    pub async fn fetch_location(&self) -> Result<Option<Location>> {
         let resp = self
             .shared
             .call(|ch| async move {
@@ -497,16 +507,19 @@ impl PlatformClient {
             })
             .await?;
         Self::check(resp.response_header)?;
-        Ok(Location {
-            latitude: resp.latitude,
-            longitude: resp.longitude,
+        let (Some(latitude), Some(longitude)) = (resp.latitude, resp.longitude) else {
+            return Ok(None);
+        };
+        Ok(Some(Location {
+            latitude,
+            longitude,
             altitude_m: resp.altitude_m,
             accuracy_m: resp.accuracy_m,
             speed_mps: resp.speed_mps,
             heading_deg: resp.heading_deg,
             sat_count: resp.sat_count,
             timestamp: resp.timestamp,
-        })
+        }))
     }
 
     /// The IO table advertised by the platform, as JSON; `None` when
@@ -798,7 +811,11 @@ impl PlatformClient {
         edge: Edge,
     ) -> Result<impl Stream<Item = Result<DiPulse>>> {
         let req = pb::PulseCounterRequest { di, edge: edge.as_str().to_string() };
-        let mut client = GenClient::new(self.shared.fresh_channel());
+        // Stream keepalive settings, without which a half-open connection
+        // surfaces nothing to the reader and the reconnect loop in
+        // `start_di_pulse_listener` can never fire (pydoover
+        // `_STREAM_CHANNEL_OPTIONS`).
+        let mut client = GenClient::new(self.shared.stream_channel());
         let stream = client.start_pulse_counter(req).await?.into_inner();
         Ok(stream.map(|item| {
             let resp = item?;

@@ -166,6 +166,15 @@ pub struct ListMessagesOptions {
 
 impl DeviceAgentClient {
     /// Connect to the local device agent (default `http://127.0.0.1:50051`).
+    ///
+    /// Note `keep_alive_while_idle(true)`: this channel also carries the
+    /// long-lived `ChannelEventSubscription` streams
+    /// ([`subscribe_events`](Self::subscribe_events)), which are receive-only,
+    /// so pings must keep flowing with no outgoing data or a silently-dead
+    /// agent would never surface to the reader and
+    /// [`SubscriptionHub`](crate::SubscriptionHub)'s reconnect loop could never
+    /// fire. This is what pydoover's `_STREAM_CHANNEL_OPTIONS` buys on its
+    /// per-stream channels; here one setting covers both call shapes.
     pub async fn connect(uri: impl Into<String>) -> Result<Self> {
         let endpoint = Endpoint::from_shared(uri.into())
             .map_err(|e| DooverError::Other(format!("bad dda uri: {e}")))?
@@ -264,7 +273,10 @@ impl DeviceAgentClient {
             replace_data: Some(opts.replace_data),
             max_age_secs: opts.max_age_secs,
             save_log: opts.save_log,
-            return_aggregate: Some(return_aggregate),
+            // `suppress_response` is the HTTP spelling of `return_aggregate=false`
+            // (pydoover maps one onto the other), so honour it here too — a
+            // caller that set it does not want the echo on either transport.
+            return_aggregate: Some(return_aggregate && !opts.suppress_response),
             // The device agent now honours replace_keys: each named subtree is
             // replaced wholesale locally and forwarded to the cloud as `?replace=`.
             replace_keys: opts.replace_keys.clone(),

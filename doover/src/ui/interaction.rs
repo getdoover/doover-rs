@@ -48,6 +48,10 @@ pub struct InteractionCommon {
     pub global_interaction: Option<bool>,
     /// Emitted as `commandTimeout` (pydoover `duration_ms`).
     pub command_timeout_ms: Option<i64>,
+    /// Emitted as `commandRetryTimeout`: the maximum *additional* time the site
+    /// waits after the user accepts a retry of a timed-out command. Unset means
+    /// the site reuses the command timeout.
+    pub command_retry_timeout_ms: Option<i64>,
     pub direct: Option<bool>,
 }
 
@@ -62,13 +66,14 @@ impl InteractionCommon {
             requires_confirm: None,
             global_interaction: None,
             command_timeout_ms: None,
+            command_retry_timeout_ms: None,
             direct: None,
         }
     }
 
     /// pydoover `Interaction.to_dict()`: base keys, then `currentValue`,
-    /// `requiresConfirm`, `global`, `commandTimeout`, `direct`, `default`
-    /// (`showActivity` lands in the base slot when set).
+    /// `requiresConfirm`, `global`, `commandTimeout`, `commandRetryTimeout`,
+    /// `direct`, `default` (`showActivity` lands in the base slot when set).
     pub(crate) fn interaction_json(&self, ty: &str) -> Map<String, Value> {
         let mut m = self.element.base_json(ty);
         let current = match self.value.to_json() {
@@ -95,6 +100,9 @@ impl InteractionCommon {
         }
         if let Some(t) = self.command_timeout_ms {
             m.insert("commandTimeout".into(), Value::from(t));
+        }
+        if let Some(t) = self.command_retry_timeout_ms {
+            m.insert("commandRetryTimeout".into(), Value::from(t));
         }
         if let Some(d) = self.direct {
             m.insert("direct".into(), Value::Bool(d));
@@ -141,6 +149,14 @@ macro_rules! impl_interaction_builders {
             /// command before marking it failed (emitted in ms).
             pub fn command_timeout(mut self, timeout: Duration) -> Self {
                 self.interaction.command_timeout_ms = Some(timeout.as_millis() as i64);
+                self
+            }
+
+            /// The maximum *additional* time the site waits after the user
+            /// accepts a retry of a timed-out command (emitted in ms).
+            /// Unset means the site reuses the command timeout.
+            pub fn command_retry_timeout(mut self, timeout: Duration) -> Self {
+                self.interaction.command_retry_timeout_ms = Some(timeout.as_millis() as i64);
                 self
             }
 
@@ -412,6 +428,31 @@ mod tests {
             ]
         );
         assert_eq!(out["commandTimeout"], json!(10000));
+    }
+
+    #[test]
+    fn command_retry_timeout_follows_command_timeout() {
+        let b = Button::new("Restart")
+            .command_timeout(Duration::from_secs(10))
+            .command_retry_timeout(Duration::from_secs(30));
+        let out = b.to_json();
+        let keys: Vec<_> = out.as_object().unwrap().keys().map(String::as_str).collect();
+        assert_eq!(
+            keys,
+            [
+                "name",
+                "type",
+                "displayString",
+                "hidden",
+                "currentValue",
+                "commandTimeout",
+                "commandRetryTimeout"
+            ]
+        );
+        assert_eq!(out["commandRetryTimeout"], json!(30000));
+        // Unset means the site reuses the command timeout — no key at all.
+        let bare = Button::new("Restart").command_timeout(Duration::from_secs(10));
+        assert!(bare.to_json().get("commandRetryTimeout").is_none());
     }
 
     #[test]

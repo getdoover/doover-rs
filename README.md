@@ -313,14 +313,56 @@ Done (declarative gap-fill):
     mirroring, and `AppContext::{get_remote_tag, remote_tag, remote_tags}`.
     Cross-*agent* references parse but resolve to `None` (as in pydoover).
 
+Done (caught up to pydoover 1.11.4):
+
+19. ~~**`list_channels` + `replay_missed_messages`**~~ — the `ListChannels`
+    RPC and live-only subscriptions (`SubscribeOptions`).
+20. ~~**`replace_keys`**~~ on aggregate writes over both transports, plus
+    `suppress_response` (the HTTP spelling of `return_aggregate=false`) —
+    `ChannelBackend::update_channel_aggregate` sets it, since it discards the
+    echo anyway.
+21. ~~**Command expiry + audit metadata**~~ — `CallOptions`
+    (`actor`/`reason`/`old_value`/`expires_after`/`retry_of`), the matching
+    `RpcContext` accessors, `command_expires_at`/`command_is_expired` (dated
+    off the request's snowflake, as pydoover dates off `Message.timestamp`),
+    the drop-expired-commands guard in dispatch, and `RpcManager::send_with`
+    for pydoover's `wait_for_response=False`. On the schema side,
+    `Interaction::command_retry_timeout` and `ConfirmDialog::audit` /
+    `AuditConfig`, byte-checked against pydoover-generated fixtures.
+22. ~~**Application visibility config**~~ — `ApplicationInterpreterHidden`
+    (`interpreter_hidden`) and `ApplicationCockpitVisible`
+    (`cockpit_visible`); a declarative UI's `hidden` root reference now
+    resolves against `interpreter_hidden` and carries a single
+    `:boolean:false` suffix, not the historical doubled one.
+23. ~~**Stream keepalive**~~ — `SharedChannel::stream_channel` (pydoover's
+    `_STREAM_CHANNEL_OPTIONS`: 60 s pings that keep flowing on a receive-only
+    stream) for the pulse-counter and modbus register subscriptions, so a
+    silently-dead sidecar surfaces to the reconnect loops instead of leaving
+    the subscription deaf. The DDA channel already had
+    `keep_alive_while_idle`, which covers its event streams.
+24. ~~**Location fixes**~~ — `fetch_location` returns `Option<Location>`: a
+    response missing latitude/longitude is "no fix", never a `Location` at the
+    proto default `(0, 0)`.
+25. ~~**Notification enums**~~ — name-on-the-wire (`NotificationType::wire`,
+    including the new `FirebasePush`), case-insensitive name parsing with
+    pydoover's alias set (`warning` → `Warn`, `error`/`fatal`/`crit` →
+    `Critical`), and eager `Notification::validate` on the send paths — a
+    payload the server cannot deserialise is silently replaced by one whose
+    message is the raw JSON, so it has to fail here.
+26. ~~**`AppContext::call_ui_command`**~~ — pydoover's
+    `UICommandsManager.call`: issue a UI command as a user would, on
+    `ui_cmds`.
+
 Still to port:
 
 1. **Cloud auth beyond bearer tokens** — `~/.doover` profiles, refresh-token
    / OIDC flows (`pydoover/api/auth/`); processors don't need them.
 2. **Declarative processor-config authoring** — the `dv_proc_config` schema
    elements (`SubscriptionConfig`/`ScheduleConfig`/`IngestionEndpointConfig`
-   /`ExtendedPermissionsConfig`); doover-rs currently only *deserializes*
-   `dv_proc_config` at runtime. Also processor-side declarative UI (the
+   /`ExtendedPermissionsConfig`, and inside that last one pydoover's newer
+   `DataPermissions` / `dd_permissions` bitmask element); doover-rs currently
+   only *deserializes* `dv_proc_config` at runtime, so there is nothing for
+   `dd_permissions` to hang off yet. Also processor-side declarative UI (the
    docker `#[derive(Ui)]` machinery is not yet wired into `ui_state`
    publishing on deployment) and `dv_proc_config.log_level` application.
 

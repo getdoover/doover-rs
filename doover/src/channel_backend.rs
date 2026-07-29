@@ -73,13 +73,21 @@ pub struct AggregateOptions {
     pub clear_attachments: bool,
     /// Dotted key paths to *replace* (rather than merge) within an otherwise
     /// merge-patch write — pydoover's `replace_keys` (`?replace=` on the HTTP
-    /// aggregate endpoint), used by the processor's `publish_ui_schema` clear
-    /// path (`state.children.<app_key>`).
+    /// aggregate endpoint, `replace_keys` on `UpdateAggregateRequest`), used by
+    /// the processor's `publish_ui_schema` clear path
+    /// (`state.children.<app_key>`).
     ///
-    /// Divergence: only the cloud HTTP backend honours this. The device-agent
-    /// gRPC proto (`UpdateAggregateRequest`) has no such field, so the docker
-    /// backend logs a warning and merges normally.
+    /// Honoured by both backends: the device agent gained the proto field in
+    /// pydoover 1.11.
     pub replace_keys: Vec<String>,
+    /// Ask the server not to echo the updated aggregate back — pydoover's
+    /// `suppress_response` (`?suppress_response=true`), the HTTP equivalent of
+    /// the device agent's `return_aggregate=false`.
+    ///
+    /// Only meaningful on the HTTP backend, and only to callers that use the
+    /// returned aggregate; the [`ChannelBackend`] method discards it either way,
+    /// so it sets this itself.
+    pub suppress_response: bool,
 }
 
 /// Options for `update_message`.

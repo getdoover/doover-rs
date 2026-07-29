@@ -35,10 +35,38 @@ pub const DEFAULT_TIMEOUT: Duration = Duration::from_secs(7);
 /// `UNAVAILABLE` failures ([`SharedChannel::call`]).
 pub struct SharedChannel {
     endpoint: Endpoint,
+    /// Endpoint for long-lived server-streaming calls — see
+    /// [`stream_channel`](SharedChannel::stream_channel).
+    stream_endpoint: Endpoint,
     service_name: String,
     timeout: Duration,
     channel: Mutex<Option<Channel>>,
 }
+
+/// Keepalive cadence for long-lived subscription streams, the port of
+/// pydoover's `GRPCInterface._STREAM_CHANNEL_OPTIONS`.
+///
+/// A subscription stream is one call that stays in flight for its whole life,
+/// and its read never surfaces anything when the peer silently disappears —
+/// without keepalive pings the reconnect loops around these streams can never
+/// fire, and the subscription goes permanently deaf while the process looks
+/// healthy. (Seen in the field: apps stopped receiving `ui_cmds` RPCs until
+/// their container was recreated.)
+///
+/// The stream is receive-only, so pings never accompany outgoing data:
+/// `keep_alive_while_idle` must be on, or hyper stops pinging on a quiet
+/// stream and the wedge becomes undetectable again (pydoover spells this
+/// `max_pings_without_data=0`).
+///
+/// The 60s cadence is coupled to the server side. A strict C-core/Go server
+/// GOAWAYs no-data pings more frequent than one per 5 minutes by default;
+/// doover-platform-interface (C-core) sets
+/// `min_ping_interval_without_data_ms=30s` to tolerate exactly this cadence.
+/// **The server's 30s floor has to stay below the cadence here** — do not lower
+/// this without raising the server floor to match, and check any other
+/// C-core/Go server these options get pointed at.
+const STREAM_KEEPALIVE_INTERVAL: Duration = Duration::from_secs(60);
+const STREAM_KEEPALIVE_TIMEOUT: Duration = Duration::from_secs(5);
 
 impl SharedChannel {
     /// Build the endpoint (pydoover `GRPCInterface.__init__` +
@@ -55,8 +83,14 @@ impl SharedChannel {
             .http2_keep_alive_interval(Duration::from_secs(10))
             .keep_alive_timeout(Duration::from_secs(5))
             .connect_timeout(Duration::from_secs(5));
+        let stream_endpoint = endpoint
+            .clone()
+            .http2_keep_alive_interval(STREAM_KEEPALIVE_INTERVAL)
+            .keep_alive_timeout(STREAM_KEEPALIVE_TIMEOUT)
+            .keep_alive_while_idle(true);
         Ok(Self {
             endpoint,
+            stream_endpoint,
             service_name: service_name.into(),
             timeout: DEFAULT_TIMEOUT,
             channel: Mutex::new(None),
@@ -80,8 +114,20 @@ impl SharedChannel {
     /// fresh `grpc.aio.insecure_channel` per streaming call — a stream on the
     /// shared channel would otherwise keep it looking healthy while unary
     /// calls wedge, and vice versa.
+    ///
+    /// This one carries the *unary* keepalive settings; subscription streams
+    /// want [`stream_channel`](Self::stream_channel) instead.
     pub fn fresh_channel(&self) -> Channel {
         self.endpoint.connect_lazy()
+    }
+
+    /// A fresh channel for a long-lived server-streaming subscription, carrying
+    /// the keepalive settings that make a silently-dead peer detectable — the
+    /// port of pydoover's `_STREAM_CHANNEL_OPTIONS`. See
+    /// [`STREAM_KEEPALIVE_INTERVAL`] for the cadence and its coupling to the
+    /// server's ping floor.
+    pub fn stream_channel(&self) -> Channel {
+        self.stream_endpoint.connect_lazy()
     }
 
     /// Drop the shared channel so the next call builds a fresh one

@@ -10,8 +10,7 @@ user_invocable: true
 truth and moves faster. This skill closes the gap, and is designed to be run
 repeatedly — every run leaves the next run a clean starting point.
 
-**Both repos live under `~/Documents/refactor/work/getdoover/`** (`pydoover/`,
-`doover-rs/`). Resolve them there; if either is missing, ask rather than guess.
+**Both repos live under `~/Coding/doover/`** (`pydoover/`, `doover-rs/`). Resolve them there; if either is missing, ask rather than guess.
 
 ## Ground rules
 
@@ -32,7 +31,7 @@ repeatedly — every run leaves the next run a clean starting point.
 ## Step 1 — Establish the diff base
 
 ```sh
-cd ~/Documents/refactor/work/getdoover/pydoover && git fetch --all -q
+cd ~/Coding/doover/pydoover && git fetch --all -q
 ```
 
 Read `Synced to` in `doover-rs/PARITY.md` for the base commit `$BASE`. Take
@@ -73,7 +72,7 @@ Write the changes down as a checklist before touching Rust. Classify each as:
 `doover-rs/doover-proto/proto/` is vendored verbatim. Verify each:
 
 ```sh
-cd ~/Documents/refactor/work/getdoover
+cd ~/Coding/doover
 for f in device_agent health modbus_iface platform_iface; do
   echo "--- $f"
   diff <(grep -v '^//' doover-rs/doover-proto/proto/$f.proto) \
@@ -90,7 +89,7 @@ implies matching Rust in `doover/src/docker/device_agent.rs`.
 Baseline first, so you know a later failure is yours:
 
 ```sh
-cd ~/Documents/refactor/work/getdoover/doover-rs && cargo test --all-features
+cd ~/Coding/doover/doover-rs && cargo test --all-features
 ```
 
 For each checklist item, grep for the identifier before assuming it's missing —
@@ -121,7 +120,7 @@ from reading Python; generate it.
 the live pydoover checkout and inspect the diff:
 
 ```sh
-cd ~/Documents/refactor/work/getdoover/doover-rs
+cd ~/Coding/doover/doover-rs
 PYTHONPATH=../pydoover python3 scripts/gen_ui_element_fixtures.py
 git diff tests/compat/fixtures/
 ```
@@ -134,9 +133,9 @@ are byte-exact pydoover exports. If a change touches schema emission, regenerate
 from the real app and diff:
 
 ```sh
-cd ~/Documents/refactor/work/getdoover/apps/analog-level-sensor
+cd ~/Coding/doover/analog-level-sensor
 python3 -c "
-import sys; sys.path.insert(0,'../../pydoover'); sys.path.insert(0,'src')
+import sys; sys.path.insert(0,'../pydoover'); sys.path.insert(0,'src')
 from analog_level_sensor.app_ui import export; export()"
 git diff doover_config.json      # <- this is the expected change
 git checkout doover_config.json  # <- leave the app repo clean
@@ -149,7 +148,7 @@ re-read.
 Then:
 
 ```sh
-cd ~/Documents/refactor/work/getdoover/doover-rs
+cd ~/Coding/doover/doover-rs
 cargo test --all-features && cargo clippy --all-features --all-targets
 ```
 

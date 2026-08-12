@@ -389,6 +389,23 @@ mod tests {
     }
 
     #[test]
+    fn resolves_interpreter_full_width_default() {
+        // pydoover 6394c84. Same shape as `interpreter_hidden`, against the
+        // `interpreter_full_width` config key.
+        assert_eq!(
+            resolve_single_ref("$config.app().interpreter_full_width:boolean:false", &json!({})),
+            json!(false)
+        );
+        assert_eq!(
+            resolve_single_ref(
+                "$config.app().interpreter_full_width:boolean:false",
+                &json!({"interpreter_full_width": true})
+            ),
+            json!(true)
+        );
+    }
+
+    #[test]
     fn resolves_doubled_boolean_quirk() {
         // Older exports (pre-cd82114) carry pydoover's doubled suffix, and
         // deployed configs still contain them; the greedy `.+` default group

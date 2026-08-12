@@ -26,6 +26,58 @@
 
 use serde_json::{Map, Number, Value};
 
+/// A comparison operator for a conditional config element
+/// (pydoover `config.Comparator`). Equality is the only operator the schema
+/// format defines so far.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Comparator {
+    Equal,
+}
+
+/// A condition controlling whether a config element is active
+/// (pydoover `config.Condition`, built there by `config.equal()`).
+///
+/// The controller is named by its `x-name`. pydoover also accepts the
+/// `ConfigElement` object itself and resolves it back to a name by identity;
+/// there is nothing to resolve here, so the name is the only form.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Condition {
+    /// `x-name` of the element this one depends on.
+    pub element: String,
+    pub comparator: Comparator,
+    pub value: Value,
+}
+
+impl Condition {
+    /// Show the element when `element` equals `value` (pydoover
+    /// `config.equal()`).
+    pub fn equal(element: impl Into<String>, value: Value) -> Self {
+        Self { element: element.into(), comparator: Comparator::Equal, value }
+    }
+
+    /// The `if` branch's test on the controlling property
+    /// (pydoover `_condition_schema`).
+    fn to_test(&self) -> Value {
+        match self.comparator {
+            Comparator::Equal => {
+                let mut m = Map::new();
+                m.insert("const".into(), self.value.clone());
+                Value::Object(m)
+            }
+        }
+    }
+
+    /// Whether this condition holds for a given actual value (pydoover
+    /// `_condition_matches`). `None` is pydoover's `NotSet` — an element with no
+    /// default never satisfies a condition.
+    fn matches(&self, actual: Option<&Value>) -> bool {
+        match (self.comparator, actual) {
+            (_, None) => false,
+            (Comparator::Equal, Some(actual)) => *actual == self.value,
+        }
+    }
+}
+
 /// Numeric constraints shared by integer and number elements
 /// (pydoover `config.Integer` / `config.Number` kwargs).
 #[derive(Debug, Clone, Default, PartialEq)]
@@ -114,6 +166,10 @@ pub struct ElementSchema {
     pub position: Option<u32>,
     pub deprecated: Option<bool>,
     pub advanced: Option<bool>,
+    /// When set, this element is *conditional*: it moves out of the object's
+    /// `properties`/`required` and into an `allOf` `if`/`then` branch keyed on
+    /// another element's value (pydoover's `show_if=config.equal(...)`).
+    pub show_if: Option<Condition>,
     pub kind: ElementKind,
 }
 
@@ -130,6 +186,7 @@ impl ElementSchema {
             position: None,
             deprecated: None,
             advanced: None,
+            show_if: None,
             kind,
         }
     }
@@ -194,6 +251,26 @@ impl ElementSchema {
     /// (pydoover `ConfigElement.required`).
     pub fn is_required(&self) -> bool {
         self.required.unwrap_or(self.default.is_none())
+    }
+
+    /// Whether this element is *active* for a given config object — i.e. its
+    /// `show_if` condition holds (pydoover `_condition_matches`).
+    ///
+    /// An unconditional element is always active. A conditional one reads its
+    /// controller's value from `data`, falling back to that controller's
+    /// declared default from `siblings`; with neither (pydoover's `NotSet`) the
+    /// condition does not hold, so the element stays inactive.
+    pub fn condition_holds(&self, data: &Value, siblings: &[ElementSchema]) -> bool {
+        let Some(condition) = &self.show_if else { return true };
+        let from_data = data.get(&condition.element);
+        let actual = match from_data {
+            Some(v) => Some(v),
+            None => siblings
+                .iter()
+                .find(|el| el.name == condition.element)
+                .and_then(|el| el.default.as_ref()),
+        };
+        condition.matches(actual)
     }
 
     fn numeric_bounds_mut(&mut self) -> &mut NumericBounds {
@@ -348,16 +425,13 @@ impl ElementSchema {
                 }
             }
             ElementKind::Object { properties, additional_elements, collapsible, default_collapsed } => {
-                let props: Map<String, Value> =
-                    properties.iter().map(|el| (el.name.clone(), el.to_json())).collect();
-                m.insert("properties".into(), Value::Object(props));
+                let object = build_object_schema(properties);
+                m.insert("properties".into(), Value::Object(object.properties));
                 m.insert("additionalElements".into(), additional_elements.clone());
-                let req: Vec<Value> = properties
-                    .iter()
-                    .filter(|el| el.is_required())
-                    .map(|el| Value::String(el.name.clone()))
-                    .collect();
-                m.insert("required".into(), Value::Array(req));
+                m.insert("required".into(), Value::Array(object.required));
+                if !object.all_of.is_empty() {
+                    m.insert("allOf".into(), Value::Array(object.all_of));
+                }
                 m.insert("x-collapsible".into(), Value::Bool(*collapsible));
                 m.insert("x-defaultCollapsed".into(), Value::Bool(*default_collapsed));
             }
@@ -366,6 +440,115 @@ impl ElementSchema {
 
         Value::Object(m)
     }
+}
+
+/// The `properties`, `required` and `allOf` of one object level.
+struct ObjectSchema {
+    properties: Map<String, Value>,
+    required: Vec<Value>,
+    all_of: Vec<Value>,
+}
+
+/// Split a list of elements into plain properties and conditional `allOf`
+/// branches — pydoover `_build_object_schema`, used by both the root schema and
+/// every nested `Object`.
+///
+/// A conditional element does *not* appear in the object's own
+/// `properties`/`required`; it lives in the `then` of an `if`/`then` pair keyed
+/// on its controller. Elements sharing a controller *and* a condition share one
+/// branch, in declaration order, so `sensor_type == "Radar"` produces a single
+/// branch holding every radar-only field.
+///
+/// Misuse — an unknown controller, a self-dependency, or depending on an element
+/// that is itself conditional — panics, as pydoover raises `ValueError`. These
+/// are declaration errors the derive macro can't catch, not runtime conditions.
+fn build_object_schema(elements: &[ElementSchema]) -> ObjectSchema {
+    let mut properties = Map::new();
+    let mut required = Vec::new();
+    // (controller name, condition, elements) — a Vec, not a map, to keep
+    // pydoover's declaration ordering of the branches.
+    let mut groups: Vec<(&str, &Condition, Vec<&ElementSchema>)> = Vec::new();
+
+    for element in elements {
+        let Some(condition) = &element.show_if else {
+            properties.insert(element.name.clone(), element.to_json());
+            if element.is_required() {
+                required.push(Value::String(element.name.clone()));
+            }
+            continue;
+        };
+
+        let controller = elements
+            .iter()
+            .find(|el| el.name == condition.element)
+            .unwrap_or_else(|| {
+                panic!(
+                    "conditional config element {:?} references unknown element {:?}",
+                    element.name, condition.element
+                )
+            });
+        if controller.name == element.name {
+            panic!("config element {:?} cannot depend on itself", element.name);
+        }
+        if controller.show_if.is_some() {
+            panic!(
+                "config element {:?} cannot depend on conditional element {:?}",
+                element.name, controller.name
+            );
+        }
+
+        match groups
+            .iter_mut()
+            .find(|(name, cond, _)| *name == controller.name.as_str() && *cond == condition)
+        {
+            Some((_, _, members)) => members.push(element),
+            None => groups.push((&controller.name, condition, vec![element])),
+        }
+    }
+
+    let all_of = groups
+        .into_iter()
+        .map(|(controller_name, condition, members)| {
+            let then_properties: Map<String, Value> =
+                members.iter().map(|el| (el.name.clone(), el.to_json())).collect();
+            let mut then = Map::new();
+            then.insert("properties".into(), Value::Object(then_properties));
+            let then_required: Vec<Value> = members
+                .iter()
+                .filter(|el| el.is_required())
+                .map(|el| Value::String(el.name.clone()))
+                .collect();
+            if !then_required.is_empty() {
+                then.insert("required".into(), Value::Array(then_required));
+            }
+
+            let mut if_properties = Map::new();
+            if_properties.insert(controller_name.to_string(), condition.to_test());
+            let mut if_schema = Map::new();
+            if_schema.insert("properties".into(), Value::Object(if_properties));
+            // JSON Schema's `properties` matches when the property is absent.
+            // That is correct only when the controller's effective default also
+            // satisfies the condition; otherwise require the controller to
+            // exist, or the branch would fire on a config that omits it.
+            let controller = elements
+                .iter()
+                .find(|el| el.name == controller_name)
+                .expect("controller resolved above");
+            if !condition.matches(controller.default.as_ref()) {
+                if_schema
+                    .insert("required".into(), Value::Array(vec![Value::String(
+                        controller_name.to_string(),
+                    )]));
+            }
+
+            let mut branch = Map::new();
+            branch.insert("if".into(), Value::Object(if_schema));
+            branch.insert("then".into(), Value::Object(then));
+            Value::Object(branch)
+        })
+        .collect();
+
+    ObjectSchema { properties, required, all_of }
 }
 
 /// The whole application config schema — pydoover `config.Schema`.
@@ -407,18 +590,13 @@ impl SchemaModel {
         );
         m.insert("type".into(), Value::String("object".into()));
 
-        let props: Map<String, Value> =
-            self.elements.iter().map(|el| (el.name.clone(), el.to_json())).collect();
-        m.insert("properties".into(), Value::Object(props));
+        let object = build_object_schema(&self.elements);
+        m.insert("properties".into(), Value::Object(object.properties));
         m.insert("additionalElements".into(), Value::Bool(true));
-
-        let required: Vec<Value> = self
-            .elements
-            .iter()
-            .filter(|el| el.is_required())
-            .map(|el| Value::String(el.name.clone()))
-            .collect();
-        m.insert("required".into(), Value::Array(required));
+        m.insert("required".into(), Value::Array(object.required));
+        if !object.all_of.is_empty() {
+            m.insert("allOf".into(), Value::Array(object.all_of));
+        }
 
         if let Some(advanced) = self.advanced {
             m.insert("x-advanced".into(), Value::Bool(advanced));

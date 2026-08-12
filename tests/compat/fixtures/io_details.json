@@ -1,0 +1,514 @@
+[
+  {
+    "io_table": {},
+    "details": {
+      "devices": [
+        {
+          "name": "master",
+          "type": "",
+          "index": 0,
+          "is_master": true,
+          "online": true,
+          "channels": []
+        }
+      ]
+    },
+    "master": {
+      "name": "master",
+      "type": "",
+      "index": 0,
+      "is_master": true,
+      "online": true,
+      "channels": []
+    },
+    "channels_by_type": {
+      "DI": [],
+      "DO": [],
+      "AI": [],
+      "AO": []
+    }
+  },
+  {
+    "io_table": {
+      "DI": [
+        0,
+        1,
+        2
+      ],
+      "DO": [
+        0,
+        1
+      ],
+      "AI": [
+        0
+      ],
+      "AO": []
+    },
+    "details": {
+      "devices": [
+        {
+          "name": "master",
+          "type": "",
+          "index": 0,
+          "is_master": true,
+          "online": true,
+          "channels": [
+            {
+              "channel": 0,
+              "device_channel": 0,
+              "io_type": "DI",
+              "kind": null,
+              "units": null,
+              "supports_events": false,
+              "supports_pulse_counter": false,
+              "supports_di_config": false
+            },
+            {
+              "channel": 1,
+              "device_channel": 1,
+              "io_type": "DI",
+              "kind": null,
+              "units": null,
+              "supports_events": false,
+              "supports_pulse_counter": false,
+              "supports_di_config": false
+            },
+            {
+              "channel": 2,
+              "device_channel": 2,
+              "io_type": "DI",
+              "kind": null,
+              "units": null,
+              "supports_events": false,
+              "supports_pulse_counter": false,
+              "supports_di_config": false
+            },
+            {
+              "channel": 0,
+              "device_channel": 0,
+              "io_type": "DO",
+              "kind": null,
+              "units": null,
+              "supports_events": false,
+              "supports_pulse_counter": false,
+              "supports_di_config": false
+            },
+            {
+              "channel": 1,
+              "device_channel": 1,
+              "io_type": "DO",
+              "kind": null,
+              "units": null,
+              "supports_events": false,
+              "supports_pulse_counter": false,
+              "supports_di_config": false
+            },
+            {
+              "channel": 0,
+              "device_channel": 0,
+              "io_type": "AI",
+              "kind": null,
+              "units": null,
+              "supports_events": false,
+              "supports_pulse_counter": false,
+              "supports_di_config": false
+            }
+          ]
+        }
+      ]
+    },
+    "master": {
+      "name": "master",
+      "type": "",
+      "index": 0,
+      "is_master": true,
+      "online": true,
+      "channels": [
+        {
+          "channel": 0,
+          "device_channel": 0,
+          "io_type": "DI",
+          "kind": null,
+          "units": null,
+          "supports_events": false,
+          "supports_pulse_counter": false,
+          "supports_di_config": false
+        },
+        {
+          "channel": 1,
+          "device_channel": 1,
+          "io_type": "DI",
+          "kind": null,
+          "units": null,
+          "supports_events": false,
+          "supports_pulse_counter": false,
+          "supports_di_config": false
+        },
+        {
+          "channel": 2,
+          "device_channel": 2,
+          "io_type": "DI",
+          "kind": null,
+          "units": null,
+          "supports_events": false,
+          "supports_pulse_counter": false,
+          "supports_di_config": false
+        },
+        {
+          "channel": 0,
+          "device_channel": 0,
+          "io_type": "DO",
+          "kind": null,
+          "units": null,
+          "supports_events": false,
+          "supports_pulse_counter": false,
+          "supports_di_config": false
+        },
+        {
+          "channel": 1,
+          "device_channel": 1,
+          "io_type": "DO",
+          "kind": null,
+          "units": null,
+          "supports_events": false,
+          "supports_pulse_counter": false,
+          "supports_di_config": false
+        },
+        {
+          "channel": 0,
+          "device_channel": 0,
+          "io_type": "AI",
+          "kind": null,
+          "units": null,
+          "supports_events": false,
+          "supports_pulse_counter": false,
+          "supports_di_config": false
+        }
+      ]
+    },
+    "channels_by_type": {
+      "DI": [
+        0,
+        1,
+        2
+      ],
+      "DO": [
+        0,
+        1
+      ],
+      "AI": [
+        0
+      ],
+      "AO": []
+    }
+  },
+  {
+    "io_table": {
+      "DI": [
+        "0",
+        "1"
+      ],
+      "AI": [
+        "4"
+      ]
+    },
+    "details": {
+      "devices": [
+        {
+          "name": "master",
+          "type": "",
+          "index": 0,
+          "is_master": true,
+          "online": true,
+          "channels": [
+            {
+              "channel": 0,
+              "device_channel": 0,
+              "io_type": "DI",
+              "kind": null,
+              "units": null,
+              "supports_events": false,
+              "supports_pulse_counter": false,
+              "supports_di_config": false
+            },
+            {
+              "channel": 1,
+              "device_channel": 1,
+              "io_type": "DI",
+              "kind": null,
+              "units": null,
+              "supports_events": false,
+              "supports_pulse_counter": false,
+              "supports_di_config": false
+            },
+            {
+              "channel": 4,
+              "device_channel": 4,
+              "io_type": "AI",
+              "kind": null,
+              "units": null,
+              "supports_events": false,
+              "supports_pulse_counter": false,
+              "supports_di_config": false
+            }
+          ]
+        }
+      ]
+    },
+    "master": {
+      "name": "master",
+      "type": "",
+      "index": 0,
+      "is_master": true,
+      "online": true,
+      "channels": [
+        {
+          "channel": 0,
+          "device_channel": 0,
+          "io_type": "DI",
+          "kind": null,
+          "units": null,
+          "supports_events": false,
+          "supports_pulse_counter": false,
+          "supports_di_config": false
+        },
+        {
+          "channel": 1,
+          "device_channel": 1,
+          "io_type": "DI",
+          "kind": null,
+          "units": null,
+          "supports_events": false,
+          "supports_pulse_counter": false,
+          "supports_di_config": false
+        },
+        {
+          "channel": 4,
+          "device_channel": 4,
+          "io_type": "AI",
+          "kind": null,
+          "units": null,
+          "supports_events": false,
+          "supports_pulse_counter": false,
+          "supports_di_config": false
+        }
+      ]
+    },
+    "channels_by_type": {
+      "DI": [
+        0,
+        1
+      ],
+      "DO": [],
+      "AI": [
+        4
+      ],
+      "AO": []
+    }
+  },
+  {
+    "io_table": {
+      "AI": [
+        3,
+        1,
+        2
+      ],
+      "DI": [
+        9,
+        0
+      ]
+    },
+    "details": {
+      "devices": [
+        {
+          "name": "master",
+          "type": "",
+          "index": 0,
+          "is_master": true,
+          "online": true,
+          "channels": [
+            {
+              "channel": 3,
+              "device_channel": 3,
+              "io_type": "AI",
+              "kind": null,
+              "units": null,
+              "supports_events": false,
+              "supports_pulse_counter": false,
+              "supports_di_config": false
+            },
+            {
+              "channel": 1,
+              "device_channel": 1,
+              "io_type": "AI",
+              "kind": null,
+              "units": null,
+              "supports_events": false,
+              "supports_pulse_counter": false,
+              "supports_di_config": false
+            },
+            {
+              "channel": 2,
+              "device_channel": 2,
+              "io_type": "AI",
+              "kind": null,
+              "units": null,
+              "supports_events": false,
+              "supports_pulse_counter": false,
+              "supports_di_config": false
+            },
+            {
+              "channel": 9,
+              "device_channel": 9,
+              "io_type": "DI",
+              "kind": null,
+              "units": null,
+              "supports_events": false,
+              "supports_pulse_counter": false,
+              "supports_di_config": false
+            },
+            {
+              "channel": 0,
+              "device_channel": 0,
+              "io_type": "DI",
+              "kind": null,
+              "units": null,
+              "supports_events": false,
+              "supports_pulse_counter": false,
+              "supports_di_config": false
+            }
+          ]
+        }
+      ]
+    },
+    "master": {
+      "name": "master",
+      "type": "",
+      "index": 0,
+      "is_master": true,
+      "online": true,
+      "channels": [
+        {
+          "channel": 3,
+          "device_channel": 3,
+          "io_type": "AI",
+          "kind": null,
+          "units": null,
+          "supports_events": false,
+          "supports_pulse_counter": false,
+          "supports_di_config": false
+        },
+        {
+          "channel": 1,
+          "device_channel": 1,
+          "io_type": "AI",
+          "kind": null,
+          "units": null,
+          "supports_events": false,
+          "supports_pulse_counter": false,
+          "supports_di_config": false
+        },
+        {
+          "channel": 2,
+          "device_channel": 2,
+          "io_type": "AI",
+          "kind": null,
+          "units": null,
+          "supports_events": false,
+          "supports_pulse_counter": false,
+          "supports_di_config": false
+        },
+        {
+          "channel": 9,
+          "device_channel": 9,
+          "io_type": "DI",
+          "kind": null,
+          "units": null,
+          "supports_events": false,
+          "supports_pulse_counter": false,
+          "supports_di_config": false
+        },
+        {
+          "channel": 0,
+          "device_channel": 0,
+          "io_type": "DI",
+          "kind": null,
+          "units": null,
+          "supports_events": false,
+          "supports_pulse_counter": false,
+          "supports_di_config": false
+        }
+      ]
+    },
+    "channels_by_type": {
+      "DI": [
+        0,
+        9
+      ],
+      "DO": [],
+      "AI": [
+        1,
+        2,
+        3
+      ],
+      "AO": []
+    }
+  },
+  {
+    "io_table": {
+      "DI": [
+        0
+      ]
+    },
+    "details": {
+      "devices": [
+        {
+          "name": "master",
+          "type": "",
+          "index": 0,
+          "is_master": true,
+          "online": true,
+          "channels": [
+            {
+              "channel": 0,
+              "device_channel": 0,
+              "io_type": "DI",
+              "kind": null,
+              "units": null,
+              "supports_events": false,
+              "supports_pulse_counter": false,
+              "supports_di_config": false
+            }
+          ]
+        }
+      ]
+    },
+    "master": {
+      "name": "master",
+      "type": "",
+      "index": 0,
+      "is_master": true,
+      "online": true,
+      "channels": [
+        {
+          "channel": 0,
+          "device_channel": 0,
+          "io_type": "DI",
+          "kind": null,
+          "units": null,
+          "supports_events": false,
+          "supports_pulse_counter": false,
+          "supports_di_config": false
+        }
+      ]
+    },
+    "channels_by_type": {
+      "DI": [
+        0
+      ],
+      "DO": [],
+      "AI": [],
+      "AO": []
+    }
+  }
+]

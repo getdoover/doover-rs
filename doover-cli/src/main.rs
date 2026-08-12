@@ -286,7 +286,7 @@ mod tests {
     fn aggregate_aliases_and_kebab_flags_also_parse() {
         for name in ["get_aggregate", "get-aggregate", "fetch-channel-aggregate"] {
             let Section::DeviceAgent {
-                cmd: device_agent::DeviceAgentCmd::FetchChannelAggregate { channel_name },
+                cmd: device_agent::DeviceAgentCmd::FetchChannelAggregate { channel_name, .. },
                 ..
             } = parse_section(&["doover", "device_agent", name, "ch"])
             else {

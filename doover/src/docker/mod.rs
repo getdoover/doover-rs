@@ -17,13 +17,13 @@ pub use application::{
     channels, run, run_with, wire_rpc, write_export, AppContext, Application, RunOptions,
 };
 pub use device_agent::{
-    validate_payload, AggregateOptions, ChannelInfo, ChannelList, DdaStatus, DeviceAgentClient,
-    SubscribeOptions,
+    validate_payload, AggregateOptions, ChannelInfo, ChannelList, ChannelRef, DdaStatus,
+    DeviceAgentClient, ListChannelsOptions, MessageWriteOptions, Qos, SubscribeOptions,
 };
 pub use healthcheck::HealthState;
 pub use modbus::{BusSettings, ModbusClient, RegisterRange, SerialBusSettings, TcpBusSettings};
 pub use platform::{
-    DiConfigUpdate, DiPulse, Edge, Location, PlatformClient, PlatformEvent, PulseCounter,
-    PulseCounterUpdate,
+    DiConfigUpdate, DiPulse, Edge, IoChannel, IoDetails, IoDevice, Location, PlatformClient,
+    PlatformEvent, PulseCounter, PulseCounterUpdate,
 };
 pub use subscriptions::SubscriptionHub;

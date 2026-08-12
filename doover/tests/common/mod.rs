@@ -7,6 +7,12 @@
 //! event-subscription streams are backed by mpsc channels the test drives
 //! explicitly via [`FakeAgentState::publish_event`] — the fake does not echo
 //! its own writes back as events, so tests stay deterministic.
+//!
+//! Cross-agent requests are keyed exactly as the real agent keys them: a
+//! request with no `agent_id` uses the bare channel name, one naming another
+//! agent uses `{agent_id}:{name}` (see `key_for`). Recorded writes keep the
+//! `agent_id`/`qos` the client actually sent, so a test can assert that a
+//! default write still omits both.
 
 use std::collections::HashMap;
 use std::net::SocketAddr;
@@ -30,6 +36,8 @@ pub struct RecordedSubscribe {
     pub channel: String,
     /// `None` when the client left it unset (the agent then replays).
     pub replay_missed_messages: Option<bool>,
+    /// `None` when the client asked for its own channel.
+    pub agent_id: Option<u64>,
 }
 
 #[derive(Debug, Clone)]
@@ -40,6 +48,9 @@ pub struct RecordedAggregateWrite {
     pub max_age_secs: f32,
     pub save_log: bool,
     pub replace_data: bool,
+    pub agent_id: Option<u64>,
+    /// `None` on the default path — the client must omit the field, not send 1.
+    pub qos: Option<u32>,
 }
 
 #[derive(Debug, Clone)]
@@ -48,6 +59,9 @@ pub struct RecordedMessage {
     pub channel: String,
     pub data: Value,
     pub timestamp: u64,
+    pub agent_id: Option<u64>,
+    /// `None` on the default path — the client must omit the field, not send 1.
+    pub qos: Option<u32>,
 }
 
 #[derive(Debug, Clone)]
@@ -57,6 +71,9 @@ pub struct RecordedMessageUpdate {
     pub message_id: u64,
     pub data: Value,
     pub replace_data: bool,
+    pub agent_id: Option<u64>,
+    /// `None` on the default path — the client must omit the field, not send 1.
+    pub qos: Option<u32>,
 }
 
 type EventSender = mpsc::Sender<Result<pb::ChannelEventSubscriptionResponse, Status>>;
@@ -76,6 +93,15 @@ pub struct FakeAgentState {
     next_message_id: AtomicU64,
 }
 
+/// The agent's storage key for a channel: bare for its own, `{agent_id}:{name}`
+/// for another agent's (pydoover `_channel_key`).
+pub fn key_for(channel: &str, agent_id: Option<u64>) -> String {
+    match agent_id {
+        None => channel.to_string(),
+        Some(id) => format!("{id}:{channel}"),
+    }
+}
+
 // Driver helpers exist for whichever test target includes this module; not
 // every target calls every one (dead-code is analysed per test binary).
 #[allow(dead_code)]
@@ -83,6 +109,11 @@ impl FakeAgentState {
     /// Pre-seed a channel aggregate before the client connects.
     pub fn seed_aggregate(&self, channel: &str, data: Value) {
         self.aggregates.lock().unwrap().insert(channel.to_string(), data);
+    }
+
+    /// Pre-seed a channel belonging to another agent.
+    pub fn seed_agent_aggregate(&self, agent_id: u64, channel: &str, data: Value) {
+        self.aggregates.lock().unwrap().insert(key_for(channel, Some(agent_id)), data);
     }
 
     /// Attach the envelope fields a real agent returns alongside `data`.
@@ -201,13 +232,21 @@ impl DeviceAgent for FakeAgent {
         &self,
         request: Request<pb::ListChannelsRequest>,
     ) -> Result<Response<pb::ListChannelsResponse>, Status> {
-        let include_aggregate = request.into_inner().include_aggregate.unwrap_or(false);
+        let req = request.into_inner();
+        let include_aggregate = req.include_aggregate.unwrap_or(false);
+        let prefix = req.agent_id.map(|id| format!("{id}:")).unwrap_or_default();
         let aggregates = self.0.aggregates.lock().unwrap();
+        // Own listings exclude other agents' channels; an agent-scoped listing
+        // returns only that agent's, with the prefix stripped back off.
         let mut channels: Vec<pb::ChannelDetails> = aggregates
             .iter()
+            .filter(|(name, _)| {
+                name.starts_with(&prefix) && (req.agent_id.is_some() || !name.contains(':'))
+            })
             .map(|(name, data)| pb::ChannelDetails {
-                channel_name: name.clone(),
+                channel_name: name.strip_prefix(&prefix).unwrap_or(name).to_string(),
                 aggregate: include_aggregate.then(|| data.to_string()),
+                agent_id: req.agent_id,
             })
             .collect();
         // HashMap order is arbitrary; keep the fake deterministic.
@@ -223,7 +262,8 @@ impl DeviceAgent for FakeAgent {
         &self,
         request: Request<pb::GetAggregateRequest>,
     ) -> Result<Response<pb::GetAggregateResponse>, Status> {
-        let channel = request.into_inner().channel_name;
+        let req = request.into_inner();
+        let channel = key_for(&req.channel_name, req.agent_id);
         let aggregates = self.0.aggregates.lock().unwrap();
         let meta = self.0.aggregate_meta.lock().unwrap().get(&channel).cloned();
         let resp = match aggregates.get(&channel) {
@@ -254,7 +294,7 @@ impl DeviceAgent for FakeAgent {
         let merged = {
             let mut aggregates = self.0.aggregates.lock().unwrap();
             let entry = aggregates
-                .entry(req.channel_name.clone())
+                .entry(key_for(&req.channel_name, req.agent_id))
                 .or_insert_with(|| Value::Object(Map::new()));
             if req.replace_data.unwrap_or(false) {
                 *entry = data.clone();
@@ -269,6 +309,8 @@ impl DeviceAgent for FakeAgent {
             max_age_secs: req.max_age_secs,
             save_log: req.save_log,
             replace_data: req.replace_data.unwrap_or(false),
+            agent_id: req.agent_id,
+            qos: req.qos,
         });
         Ok(Response::new(pb::UpdateAggregateResponse {
             response_header: Some(ok_header()),
@@ -292,6 +334,8 @@ impl DeviceAgent for FakeAgent {
             channel: req.channel_name,
             data,
             timestamp: req.timestamp,
+            agent_id: req.agent_id,
+            qos: req.qos,
         });
         Ok(Response::new(pb::CreateMessageResponse {
             response_header: Some(ok_header()),
@@ -310,6 +354,8 @@ impl DeviceAgent for FakeAgent {
             channel: req.channel_name,
             data,
             timestamp: req.timestamp.unwrap_or(0),
+            agent_id: req.agent_id,
+            qos: req.qos,
         });
         Ok(Response::new(pb::SendOneShotMessageResponse {
             response_header: Some(ok_header()),
@@ -331,13 +377,14 @@ impl DeviceAgent for FakeAgent {
             .push(RecordedSubscribe {
                 channel: request.channel_name.clone(),
                 replay_missed_messages: request.replay_missed_messages,
+                agent_id: request.agent_id,
             });
         let (tx, rx) = mpsc::channel(64);
         self.0
             .event_txs
             .lock()
             .unwrap()
-            .entry(request.channel_name)
+            .entry(key_for(&request.channel_name, request.agent_id))
             .or_default()
             .push(tx);
         Ok(Response::new(ReceiverStream::new(rx)))
@@ -390,6 +437,8 @@ impl DeviceAgent for FakeAgent {
             message_id,
             data: data.clone(),
             replace_data: req.replace_data.unwrap_or(false),
+            agent_id: req.agent_id,
+            qos: req.qos,
         });
         Ok(Response::new(pb::UpdateMessageResponse {
             response_header: Some(ok_header()),

@@ -25,10 +25,71 @@ use crate::events::Event;
 // Re-exported from their new home so existing `doover::docker::device_agent`
 // (and `doover::AggregateOptions`) paths keep working.
 pub use crate::channel_backend::{
-    AggregateOptions, Attachment, ChannelAggregate, UpdateMessageOptions,
+    AggregateOptions, Attachment, ChannelAggregate, Qos, UpdateMessageOptions,
 };
 
 const DEFAULT_MAX_MESSAGE_SIZE: usize = 16 * 1024 * 1024;
+
+/// A channel, plus the agent that owns it — the `(channel_name, agent_id)` pair
+/// every channel-scoped device-agent request now carries.
+///
+/// `agent_id: None` means "the agent I am talking to". That is what every caller
+/// written before cross-agent access existed means, and pydoover omits the proto
+/// field entirely on that path, so such a request stays byte-identical to one
+/// sent before the field existed. A `&str` converts into a `ChannelRef`, so
+/// own-channel call sites read exactly as they did.
+///
+/// A non-self `agent_id` requires the device's token to hold a grant on that
+/// agent (`ag:{agent_id}`) or channel (`ch:{agent_id}:{name}`); without one the
+/// agent answers 403. Cross-agent aggregate *writes* are best-effort at the
+/// agent — never persisted across a restart, never merged into its local cache —
+/// because a remote aggregate is a read-through cache of the owning agent's
+/// state rather than state this agent owns.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct ChannelRef<'a> {
+    pub name: &'a str,
+    /// The owning agent, or `None` for this device's own channel.
+    pub agent_id: Option<u64>,
+}
+
+impl<'a> ChannelRef<'a> {
+    /// A channel on this device's own agent — the same thing a bare `&str` means.
+    pub fn own(name: &'a str) -> Self {
+        Self { name, agent_id: None }
+    }
+
+    /// A channel owned by another agent. Needs a token grant on that agent or
+    /// channel, or the agent answers 403.
+    pub fn on_agent(name: &'a str, agent_id: u64) -> Self {
+        Self { name, agent_id: Some(agent_id) }
+    }
+
+    /// The cache key for this channel, namespaced by owning agent (pydoover
+    /// `_channel_key`).
+    ///
+    /// Own channels keep their bare name, so nothing about existing
+    /// single-agent behaviour changes; another agent's channels are prefixed, so
+    /// two agents with a channel of the same name never collide in the caches.
+    /// Mirrors the device agent's own key scheme.
+    pub fn cache_key(&self) -> String {
+        match self.agent_id {
+            None => self.name.to_string(),
+            Some(agent_id) => format!("{agent_id}:{}", self.name),
+        }
+    }
+}
+
+impl<'a> From<&'a str> for ChannelRef<'a> {
+    fn from(name: &'a str) -> Self {
+        Self::own(name)
+    }
+}
+
+impl<'a> From<&'a String> for ChannelRef<'a> {
+    fn from(name: &'a String) -> Self {
+        Self::own(name.as_str())
+    }
+}
 
 /// Connection-state flags derived from every `ResponseHeader` the agent
 /// returns (pydoover `update_dda_status`): `available` tracks whether the
@@ -96,6 +157,28 @@ impl Default for SubscribeOptions {
     }
 }
 
+/// Options for [`DeviceAgentClient::list_channels_with`].
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct ListChannelsOptions {
+    /// Populate each channel's `aggregate`. Off by default: the agent can list
+    /// channel names without reading any aggregate body.
+    pub include_aggregate: bool,
+    /// List another agent's channels instead of this device's own.
+    pub agent_id: Option<u64>,
+}
+
+/// Options for a message write — [`DeviceAgentClient::create_message_with`] and
+/// [`DeviceAgentClient::send_one_shot_message_with`].
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct MessageWriteOptions {
+    /// Unix-millisecond stamp for the message. `None` lets the agent stamp it
+    /// (pydoover stamps `datetime.now()` client-side for `create_message`, and
+    /// omits the field for one-shots).
+    pub timestamp_ms: Option<u64>,
+    /// How hard the agent should try to get this write to the cloud.
+    pub qos: Qos,
+}
+
 /// One channel in a [`DeviceAgentClient::list_channels`] listing.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ChannelInfo {
@@ -103,6 +186,9 @@ pub struct ChannelInfo {
     /// The channel's aggregate data, when the listing was asked to include it
     /// and the agent had one to give.
     pub aggregate: Option<Value>,
+    /// The agent that owns this channel. `None` for the agent that answered the
+    /// listing (i.e. an ordinary own-channel listing).
+    pub agent_id: Option<u64>,
 }
 
 /// The result of [`DeviceAgentClient::list_channels`].
@@ -232,32 +318,32 @@ impl DeviceAgentClient {
     /// `update_channel_aggregate` — the core state write. Merges `data` into
     /// the channel aggregate (unless `replace_data`) and routes it to the
     /// cloud per the max-age / save_log rules.
-    pub async fn update_channel_aggregate(
+    pub async fn update_channel_aggregate<'a>(
         &self,
-        channel: &str,
+        channel: impl Into<ChannelRef<'a>>,
         data: &Value,
         opts: &AggregateOptions,
     ) -> Result<()> {
         // most callers discard the echo — skip the encode.
-        self.update_aggregate_inner(channel, data, opts, false).await?;
+        self.update_aggregate_inner(channel.into(), data, opts, false).await?;
         Ok(())
     }
 
     /// As [`update_channel_aggregate`](Self::update_channel_aggregate), but
     /// asks the agent to echo the resulting aggregate back (pydoover's
     /// `return_aggregate=True` default). `None` when the agent sends no echo.
-    pub async fn update_channel_aggregate_returning(
+    pub async fn update_channel_aggregate_returning<'a>(
         &self,
-        channel: &str,
+        channel: impl Into<ChannelRef<'a>>,
         data: &Value,
         opts: &AggregateOptions,
     ) -> Result<Option<ChannelAggregate>> {
-        self.update_aggregate_inner(channel, data, opts, true).await
+        self.update_aggregate_inner(channel.into(), data, opts, true).await
     }
 
     async fn update_aggregate_inner(
         &self,
-        channel: &str,
+        channel: ChannelRef<'_>,
         data: &Value,
         opts: &AggregateOptions,
         return_aggregate: bool,
@@ -265,7 +351,9 @@ impl DeviceAgentClient {
         validate_payload(data)?;
         let req = pb::UpdateAggregateRequest {
             header: self.header(),
-            channel_name: channel.to_string(),
+            channel_name: channel.name.to_string(),
+            agent_id: channel.agent_id,
+            qos: opts.qos.wire(),
             data: None,
             data_json: serde_json::to_string(data)?,
             files: vec![],
@@ -293,9 +381,16 @@ impl DeviceAgentClient {
     /// `include_aggregate` populates each channel's data; leave it off to list
     /// names without pulling every aggregate body over.
     pub async fn list_channels(&self, include_aggregate: bool) -> Result<ChannelList> {
+        self.list_channels_with(&ListChannelsOptions { include_aggregate, agent_id: None }).await
+    }
+
+    /// As [`list_channels`](Self::list_channels), with control over which agent's
+    /// channels are listed — see [`ListChannelsOptions`].
+    pub async fn list_channels_with(&self, opts: &ListChannelsOptions) -> Result<ChannelList> {
         let req = pb::ListChannelsRequest {
             header: self.header(),
-            include_aggregate: Some(include_aggregate),
+            include_aggregate: Some(opts.include_aggregate),
+            agent_id: opts.agent_id,
         };
         let resp = self.inner.clone().list_channels(req).await?.into_inner();
         self.check_header(resp.response_header)?;
@@ -309,6 +404,7 @@ impl DeviceAgentClient {
                     // The agent sends the aggregate as a JSON string, as it
                     // does for every other payload (see `decode_aggregate`).
                     aggregate: c.aggregate.and_then(|a| serde_json::from_str(&a).ok()),
+                    agent_id: c.agent_id,
                 })
                 .collect(),
         })
@@ -317,10 +413,19 @@ impl DeviceAgentClient {
     /// Fetch a channel's aggregate — data, attachments and update stamp — or
     /// `None` if the channel does not exist (pydoover `fetch_channel_aggregate`,
     /// which likewise returns the whole `Aggregate`).
-    pub async fn fetch_channel_aggregate(&self, channel: &str) -> Result<Option<ChannelAggregate>> {
+    ///
+    /// Pass a [`ChannelRef::on_agent`] to read another agent's channel. Note
+    /// that, unlike an own channel, a missing channel on another agent is *not*
+    /// created — see [`SubscriptionHub`](crate::SubscriptionHub).
+    pub async fn fetch_channel_aggregate<'a>(
+        &self,
+        channel: impl Into<ChannelRef<'a>>,
+    ) -> Result<Option<ChannelAggregate>> {
+        let channel = channel.into();
         let req = pb::GetAggregateRequest {
             header: self.header(),
-            channel_name: channel.to_string(),
+            channel_name: channel.name.to_string(),
+            agent_id: channel.agent_id,
         };
         let resp = self.inner.clone().get_aggregate(req).await?.into_inner();
         match self.check_header(resp.response_header) {
@@ -332,37 +437,63 @@ impl DeviceAgentClient {
 
     /// Just the payload of a channel's aggregate — the common case for callers
     /// that don't care about attachments or the update stamp.
-    pub async fn fetch_channel_data(&self, channel: &str) -> Result<Option<Value>> {
-        Ok(self.fetch_channel_aggregate(channel).await?.map(|a| a.data))
+    pub async fn fetch_channel_data<'a>(
+        &self,
+        channel: impl Into<ChannelRef<'a>>,
+    ) -> Result<Option<Value>> {
+        Ok(self.fetch_channel_aggregate(channel.into()).await?.map(|a| a.data))
     }
 
     /// Append a message to a channel log stamped now; returns the minted
     /// message id (pydoover stamps `datetime.now()` when no timestamp is
     /// given).
-    pub async fn create_message(&self, channel: &str, data: &Value) -> Result<u64> {
-        let now_ms = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_millis() as u64)
-            .unwrap_or(0);
-        self.create_message_at(channel, data, now_ms).await
+    pub async fn create_message<'a>(
+        &self,
+        channel: impl Into<ChannelRef<'a>>,
+        data: &Value,
+    ) -> Result<u64> {
+        self.create_message_with(channel, data, &MessageWriteOptions::default()).await
     }
 
     /// Append a message stamped with an explicit unix-millisecond timestamp
     /// (used for backdated log points).
-    pub async fn create_message_at(
+    pub async fn create_message_at<'a>(
         &self,
-        channel: &str,
+        channel: impl Into<ChannelRef<'a>>,
         data: &Value,
         timestamp_ms: u64,
     ) -> Result<u64> {
+        let opts = MessageWriteOptions { timestamp_ms: Some(timestamp_ms), ..Default::default() };
+        self.create_message_with(channel, data, &opts).await
+    }
+
+    /// As [`create_message`](Self::create_message), with control over the stamp
+    /// and the write's cloud QoS — see [`MessageWriteOptions`].
+    pub async fn create_message_with<'a>(
+        &self,
+        channel: impl Into<ChannelRef<'a>>,
+        data: &Value,
+        opts: &MessageWriteOptions,
+    ) -> Result<u64> {
         validate_payload(data)?;
+        let channel = channel.into();
+        // `CreateMessageRequest.timestamp` has no presence, so the client always
+        // sends one — pydoover likewise defaults it to `datetime.now()`.
+        let timestamp = opts.timestamp_ms.unwrap_or_else(|| {
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_millis() as u64)
+                .unwrap_or(0)
+        });
         let req = pb::CreateMessageRequest {
             header: self.header(),
-            channel_name: channel.to_string(),
+            channel_name: channel.name.to_string(),
+            agent_id: channel.agent_id,
+            qos: opts.qos.wire(),
             data: None,
             data_json: serde_json::to_string(data)?,
             files: vec![],
-            timestamp: timestamp_ms,
+            timestamp,
         };
         let resp = self.inner.clone().create_message(req).await?.into_inner();
         self.check_header(resp.response_header)?;
@@ -370,34 +501,47 @@ impl DeviceAgentClient {
     }
 
     /// Send an ephemeral one-shot message (WSS-only; requires cloud).
-    pub async fn send_one_shot_message(&self, channel: &str, data: &Value) -> Result<()> {
-        self.send_one_shot_inner(channel, data, None).await
+    pub async fn send_one_shot_message<'a>(
+        &self,
+        channel: impl Into<ChannelRef<'a>>,
+        data: &Value,
+    ) -> Result<()> {
+        self.send_one_shot_message_with(channel, data, &MessageWriteOptions::default()).await
     }
 
     /// As [`send_one_shot_message`](Self::send_one_shot_message), but stamped
     /// with an explicit unix-millisecond time rather than the agent's clock.
-    pub async fn send_one_shot_message_at(
+    pub async fn send_one_shot_message_at<'a>(
         &self,
-        channel: &str,
+        channel: impl Into<ChannelRef<'a>>,
         data: &Value,
         timestamp_ms: u64,
     ) -> Result<()> {
-        self.send_one_shot_inner(channel, data, Some(timestamp_ms)).await
+        let opts = MessageWriteOptions { timestamp_ms: Some(timestamp_ms), ..Default::default() };
+        self.send_one_shot_message_with(channel, data, &opts).await
     }
 
-    async fn send_one_shot_inner(
+    /// As [`send_one_shot_message`](Self::send_one_shot_message), with control
+    /// over the stamp and the write's cloud QoS — see [`MessageWriteOptions`].
+    ///
+    /// One-shots are fire-and-forget by nature, so [`Qos::AtMostOnce`] mostly
+    /// only makes explicit what the transport already is.
+    pub async fn send_one_shot_message_with<'a>(
         &self,
-        channel: &str,
+        channel: impl Into<ChannelRef<'a>>,
         data: &Value,
-        timestamp_ms: Option<u64>,
+        opts: &MessageWriteOptions,
     ) -> Result<()> {
         validate_payload(data)?;
+        let channel = channel.into();
         let req = pb::SendOneShotMessageRequest {
             header: self.header(),
-            channel_name: channel.to_string(),
+            channel_name: channel.name.to_string(),
+            agent_id: channel.agent_id,
+            qos: opts.qos.wire(),
             data: None,
             data_json: serde_json::to_string(data)?,
-            timestamp: timestamp_ms,
+            timestamp: opts.timestamp_ms,
         };
         let resp = self.inner.clone().send_one_shot_message(req).await?.into_inner();
         self.check_header(resp.response_header)?;
@@ -405,29 +549,38 @@ impl DeviceAgentClient {
     }
 
     /// Fetch a single message by id (pydoover `fetch_message`).
-    pub async fn fetch_message(&self, channel: &str, message_id: u64) -> Result<Message> {
+    pub async fn fetch_message<'a>(
+        &self,
+        channel: impl Into<ChannelRef<'a>>,
+        message_id: u64,
+    ) -> Result<Message> {
+        let channel = channel.into();
         let req = pb::GetMessageRequest {
             header: self.header(),
-            channel_name: channel.to_string(),
+            channel_name: channel.name.to_string(),
             message_id,
+            agent_id: channel.agent_id,
         };
         let resp = self.inner.clone().get_message(req).await?.into_inner();
         self.check_header(resp.response_header)?;
+        let name = channel.name;
         resp.message
             .map(Message::from_proto)
-            .ok_or_else(|| DooverError::NotFound(format!("message {message_id} on '{channel}'")))
+            .ok_or_else(|| DooverError::NotFound(format!("message {message_id} on '{name}'")))
     }
 
     /// List messages on a channel, bounded by snowflake ids
     /// (pydoover `list_messages`).
-    pub async fn list_messages(
+    pub async fn list_messages<'a>(
         &self,
-        channel: &str,
+        channel: impl Into<ChannelRef<'a>>,
         opts: &ListMessagesOptions,
     ) -> Result<Vec<Message>> {
+        let channel = channel.into();
         let req = pb::GetMessagesRequest {
             header: self.header(),
-            channel_name: channel.to_string(),
+            channel_name: channel.name.to_string(),
+            agent_id: channel.agent_id,
             before: opts.before,
             after: opts.after,
             limit: opts.limit,
@@ -439,18 +592,21 @@ impl DeviceAgentClient {
     }
 
     /// Update an existing message's payload (pydoover `update_message`).
-    pub async fn update_message(
+    pub async fn update_message<'a>(
         &self,
-        channel: &str,
+        channel: impl Into<ChannelRef<'a>>,
         message_id: u64,
         data: &Value,
         opts: &UpdateMessageOptions,
     ) -> Result<Message> {
         validate_payload(data)?;
+        let channel = channel.into();
         let req = pb::UpdateMessageRequest {
             header: self.header(),
-            channel_name: channel.to_string(),
+            channel_name: channel.name.to_string(),
             message_id: message_id.to_string(),
+            agent_id: channel.agent_id,
+            qos: opts.qos.wire(),
             data: None,
             data_json: serde_json::to_string(data)?,
             files: vec![],
@@ -501,28 +657,34 @@ impl DeviceAgentClient {
     /// `Event`s until the agent ends the stream (graceful shutdown, or the
     /// per-subscriber queue overflowing) or the connection drops; callers
     /// should reconnect, exactly as pydoover does.
-    pub async fn subscribe_events(
+    pub async fn subscribe_events<'a>(
         &self,
-        channel: &str,
+        channel: impl Into<ChannelRef<'a>>,
     ) -> Result<impl Stream<Item = Result<Event>>> {
         self.subscribe_events_with(channel, &SubscribeOptions::default()).await
     }
 
     /// As [`subscribe_events`](Self::subscribe_events), with control over what
-    /// the agent delivers — see [`SubscribeOptions`].
-    pub async fn subscribe_events_with(
+    /// the agent delivers — see [`SubscribeOptions`]. Pass a
+    /// [`ChannelRef::on_agent`] to subscribe to another agent's channel.
+    pub async fn subscribe_events_with<'a>(
         &self,
-        channel: &str,
+        channel: impl Into<ChannelRef<'a>>,
         opts: &SubscribeOptions,
     ) -> Result<impl Stream<Item = Result<Event>>> {
+        let channel = channel.into();
         let req = pb::ChannelEventSubscriptionRequest {
             header: self.header(),
-            channel_name: channel.to_string(),
+            channel_name: channel.name.to_string(),
             wire_format: pb::WireFormat::JsonOnly as i32,
             replay_missed_messages: Some(opts.replay_missed_messages),
+            agent_id: channel.agent_id,
         };
         let stream = self.inner.clone().channel_event_subscription(req).await?.into_inner();
-        let channel = channel.to_string();
+        // Events carry the bare channel name, as pydoover's do — the owning
+        // agent is what the subscriber asked for, not something the payload
+        // restates.
+        let channel = channel.name.to_string();
         let status = self.status.clone();
         Ok(stream.map(move |item| {
             let resp = item?;

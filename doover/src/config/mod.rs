@@ -23,7 +23,9 @@ use serde_json::Value;
 use crate::error::{DooverError, Result};
 
 pub use export::{write_config_schema, write_ui_schema};
-pub use schema::{ElementKind, ElementSchema, NumericBounds, SchemaModel, StringBounds};
+pub use schema::{
+    Comparator, Condition, ElementKind, ElementSchema, NumericBounds, SchemaModel, StringBounds,
+};
 
 // ---------------------------------------------------------------------------
 // Dynamic config (raw JSON access)
@@ -227,7 +229,31 @@ pub fn field_optional<T: FromConfigValue>(v: &Value, key: &str) -> Result<Option
 /// otherwise the schema default applies when the key is absent or null.
 /// This is the workhorse behind `#[derive(Config)]`'s `from_value`.
 pub fn load_element<T: FromConfigValue>(v: &Value, el: &ElementSchema) -> Result<T> {
+    load_element_in(v, el, &[])
+}
+
+/// As [`load_element`], with the element's siblings available so a conditional
+/// element (`show_if`) can resolve its controller's *declared default* when the
+/// config omits the controller — pydoover's `_condition_matches`, which falls
+/// back to `controller.default`.
+///
+/// An inactive conditional element takes its own default and is never reported
+/// missing, however `required` it is: pydoover skips the required check for a
+/// field the deployment was never asked to fill in. `#[derive(Config)]` calls
+/// this; [`load_element`] is the hand-written path, where an absent controller
+/// simply reads as not matching.
+pub fn load_element_in<T: FromConfigValue>(
+    v: &Value,
+    el: &ElementSchema,
+    siblings: &[ElementSchema],
+) -> Result<T> {
     let key = el.name.as_str();
+    if v.get(key).is_none() && !el.condition_holds(v, siblings) {
+        let default = el.default.clone().unwrap_or(Value::Null);
+        return T::from_config_value(&default).map_err(|e| {
+            DooverError::Other(format!("inactive conditional config element '{key}': {e}"))
+        });
+    }
     match v.get(key) {
         Some(val) if !val.is_null() => T::from_config_value(val)
             .map_err(|e| DooverError::Other(format!("config element '{key}': {e}"))),
@@ -347,6 +373,33 @@ impl ConfigElementBuild for ApplicationInterpreterHidden {
 }
 
 impl FromConfigValue for ApplicationInterpreterHidden {
+    fn from_config_value(v: &Value) -> Result<Self> {
+        bool::from_config_value(v).map(Self)
+    }
+}
+
+/// pydoover `config.ApplicationFullWidth()` — an advanced boolean under
+/// `interpreter_full_width` (default `false`): whether the application spans the
+/// full width of the interpreter.
+///
+/// This is the key a declarative UI's `full_width` root reference resolves
+/// against (see [`UiApplicationInfo`](crate::ui::UiApplicationInfo)), so an app
+/// that wants the interpreter to be able to widen it declares this element.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct ApplicationFullWidth(pub bool);
+
+impl ConfigElementBuild for ApplicationFullWidth {
+    fn element(_title: &str, _name: &str) -> ElementSchema {
+        let mut el = ElementSchema::boolean("Full Width", "interpreter_full_width");
+        el.advanced = Some(true);
+        el.description =
+            Some("Whether the application spans the full width of the interpreter.".into());
+        el.default = Some(Value::Bool(false));
+        el
+    }
+}
+
+impl FromConfigValue for ApplicationFullWidth {
     fn from_config_value(v: &Value) -> Result<Self> {
         bool::from_config_value(v).map(Self)
     }

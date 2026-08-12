@@ -19,9 +19,17 @@
 //! - `item_title = "…"` — the items element title for `Vec<T>` fields
 //!   (pydoover: `config.Array("Volume Curve", element=Point("Volume Curve Point"))`).
 //! - `hidden`, `advanced`, `deprecated` — flags.
+//! - `required` — force `x-required: true` and emit no `default`, even on an
+//!   `Option<T>` field. This is how a *conditional* field stays required while
+//!   it is active: pydoover leaves the element `NotSet` when it is inactive, and
+//!   `Option<T>` is how that reads in Rust (see `show_if_eq`).
 //! - `format = "…"`, `pattern = "…"` — strings.
 //! - `min = <n>`, `max = <n>`, `multiple_of = <n>` — numeric bounds.
 //! - `min_items = <n>`, `max_items = <n>` — array bounds.
+//! - `show_if_eq(<other_field>, <expr>)` — make the field *conditional*: it is
+//!   only shown (and only loaded) when `<other_field>` equals `<expr>`
+//!   (pydoover `show_if=config.equal(other, value)`). The controller is named by
+//!   its Rust field; a conditional field cannot control another one.
 //!
 //! `Option<T>` fields are optional with `"default": null` (pydoover
 //! `default=None`); plain fields without a default are required.
@@ -101,6 +109,7 @@ struct FieldAttrs {
     hidden: bool,
     advanced: bool,
     deprecated: bool,
+    required: bool,
     format: Option<String>,
     pattern: Option<String>,
     min: Option<syn::Lit>,
@@ -108,6 +117,9 @@ struct FieldAttrs {
     multiple_of: Option<syn::Lit>,
     min_items: Option<u64>,
     max_items: Option<u64>,
+    /// `show_if_eq(controller_field, value)` — the controlling field and the
+    /// value it must equal.
+    show_if_eq: Option<(syn::Ident, syn::Expr)>,
 }
 
 fn parse_field_attrs(attrs: &[syn::Attribute]) -> syn::Result<FieldAttrs> {
@@ -132,6 +144,7 @@ fn parse_field_attrs(attrs: &[syn::Attribute]) -> syn::Result<FieldAttrs> {
                 "hidden" => out.hidden = true,
                 "advanced" => out.advanced = true,
                 "deprecated" => out.deprecated = true,
+                "required" => out.required = true,
                 "min" => out.min = Some(meta.value()?.parse()?),
                 "max" => out.max = Some(meta.value()?.parse()?),
                 "multiple_of" => out.multiple_of = Some(meta.value()?.parse()?),
@@ -140,6 +153,14 @@ fn parse_field_attrs(attrs: &[syn::Attribute]) -> syn::Result<FieldAttrs> {
                 }
                 "max_items" => {
                     out.max_items = Some(meta.value()?.parse::<syn::LitInt>()?.base10_parse()?)
+                }
+                "show_if_eq" => {
+                    let content;
+                    syn::parenthesized!(content in meta.input);
+                    let controller: syn::Ident = content.parse()?;
+                    content.parse::<syn::Token![,]>()?;
+                    let value: syn::Expr = content.parse()?;
+                    out.show_if_eq = Some((controller, value));
                 }
                 other => {
                     return Err(meta.error(format!("unknown #[config] option `{other}`")));
@@ -211,10 +232,32 @@ fn generic_inner<'a>(ty: &'a Type, wrapper: &str) -> Option<&'a Type> {
     }
 }
 
+/// Every field's config key and (Option-unwrapped) type, by Rust field name.
+/// `show_if_eq` names its controller by field, so it needs to resolve that
+/// field's key — which `#[config(name = "...")]` may have overridden — and its
+/// type, to give the compared value the right JSON flavour.
+type FieldKeys = std::collections::HashMap<String, (String, syn::Type)>;
+
+fn field_keys(fields: &FieldsNamed) -> syn::Result<FieldKeys> {
+    let mut out = FieldKeys::new();
+    for field in &fields.named {
+        let ident = field.ident.as_ref().expect("named field").to_string();
+        let attrs = parse_field_attrs(&field.attrs)?;
+        let key = attrs.name.clone().unwrap_or_else(|| ident.clone());
+        let ty = generic_inner(&field.ty, "Option").unwrap_or(&field.ty).clone();
+        out.insert(ident, (key, ty));
+    }
+    Ok(out)
+}
+
 /// Generate the block that builds this field's `ElementSchema` and pushes it
 /// onto `__els`. `position` is pre-computed by the caller (0-based for
 /// top-level schemas, 1-based for Object children).
-fn field_element_block(field: &syn::Field, position: u32) -> syn::Result<TokenStream2> {
+fn field_element_block(
+    field: &syn::Field,
+    position: u32,
+    keys: &FieldKeys,
+) -> syn::Result<TokenStream2> {
     let ident = field.ident.as_ref().expect("named field");
     let field_name = ident.to_string();
     let attrs = parse_field_attrs(&field.attrs)?;
@@ -317,6 +360,36 @@ fn field_element_block(field: &syn::Field, position: u32) -> syn::Result<TokenSt
         extras.push(quote! { __el.set_max_items(#n); });
     }
 
+    if let Some((controller, value)) = &attrs.show_if_eq {
+        let controller_name = controller.to_string();
+        if controller_name == field_name {
+            return Err(syn::Error::new(
+                controller.span(),
+                format!("config field {field_name:?} cannot depend on itself"),
+            ));
+        }
+        let Some((controller_key, controller_ty)) = keys.get(&controller_name) else {
+            return Err(syn::Error::new(
+                controller.span(),
+                format!(
+                    "#[config(show_if_eq({controller_name}, ...))] names no field of this \
+                     struct — a condition can only reference a sibling config field"
+                ),
+            ));
+        };
+        // Coerce through the controller's own type so the compared value gets
+        // the same JSON representation the controller's schema uses (an enum
+        // field compares against its choice string, not the Rust variant name).
+        extras.push(quote! {
+            __el.show_if = ::core::option::Option::Some(
+                ::doover::config::Condition::equal(#controller_key, {
+                    let __cond: #controller_ty = ::core::convert::Into::into(#value);
+                    ::doover::config::ToConfigValue::to_config_value(&__cond)
+                }),
+            );
+        });
+    }
+
     if let Some(default) = &attrs.default {
         // Coerce the default expression to the field's (inner) type so the
         // schema value keeps the right JSON number flavour: an integer
@@ -328,12 +401,25 @@ fn field_element_block(field: &syn::Field, position: u32) -> syn::Result<TokenSt
                 ::doover::config::ToConfigValue::to_config_value(&__default),
             );
         });
-    } else if is_option {
+    } else if is_option && !attrs.required {
         // pydoover `default=None`: emitted as `"default": null`, optional.
         extras.push(quote! {
             __el.default =
                 ::core::option::Option::Some(::doover::__private::serde_json::Value::Null);
         });
+    }
+
+    if attrs.required {
+        if attrs.default.is_some() {
+            return Err(syn::Error::new(
+                field.span(),
+                "#[config(required)] and #[config(default = ...)] contradict each other — a \
+                 field with a default is never required",
+            ));
+        }
+        // pydoover's `required=True` kwarg: `x-required` stops being derived
+        // from the presence of a default.
+        extras.push(quote! { __el.required = ::core::option::Option::Some(true); });
     }
 
     Ok(quote! {
@@ -388,14 +474,15 @@ fn expand_config(input: DeriveInput) -> syn::Result<TokenStream2> {
         .advanced
         .then(|| quote! { __m.advanced = ::core::option::Option::Some(true); });
 
+    let keys = field_keys(&fields)?;
     let mut builders = Vec::new();
     let mut loads = Vec::new();
     for (idx, field) in fields.named.iter().enumerate() {
         // Top-level schema elements are 0-based (pydoover Schema.add_element).
-        builders.push(field_element_block(field, idx as u32)?);
+        builders.push(field_element_block(field, idx as u32, &keys)?);
         let fident = field.ident.as_ref().unwrap();
         loads.push(quote! {
-            #fident: ::doover::config::load_element(__v, &__els[#idx])?,
+            #fident: ::doover::config::load_element_in(__v, &__els[#idx], &__els)?,
         });
     }
 
@@ -449,15 +536,16 @@ fn expand_config_object(input: DeriveInput) -> syn::Result<TokenStream2> {
     let fields = named_fields(&input, "ConfigObject")?;
     let ident = &input.ident;
 
+    let keys = field_keys(&fields)?;
     let mut builders = Vec::new();
     let mut loads = Vec::new();
     for (idx, field) in fields.named.iter().enumerate() {
         // Object children are 1-based (pydoover Object._add_cls_element
         // assigns positions after insertion, so the first child gets 1).
-        builders.push(field_element_block(field, idx as u32 + 1)?);
+        builders.push(field_element_block(field, idx as u32 + 1, &keys)?);
         let fident = field.ident.as_ref().unwrap();
         loads.push(quote! {
-            #fident: ::doover::config::load_element(__v, &__els[#idx])?,
+            #fident: ::doover::config::load_element_in(__v, &__els[#idx], &__els)?,
         });
     }
 

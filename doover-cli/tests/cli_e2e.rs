@@ -105,8 +105,10 @@ async fn list_channels_prints_the_listing_and_gates_aggregates() {
     assert_eq!(
         listing["channels"],
         json!([
-            {"channel_name": "alpha", "aggregate": null},
-            {"channel_name": "beta", "aggregate": null},
+            // `agent_id` is null for an own-channel listing — pydoover's
+            // `ChannelListing.to_dict` emits the key unconditionally.
+            {"channel_name": "alpha", "aggregate": null, "agent_id": null},
+            {"channel_name": "beta", "aggregate": null, "agent_id": null},
         ]),
         "aggregates are omitted unless asked for"
     );
@@ -120,8 +122,8 @@ async fn list_channels_prints_the_listing_and_gates_aggregates() {
     assert_eq!(
         listing["channels"],
         json!([
-            {"channel_name": "alpha", "aggregate": {"level": 1}},
-            {"channel_name": "beta", "aggregate": {"level": 2}},
+            {"channel_name": "alpha", "aggregate": {"level": 1}, "agent_id": null},
+            {"channel_name": "beta", "aggregate": {"level": 2}, "agent_id": null},
         ])
     );
 }

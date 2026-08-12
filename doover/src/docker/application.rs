@@ -28,7 +28,7 @@ use tokio::time::{Instant, MissedTickBehavior};
 
 use crate::channel_backend::ChannelBackend;
 use crate::config::{write_config_schema, write_ui_schema, Config, ConfigSchema, TagRef};
-use crate::docker::device_agent::{AggregateOptions, DeviceAgentClient};
+use crate::docker::device_agent::{AggregateOptions, ChannelRef, DeviceAgentClient};
 use crate::docker::healthcheck::{spawn_healthcheck_server, HealthState};
 use crate::docker::subscriptions::SubscriptionHub;
 use crate::error::Result;
@@ -128,12 +128,19 @@ impl AppContext {
     /// Subscribe the app to all events on a channel; they are delivered to
     /// the `on_message_create` / `on_aggregate_update` / … callbacks between
     /// loop iterations (pydoover `add_event_callback`).
-    pub fn subscribe(&self, channel: &str) {
+    ///
+    /// Pass a [`ChannelRef::on_agent`] to subscribe to a channel owned by
+    /// another agent — this device's token needs a grant on it.
+    pub fn subscribe<'a>(&self, channel: impl Into<ChannelRef<'a>>) {
         self.subscribe_filtered(channel, EventSubscription::ALL)
     }
 
     /// Subscribe with an event-kind filter.
-    pub fn subscribe_filtered(&self, channel: &str, events: EventSubscription) {
+    pub fn subscribe_filtered<'a>(
+        &self,
+        channel: impl Into<ChannelRef<'a>>,
+        events: EventSubscription,
+    ) {
         let tx = self.events_tx.clone();
         self.hub.subscribe(
             channel,
@@ -146,7 +153,10 @@ impl AppContext {
 
     /// Fetch a channel's aggregate data — served from the subscription cache
     /// when the channel is subscribed, else a gRPC round-trip.
-    pub async fn fetch_channel_data(&self, channel: &str) -> Result<Option<Value>> {
+    pub async fn fetch_channel_data<'a>(
+        &self,
+        channel: impl Into<ChannelRef<'a>>,
+    ) -> Result<Option<Value>> {
         self.hub.fetch_channel_data(channel).await
     }
 
@@ -223,7 +233,11 @@ impl AppContext {
     }
 
     /// Merge-write to a channel aggregate (immediate).
-    pub async fn update_channel_aggregate(&self, channel: &str, data: &Value) -> Result<()> {
+    pub async fn update_channel_aggregate<'a>(
+        &self,
+        channel: impl Into<ChannelRef<'a>>,
+        data: &Value,
+    ) -> Result<()> {
         self.client
             .update_channel_aggregate(channel, data, &AggregateOptions::default())
             .await
@@ -233,16 +247,20 @@ impl AppContext {
     /// `replace_keys` — the dotted subtree paths replaced wholesale rather than
     /// deep-merged, which is how you atomically swap a subtree in one write
     /// instead of a clear+set pair that can be reordered on the wire).
-    pub async fn update_channel_aggregate_with(
+    pub async fn update_channel_aggregate_with<'a>(
         &self,
-        channel: &str,
+        channel: impl Into<ChannelRef<'a>>,
         data: &Value,
         opts: &AggregateOptions,
     ) -> Result<()> {
         self.client.update_channel_aggregate(channel, data, opts).await
     }
 
-    pub async fn create_message(&self, channel: &str, data: &Value) -> Result<u64> {
+    pub async fn create_message<'a>(
+        &self,
+        channel: impl Into<ChannelRef<'a>>,
+        data: &Value,
+    ) -> Result<u64> {
         self.client.create_message(channel, data).await
     }
 

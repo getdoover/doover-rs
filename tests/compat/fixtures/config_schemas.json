@@ -1,0 +1,528 @@
+[
+  {
+    "name": "default_matches_condition",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "",
+      "title": "$default",
+      "type": "object",
+      "properties": {
+        "mode": {
+          "enum": [
+            "radar",
+            "submersible"
+          ],
+          "title": "Mode",
+          "x-name": "mode",
+          "x-hidden": false,
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-required": false,
+          "default": "radar",
+          "x-position": 0
+        }
+      },
+      "additionalElements": true,
+      "required": [],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "mode": {
+                "const": "radar"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "depth": {
+                "title": "Depth",
+                "x-name": "depth",
+                "x-hidden": false,
+                "type": "number",
+                "x-required": true,
+                "x-position": 1
+              }
+            },
+            "required": [
+              "depth"
+            ]
+          }
+        }
+      ]
+    },
+    "loads": [
+      {
+        "config": {},
+        "error": "ValueError: Required config element depth not found in deployment config."
+      },
+      {
+        "config": {
+          "mode": "radar",
+          "depth": 1.5
+        },
+        "loaded": {
+          "mode": "radar",
+          "depth": 1.5
+        }
+      },
+      {
+        "config": {
+          "mode": "submersible"
+        },
+        "loaded": {
+          "mode": "submersible",
+          "depth": "<unset>"
+        }
+      }
+    ]
+  },
+  {
+    "name": "default_differs_from_condition",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "",
+      "title": "$default",
+      "type": "object",
+      "properties": {
+        "mode": {
+          "enum": [
+            "radar",
+            "submersible"
+          ],
+          "title": "Mode",
+          "x-name": "mode",
+          "x-hidden": false,
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-required": false,
+          "default": "submersible",
+          "x-position": 0
+        }
+      },
+      "additionalElements": true,
+      "required": [],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "mode": {
+                "const": "radar"
+              }
+            },
+            "required": [
+              "mode"
+            ]
+          },
+          "then": {
+            "properties": {
+              "depth": {
+                "title": "Depth",
+                "x-name": "depth",
+                "x-hidden": false,
+                "type": "number",
+                "x-required": true,
+                "x-position": 1
+              }
+            },
+            "required": [
+              "depth"
+            ]
+          }
+        }
+      ]
+    },
+    "loads": [
+      {
+        "config": {},
+        "loaded": {
+          "mode": "submersible",
+          "depth": "<unset>"
+        }
+      },
+      {
+        "config": {
+          "mode": "radar",
+          "depth": 2.5
+        },
+        "loaded": {
+          "mode": "radar",
+          "depth": 2.5
+        }
+      },
+      {
+        "config": {
+          "mode": "radar"
+        },
+        "error": "ValueError: Required config element depth not found in deployment config."
+      }
+    ]
+  },
+  {
+    "name": "shared_and_distinct_branches",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "",
+      "title": "$default",
+      "type": "object",
+      "properties": {
+        "mode": {
+          "enum": [
+            "radar",
+            "submersible"
+          ],
+          "title": "Mode",
+          "x-name": "mode",
+          "x-hidden": false,
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-required": false,
+          "default": "radar",
+          "x-position": 0
+        },
+        "always": {
+          "title": "Always",
+          "x-name": "always",
+          "x-hidden": false,
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "x-required": false,
+          "default": true,
+          "x-position": 4
+        }
+      },
+      "additionalElements": true,
+      "required": [],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "mode": {
+                "const": "radar"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "depth": {
+                "title": "Depth",
+                "x-name": "depth",
+                "x-hidden": false,
+                "type": "number",
+                "x-required": true,
+                "x-position": 1
+              },
+              "offset": {
+                "title": "Offset",
+                "x-name": "offset",
+                "x-hidden": false,
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "x-required": false,
+                "default": 0.0,
+                "x-position": 2
+              }
+            },
+            "required": [
+              "depth"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "mode": {
+                "const": "submersible"
+              }
+            },
+            "required": [
+              "mode"
+            ]
+          },
+          "then": {
+            "properties": {
+              "probe": {
+                "title": "Probe",
+                "x-name": "probe",
+                "x-hidden": false,
+                "type": "string",
+                "x-required": true,
+                "x-position": 3
+              }
+            },
+            "required": [
+              "probe"
+            ]
+          }
+        }
+      ]
+    },
+    "loads": [
+      {
+        "config": {
+          "mode": "radar",
+          "depth": 1.0
+        },
+        "loaded": {
+          "mode": "radar",
+          "depth": 1,
+          "offset": 0,
+          "probe": "<unset>",
+          "always": true
+        }
+      },
+      {
+        "config": {
+          "mode": "submersible",
+          "probe": "p1"
+        },
+        "loaded": {
+          "mode": "submersible",
+          "depth": "<unset>",
+          "offset": 0,
+          "probe": "p1",
+          "always": true
+        }
+      }
+    ]
+  },
+  {
+    "name": "nested_object_conditions",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "",
+      "title": "$default",
+      "type": "object",
+      "properties": {
+        "advanced_mode": {
+          "title": "Advanced Mode",
+          "x-name": "advanced_mode",
+          "x-hidden": false,
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "x-required": false,
+          "default": false,
+          "x-position": 0
+        },
+        "tuning": {
+          "title": "Tuning",
+          "x-name": "tuning",
+          "x-hidden": false,
+          "type": [
+            "object",
+            "null"
+          ],
+          "x-required": false,
+          "default": {},
+          "x-position": 2,
+          "properties": {
+            "use_filter": {
+              "title": "Use Filter",
+              "x-name": "use_filter",
+              "x-hidden": false,
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "x-required": false,
+              "default": false,
+              "x-position": 1
+            }
+          },
+          "additionalElements": true,
+          "required": [],
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "use_filter": {
+                    "const": true
+                  }
+                },
+                "required": [
+                  "use_filter"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "filter_alpha": {
+                    "title": "Filter Alpha",
+                    "x-name": "filter_alpha",
+                    "x-hidden": false,
+                    "type": [
+                      "number",
+                      "null"
+                    ],
+                    "x-required": false,
+                    "default": 0.5,
+                    "x-position": 2
+                  },
+                  "filter_window": {
+                    "title": "Filter Window",
+                    "x-name": "filter_window",
+                    "x-hidden": false,
+                    "type": "integer",
+                    "x-required": true,
+                    "x-position": 3
+                  }
+                },
+                "required": [
+                  "filter_window"
+                ]
+              }
+            }
+          ],
+          "x-collapsible": true,
+          "x-defaultCollapsed": false
+        }
+      },
+      "additionalElements": true,
+      "required": [],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "advanced_mode": {
+                "const": true
+              }
+            },
+            "required": [
+              "advanced_mode"
+            ]
+          },
+          "then": {
+            "properties": {
+              "threshold": {
+                "title": "Threshold",
+                "x-name": "threshold",
+                "x-hidden": false,
+                "type": "number",
+                "x-required": true,
+                "x-position": 1
+              }
+            },
+            "required": [
+              "threshold"
+            ]
+          }
+        }
+      ]
+    },
+    "loads": [
+      {
+        "config": {},
+        "loaded": {
+          "advanced_mode": false,
+          "threshold": "<unset>",
+          "tuning": "<unset>"
+        }
+      },
+      {
+        "config": {
+          "advanced_mode": true,
+          "threshold": 9.0,
+          "tuning": {
+            "use_filter": true,
+            "filter_window": 3
+          }
+        },
+        "loaded": {
+          "advanced_mode": true,
+          "threshold": 9,
+          "tuning": "<unset>"
+        }
+      }
+    ]
+  },
+  {
+    "name": "application_elements",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "",
+      "title": "$default",
+      "type": "object",
+      "properties": {
+        "interpreter_hidden": {
+          "title": "Interpreter Hidden",
+          "x-name": "interpreter_hidden",
+          "x-hidden": false,
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "x-required": false,
+          "description": "Whether the application is hidden in the interpreter.",
+          "default": false,
+          "x-position": 0,
+          "x-advanced": true
+        },
+        "interpreter_full_width": {
+          "title": "Full Width",
+          "x-name": "interpreter_full_width",
+          "x-hidden": false,
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "x-required": false,
+          "description": "Whether the application spans the full width of the interpreter.",
+          "default": false,
+          "x-position": 1,
+          "x-advanced": true
+        },
+        "dv_app_position": {
+          "title": "Position",
+          "x-name": "dv_app_position",
+          "x-hidden": true,
+          "type": [
+            "integer",
+            "null"
+          ],
+          "x-required": false,
+          "description": "Position of Application in UI Structure. Smaller numbers are closer to the top.",
+          "default": 100,
+          "x-position": 2,
+          "minimum": 0
+        },
+        "dv_app_default_open": {
+          "title": "Default Open",
+          "x-name": "dv_app_default_open",
+          "x-hidden": true,
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "x-required": false,
+          "description": "Whether the application is default open in the UI. By default this is not set - which makes it dynamic on the number of apps installed.",
+          "default": null,
+          "x-position": 3
+        }
+      },
+      "additionalElements": true,
+      "required": []
+    },
+    "loads": [
+      {
+        "config": {},
+        "loaded": {
+          "interpreter_hidden": false,
+          "interpreter_full_width": false,
+          "dv_app_position": 100,
+          "dv_app_default_open": null
+        }
+      }
+    ]
+  }
+]

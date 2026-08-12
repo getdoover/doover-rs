@@ -4,7 +4,9 @@
 use clap::Subcommand;
 use serde_json::{json, Value};
 
-use doover::docker::platform::{DiConfigUpdate, Edge, PlatformClient, PlatformEvent};
+use doover::docker::platform::{
+    DiConfigUpdate, Edge, IoDetails, PlatformClient, PlatformEvent,
+};
 use doover::proto::platform_iface as pb;
 
 use crate::parse::{
@@ -193,6 +195,11 @@ pub enum PlatformCmd {
     #[command(name = "fetch_io_table", alias = "fetch-io-table")]
     FetchIoTable,
 
+    /// The full IO layout: master plus any configured slaves, with per-channel
+    /// metadata. Falls back to the IO table on an older platform interface.
+    #[command(name = "fetch_io_details", alias = "fetch-io-details")]
+    FetchIoDetails,
+
     /// Synchronize the real-time clock with the system time.
     #[command(name = "sync_rtc", alias = "sync-rtc")]
     SyncRtc,
@@ -243,6 +250,42 @@ pub enum PlatformCmd {
 
 /// Print a scalar when one pin was requested, a list otherwise — matching
 /// pydoover's `fetch_di(*di)` return shape.
+/// JSON for an [`IoDetails`], keyed by pydoover's dataclass field names.
+///
+/// pydoover has no wire format to match here: `IoDetails` carries no `to_dict`,
+/// so its CLI falls through `_normalise_output` and prints a Python `repr`.
+/// These keys mirror the dataclass (and the proto) so the two at least agree on
+/// names.
+fn io_details_json(details: IoDetails) -> Value {
+    json!({
+        "devices": details
+            .devices
+            .iter()
+            .map(|d| json!({
+                "name": d.name,
+                "type": d.type_name,
+                "index": d.index,
+                "is_master": d.is_master,
+                "online": d.online,
+                "channels": d
+                    .channels
+                    .iter()
+                    .map(|c| json!({
+                        "channel": c.channel,
+                        "device_channel": c.device_channel,
+                        "io_type": c.io_type,
+                        "kind": c.kind,
+                        "units": c.units,
+                        "supports_events": c.supports_events,
+                        "supports_pulse_counter": c.supports_pulse_counter,
+                        "supports_di_config": c.supports_di_config,
+                    }))
+                    .collect::<Vec<_>>(),
+            }))
+            .collect::<Vec<_>>(),
+    })
+}
+
 fn print_pin_values<T: Into<Value>>(pins: &[i32], values: Vec<T>) {
     let mut values: Vec<Value> = values.into_iter().map(Into::into).collect();
     if pins.len() == 1 && values.len() == 1 {
@@ -389,6 +432,9 @@ pub async fn run(uri: &str, cmd: PlatformCmd) -> CliResult {
         }
         PlatformCmd::FetchIoTable => {
             print_json(&json!(client.fetch_io_table().await?));
+        }
+        PlatformCmd::FetchIoDetails => {
+            print_json(&client.fetch_io_details().await?.map_or(Value::Null, io_details_json));
         }
         PlatformCmd::SyncRtc => client.sync_rtc().await?,
         PlatformCmd::FetchDiEvents { di_pin, edge, include_system_events, events_from } => {

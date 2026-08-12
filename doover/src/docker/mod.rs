@@ -23,7 +23,7 @@ pub use device_agent::{
 pub use healthcheck::HealthState;
 pub use modbus::{BusSettings, ModbusClient, RegisterRange, SerialBusSettings, TcpBusSettings};
 pub use platform::{
-    DiConfigUpdate, DiPulse, Edge, Location, PlatformClient, PlatformEvent, PulseCounter,
-    PulseCounterUpdate,
+    DiConfigUpdate, DiPulse, Edge, IoChannel, IoDetails, IoDevice, Location, PlatformClient,
+    PlatformEvent, PulseCounter, PulseCounterUpdate,
 };
 pub use subscriptions::SubscriptionHub;

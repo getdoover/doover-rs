@@ -8,6 +8,12 @@ runs PYDOOVER (the reference implementation) over a corpus of inputs and
 dumps its actual outputs to tests/compat/fixtures/, which the Rust test
 suite (doover/tests/compat_fixtures.rs) replays and asserts against.
 
+Note: `diffs.json` is not byte-stable across runs. pydoover's `generate_diff`
+derives its deletion keys from a `set`, whose iteration order varies with
+Python's string hash seed, so re-running this reshuffles the keys inside
+delete-only diffs. That is cosmetic — the Rust replay compares JSON objects, not
+key order — so revert such a diff rather than committing the churn.
+
 Regenerating fixtures is a deliberate, reviewed act — run this only when
 pydoover's behavior intentionally changes, and review the fixture diff:
 
@@ -19,6 +25,9 @@ import json
 import sys
 from pathlib import Path
 
+from dataclasses import asdict
+
+from pydoover.docker.platform import IoDetails
 from pydoover.utils.diff import apply_diff, generate_diff
 from pydoover.docker.device_agent.device_agent import validate_payload
 from pydoover.utils.snowflake import (
@@ -148,12 +157,47 @@ def gen_snowflake_fixtures():
     return cases
 
 
+# IO tables fed to `IoDetails.from_io_table`, the fallback a platform interface
+# that predates getIoDetails takes. Covers the empty table, the usual
+# int-per-type shape, numeric strings (pydoover's `int(ch)` accepts them), and
+# out-of-order channels — `IoDetails.channels()` sorts by flat channel number.
+IO_TABLES = [
+    {},
+    {"DI": [0, 1, 2], "DO": [0, 1], "AI": [0], "AO": []},
+    {"DI": ["0", "1"], "AI": ["4"]},
+    {"AI": [3, 1, 2], "DI": [9, 0]},
+    {"DI": [0]},
+]
+
+
+def gen_io_details_fixtures():
+    """`IoDetails.from_io_table` plus the accessors that read the result."""
+    cases = []
+    for table in IO_TABLES:
+        details = IoDetails.from_io_table(table)
+        cases.append(
+            {
+                "io_table": table,
+                "details": asdict(details),
+                "master": asdict(details.master) if details.master else None,
+                # Flat channel numbers per type, in the order `channels()`
+                # returns them (sorted by channel).
+                "channels_by_type": {
+                    io_type: [c.channel for c in details.channels(io_type)]
+                    for io_type in ("DI", "DO", "AI", "AO")
+                },
+            }
+        )
+    return cases
+
+
 def main():
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     fixtures = {
         "diffs.json": gen_diff_fixtures(),
         "payload_validation.json": gen_payload_fixtures(),
         "snowflakes.json": gen_snowflake_fixtures(),
+        "io_details.json": gen_io_details_fixtures(),
     }
     for name, cases in fixtures.items():
         path = OUT_DIR / name

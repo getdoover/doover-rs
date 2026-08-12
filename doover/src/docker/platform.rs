@@ -105,6 +105,163 @@ pub struct Location {
     pub timestamp: Option<String>,
 }
 
+/// One IO channel in the flat namespace shared with
+/// [`fetch_di`](PlatformClient::fetch_di) / [`set_do`](PlatformClient::set_do)
+/// and friends (pydoover `platform_types.IoChannel`).
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct IoChannel {
+    /// Global flat channel number — the number you pass to `fetch_di`,
+    /// `set_do`, etc.
+    pub channel: i32,
+    /// Channel number on the owning device (e.g. DI 0 of slave 2).
+    pub device_channel: i32,
+    /// One of `"DI"`, `"DO"`, `"AI"`, `"AO"`.
+    pub io_type: String,
+    /// Analog channels only: e.g. `"voltage"`, `"current"`, `"temperature"`.
+    pub kind: Option<String>,
+    /// Display units, e.g. `"V"`, `"mA"`, `"degC"`.
+    pub units: Option<String>,
+    /// Whether DI edge events ([`fetch_di_events`](PlatformClient::fetch_di_events))
+    /// work on this channel.
+    pub supports_events: bool,
+    /// Whether pulse counters work on this channel.
+    pub supports_pulse_counter: bool,
+    /// Whether DI config (PNP/NPN, debounce, wake-on-event) works on this
+    /// channel.
+    pub supports_di_config: bool,
+}
+
+impl IoChannel {
+    fn from_proto(c: pb::IoChannelDetail) -> Self {
+        Self {
+            channel: c.channel,
+            device_channel: c.device_channel,
+            io_type: c.io_type,
+            kind: c.kind,
+            units: c.units,
+            supports_events: c.supports_events,
+            supports_pulse_counter: c.supports_pulse_counter,
+            supports_di_config: c.supports_di_config,
+        }
+    }
+}
+
+/// The master or one slave, with the channels it contributes to the flat
+/// namespace (pydoover `platform_types.IoDevice`).
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct IoDevice {
+    /// `"master"`, or the slave's configured name.
+    pub name: String,
+    /// Driver type, e.g. `"doovit"`, `"moxa1242"`, `"point_io"`. Empty when
+    /// synthesized from a platform interface that only supports
+    /// [`fetch_io_table`](PlatformClient::fetch_io_table).
+    pub type_name: String,
+    /// Slave index; 0 for the master — check [`is_master`](Self::is_master),
+    /// not the index.
+    pub index: i32,
+    pub is_master: bool,
+    /// Best-effort connectivity to the device.
+    pub online: bool,
+    /// The channels this device contributes, in flat-channel order.
+    pub channels: Vec<IoChannel>,
+}
+
+impl IoDevice {
+    /// This device's channels of one IO type (`"DI"`, `"DO"`, `"AI"`, `"AO"`) —
+    /// pydoover `IoDevice.channels_of`.
+    pub fn channels_of(&self, io_type: &str) -> Vec<&IoChannel> {
+        self.channels.iter().filter(|c| c.io_type == io_type).collect()
+    }
+
+    fn from_proto(d: pb::IoDeviceDetail) -> Self {
+        Self {
+            name: d.name,
+            type_name: d.r#type,
+            index: d.index,
+            is_master: d.is_master,
+            online: d.online,
+            channels: d.channels.into_iter().map(IoChannel::from_proto).collect(),
+        }
+    }
+}
+
+/// The full IO layout of a device: master plus any configured slaves
+/// (pydoover `platform_types.IoDetails`).
+///
+/// This is the discovery result for apps that adapt to whatever IO the device
+/// actually has, rather than hardcoding channel counts.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct IoDetails {
+    /// Master first, then slaves in index order — matching the flat channel
+    /// numbering the platform interface assigns.
+    pub devices: Vec<IoDevice>,
+}
+
+impl IoDetails {
+    /// The master device, or `None` if the layout marks no master.
+    pub fn master(&self) -> Option<&IoDevice> {
+        self.devices.iter().find(|d| d.is_master)
+    }
+
+    /// All channels of one IO type across every device, in flat-channel order
+    /// (pydoover `IoDetails.channels`).
+    pub fn channels(&self, io_type: &str) -> Vec<&IoChannel> {
+        let mut found: Vec<&IoChannel> = self
+            .devices
+            .iter()
+            .flat_map(|d| d.channels.iter())
+            .filter(|c| c.io_type == io_type)
+            .collect();
+        found.sort_by_key(|c| c.channel);
+        found
+    }
+
+    fn from_proto(devices: Vec<pb::IoDeviceDetail>) -> Self {
+        Self { devices: devices.into_iter().map(IoDevice::from_proto).collect() }
+    }
+
+    /// Synthesize an `IoDetails` from a [`fetch_io_table`](PlatformClient::fetch_io_table)
+    /// mapping (pydoover `IoDetails.from_io_table`).
+    ///
+    /// The fallback for platform interfaces that predate `getIoDetails`: the
+    /// table only lists flat channel numbers per IO type, so everything lands on
+    /// one anonymous master device with no per-channel metadata or capability
+    /// flags. Non-numeric entries are skipped rather than guessed at.
+    pub fn from_io_table(io_table: &Value) -> Self {
+        let mut channels = Vec::new();
+        if let Some(table) = io_table.as_object() {
+            for (io_type, entries) in table {
+                let Some(entries) = entries.as_array() else { continue };
+                for entry in entries {
+                    // pydoover's `int(ch)` accepts an int or a numeric string.
+                    let Some(number) = entry
+                        .as_i64()
+                        .or_else(|| entry.as_str().and_then(|s| s.parse::<i64>().ok()))
+                    else {
+                        continue;
+                    };
+                    channels.push(IoChannel {
+                        channel: number as i32,
+                        device_channel: number as i32,
+                        io_type: io_type.clone(),
+                        ..Default::default()
+                    });
+                }
+            }
+        }
+        Self {
+            devices: vec![IoDevice {
+                name: "master".to_string(),
+                type_name: String::new(),
+                index: 0,
+                is_master: true,
+                online: true,
+                channels,
+            }],
+        }
+    }
+}
+
 /// A platform event (pydoover `platform_types.Event`), e.g. a digital-input
 /// edge recorded while the compute module was asleep.
 #[derive(Debug, Clone, PartialEq)]
@@ -536,6 +693,38 @@ impl PlatformClient {
             Some(raw) => Ok(Some(serde_json::from_str(&raw)?)),
             None => Ok(None),
         }
+    }
+
+    /// The full IO layout — master plus any configured slaves — for apps that
+    /// adapt to whatever IO the device actually has (pydoover
+    /// `fetch_io_details`).
+    ///
+    /// Prefer this over [`fetch_io_table`](Self::fetch_io_table): it also reports
+    /// which device owns each channel, plus per-channel metadata and capability
+    /// flags.
+    ///
+    /// Against a platform interface that predates `getIoDetails` this falls back
+    /// to `fetch_io_table` and synthesizes a single anonymous master device with
+    /// no per-channel metadata. Returns `None` only when that fallback also came
+    /// back empty.
+    pub async fn fetch_io_details(&self) -> Result<Option<IoDetails>> {
+        let resp = self
+            .shared
+            .call(|ch| async move {
+                GenClient::new(ch).get_io_details(pb::GetIoDetailsRequest {}).await
+            })
+            .await;
+        let resp = match resp {
+            Ok(resp) => resp,
+            // An older sidecar doesn't have the method at all. Everything else
+            // — including a failure header on a sidecar that does — propagates.
+            Err(DooverError::Status(status)) if status.code() == tonic::Code::Unimplemented => {
+                return Ok(self.fetch_io_table().await?.as_ref().map(IoDetails::from_io_table));
+            }
+            Err(e) => return Err(e),
+        };
+        Self::check(resp.response_header)?;
+        Ok(Some(IoDetails::from_proto(resp.devices)))
     }
 
     /// Synchronize the real-time clock with the system (network) time. On

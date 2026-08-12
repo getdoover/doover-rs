@@ -119,6 +119,10 @@ pub fn assign_positions_depth_first(element: &mut dyn UiElement, counter: &mut i
 pub struct UiApplicationInfo {
     pub display_name: Value,
     pub hidden: Value,
+    /// Whether the application spans the full width of the interpreter
+    /// (pydoover 6394c84). Resolves against the `interpreter_full_width` config
+    /// key — see [`ApplicationFullWidth`](crate::config::ApplicationFullWidth).
+    pub full_width: Value,
     pub position: Value,
     pub default_open: Value,
     pub icon: Value,
@@ -137,6 +141,12 @@ impl Default for UiApplicationInfo {
             // `config::ApplicationInterpreterHidden`), so the exported
             // reference carries exactly one suffix.
             hidden: Value::String("$config.app().interpreter_hidden:boolean:false".into()),
+            // `full_width` takes the same ":boolean:false" suffix as `hidden`,
+            // and points at a config key that exists from the start, so it has
+            // never had `hidden`'s doubled-suffix history.
+            full_width: Value::String(
+                "$config.app().interpreter_full_width:boolean:false".into(),
+            ),
             position: Value::String("$config.app().dv_app_position:number:100".into()),
             default_open: Value::String("$config.app().dv_app_default_open:boolean".into()),
             icon: Value::Null,
@@ -198,6 +208,7 @@ pub trait UiTree {
         let mut m = Map::new();
         m.insert("displayString".into(), app.display_name.clone());
         m.insert("hidden".into(), app.hidden.clone());
+        m.insert("fullWidth".into(), app.full_width.clone());
         m.insert("position".into(), app.position.clone());
         m.insert("icon".into(), app.icon.clone());
         m.insert("colour".into(), app.colour.clone());

@@ -352,6 +352,33 @@ impl FromConfigValue for ApplicationInterpreterHidden {
     }
 }
 
+/// pydoover `config.ApplicationFullWidth()` — an advanced boolean under
+/// `interpreter_full_width` (default `false`): whether the application spans the
+/// full width of the interpreter.
+///
+/// This is the key a declarative UI's `full_width` root reference resolves
+/// against (see [`UiApplicationInfo`](crate::ui::UiApplicationInfo)), so an app
+/// that wants the interpreter to be able to widen it declares this element.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct ApplicationFullWidth(pub bool);
+
+impl ConfigElementBuild for ApplicationFullWidth {
+    fn element(_title: &str, _name: &str) -> ElementSchema {
+        let mut el = ElementSchema::boolean("Full Width", "interpreter_full_width");
+        el.advanced = Some(true);
+        el.description =
+            Some("Whether the application spans the full width of the interpreter.".into());
+        el.default = Some(Value::Bool(false));
+        el
+    }
+}
+
+impl FromConfigValue for ApplicationFullWidth {
+    fn from_config_value(v: &Value) -> Result<Self> {
+        bool::from_config_value(v).map(Self)
+    }
+}
+
 /// pydoover `config.ApplicationCockpitVisible()` — an advanced boolean under
 /// `cockpit_visible` (default `false`): whether the application's custom
 /// widgets are visible in a Cockpit tab.

@@ -11,8 +11,8 @@ use futures_util::StreamExt;
 use serde_json::{json, Value};
 
 use doover::docker::device_agent::{
-    AggregateOptions, DeviceAgentClient, ListMessagesOptions, Message, SubscribeOptions,
-    UpdateMessageOptions,
+    AggregateOptions, ChannelRef, DeviceAgentClient, ListChannelsOptions, ListMessagesOptions,
+    Message, MessageWriteOptions, Qos, SubscribeOptions, UpdateMessageOptions,
 };
 use doover::proto::device_agent as pb;
 
@@ -71,6 +71,10 @@ pub enum DeviceAgentCmd {
         /// Include each channel's aggregate data.
         #[arg(long = "include_aggregate", alias = "include-aggregate")]
         include_aggregate: bool,
+        /// Owning agent, when the channel belongs to another agent. Needs a
+        /// token grant on that agent or channel.
+        #[arg(long = "agent_id", alias = "agent-id")]
+        agent_id: Option<u64>,
     },
 
     /// Fetch a channel's current aggregate payload.
@@ -81,6 +85,10 @@ pub enum DeviceAgentCmd {
     FetchChannelAggregate {
         /// Name of channel to get the aggregate from.
         channel_name: String,
+        /// Owning agent, when the channel belongs to another agent. Needs a
+        /// token grant on that agent or channel.
+        #[arg(long = "agent_id", alias = "agent-id")]
+        agent_id: Option<u64>,
     },
 
     /// Merge (or replace) a JSON payload into a channel's aggregate.
@@ -115,6 +123,15 @@ pub enum DeviceAgentCmd {
             help = "Don't print the resulting aggregate (skips the agent's echo)."
         )]
         return_aggregate: bool,
+        /// Owning agent, when the channel belongs to another agent. Needs a
+        /// token grant on that agent or channel.
+        #[arg(long = "agent_id", alias = "agent-id")]
+        agent_id: Option<u64>,
+        /// Cloud delivery QoS: 0 attempts the cloud write once and drops it if
+        /// the agent is offline; 1 (default) uses the agent's normal durability
+        /// routing.
+        #[arg(long, value_parser = parse::parse_qos)]
+        qos: Option<Qos>,
         #[command(flatten)]
         files: FilesCompat,
     },
@@ -131,6 +148,15 @@ pub enum DeviceAgentCmd {
         /// message with (default: now).
         #[arg(long, value_parser = parse::parse_timestamp_ms)]
         timestamp: Option<u64>,
+        /// Owning agent, when the channel belongs to another agent. Needs a
+        /// token grant on that agent or channel.
+        #[arg(long = "agent_id", alias = "agent-id")]
+        agent_id: Option<u64>,
+        /// Cloud delivery QoS: 0 attempts the cloud write once and drops it if
+        /// the agent is offline; 1 (default) uses the agent's normal durability
+        /// routing.
+        #[arg(long, value_parser = parse::parse_qos)]
+        qos: Option<Qos>,
         #[command(flatten)]
         files: FilesCompat,
     },
@@ -150,6 +176,15 @@ pub enum DeviceAgentCmd {
         /// message with (default: the agent's clock).
         #[arg(long, value_parser = parse::parse_timestamp_ms)]
         timestamp: Option<u64>,
+        /// Owning agent, when the channel belongs to another agent. Needs a
+        /// token grant on that agent or channel.
+        #[arg(long = "agent_id", alias = "agent-id")]
+        agent_id: Option<u64>,
+        /// Cloud delivery QoS: 0 attempts the cloud write once and drops it if
+        /// the agent is offline; 1 (default) uses the agent's normal durability
+        /// routing.
+        #[arg(long, value_parser = parse::parse_qos)]
+        qos: Option<Qos>,
     },
 
     /// Fetch a single message by id.
@@ -159,6 +194,10 @@ pub enum DeviceAgentCmd {
         channel_name: String,
         /// Snowflake id of the message.
         message_id: u64,
+        /// Owning agent, when the channel belongs to another agent. Needs a
+        /// token grant on that agent or channel.
+        #[arg(long = "agent_id", alias = "agent-id")]
+        agent_id: Option<u64>,
     },
 
     /// List messages on a channel, bounded by snowflake ids.
@@ -178,6 +217,10 @@ pub enum DeviceAgentCmd {
         /// Comma-separated top-level fields to include in the payloads.
         #[arg(long = "field_names", alias = "field-names", value_delimiter = ',')]
         field_names: Vec<String>,
+        /// Owning agent, when the channel belongs to another agent. Needs a
+        /// token grant on that agent or channel.
+        #[arg(long = "agent_id", alias = "agent-id")]
+        agent_id: Option<u64>,
     },
 
     /// Update an existing message's payload.
@@ -196,6 +239,15 @@ pub enum DeviceAgentCmd {
         /// Clear the message's attachments.
         #[arg(long = "clear_attachments", alias = "clear-attachments")]
         clear_attachments: bool,
+        /// Owning agent, when the channel belongs to another agent. Needs a
+        /// token grant on that agent or channel.
+        #[arg(long = "agent_id", alias = "agent-id")]
+        agent_id: Option<u64>,
+        /// Cloud delivery QoS: 0 attempts the cloud write once and drops it if
+        /// the agent is offline; 1 (default) uses the agent's normal durability
+        /// routing.
+        #[arg(long, value_parser = parse::parse_qos)]
+        qos: Option<Qos>,
         #[command(flatten)]
         files: FilesCompat,
     },
@@ -241,6 +293,10 @@ pub enum DeviceAgentCmd {
         /// while it was offline) and print only live events.
         #[arg(long = "no_replay", alias = "no-replay")]
         no_replay: bool,
+        /// Owning agent, when the channel belongs to another agent. Needs a
+        /// token grant on that agent or channel.
+        #[arg(long = "agent_id", alias = "agent-id")]
+        agent_id: Option<u64>,
     },
 }
 
@@ -289,6 +345,12 @@ fn message_json(m: &Message) -> Value {
     })
 }
 
+/// `--agent_id` as a [`ChannelRef`]: absent means this device's own channel,
+/// exactly as pydoover omits the proto field.
+fn channel(name: &str, agent_id: Option<u64>) -> ChannelRef<'_> {
+    ChannelRef { name, agent_id }
+}
+
 pub async fn run(uri: &str, app_key: &str, cmd: DeviceAgentCmd) -> CliResult {
     let client = DeviceAgentClient::connect(normalize_uri(uri))
         .await?
@@ -313,22 +375,27 @@ pub async fn run(uri: &str, app_key: &str, cmd: DeviceAgentCmd) -> CliResult {
             let _ = client.test_comms(DEFAULT_COMMS_MESSAGE).await;
             print_json(&json!(client.status().has_been_online()));
         }
-        DeviceAgentCmd::ListChannels { include_aggregate } => {
-            let listing = client.list_channels(include_aggregate).await?;
+        DeviceAgentCmd::ListChannels { include_aggregate, agent_id } => {
+            let opts = ListChannelsOptions { include_aggregate, agent_id };
+            let listing = client.list_channels_with(&opts).await?;
             print_json(&json!({
                 "from_cloud": listing.from_cloud,
                 "channels": listing
                     .channels
                     .iter()
-                    .map(|c| json!({"channel_name": c.name, "aggregate": c.aggregate}))
+                    .map(|c| json!({
+                        "channel_name": c.name,
+                        "aggregate": c.aggregate,
+                        "agent_id": c.agent_id,
+                    }))
                     .collect::<Vec<_>>(),
             }));
         }
-        DeviceAgentCmd::FetchChannelAggregate { channel_name } => {
+        DeviceAgentCmd::FetchChannelAggregate { channel_name, agent_id } => {
             // pydoover printed the whole `Aggregate`, and callers read
             // `last_updated`/`attachments` off it — print the envelope, not
             // just the payload.
-            match client.fetch_channel_aggregate(&channel_name).await? {
+            match client.fetch_channel_aggregate(channel(&channel_name, agent_id)).await? {
                 Some(aggregate) => print_json(&aggregate.to_json()),
                 None => return Err(format!("channel '{channel_name}' not found").into()),
             }
@@ -341,46 +408,60 @@ pub async fn run(uri: &str, app_key: &str, cmd: DeviceAgentCmd) -> CliResult {
             save_log,
             max_age_secs,
             return_aggregate,
+            agent_id,
+            qos,
             files,
         } => {
             files.warn_if_set();
+            let target = channel(&channel_name, agent_id);
             let opts = AggregateOptions {
                 max_age_secs,
                 save_log,
                 replace_data,
                 clear_attachments,
+                qos: qos.unwrap_or_default(),
                 ..Default::default()
             };
             if return_aggregate {
                 let aggregate =
-                    client.update_channel_aggregate_returning(&channel_name, &data, &opts).await?;
+                    client.update_channel_aggregate_returning(target, &data, &opts).await?;
                 print_json(&aggregate.map_or(Value::Null, |a| a.to_json()));
             } else {
-                client.update_channel_aggregate(&channel_name, &data, &opts).await?;
+                client.update_channel_aggregate(target, &data, &opts).await?;
             }
         }
-        DeviceAgentCmd::CreateMessage { channel_name, data, timestamp, files } => {
+        DeviceAgentCmd::CreateMessage { channel_name, data, timestamp, agent_id, qos, files } => {
             files.warn_if_set();
-            let id = match timestamp {
-                Some(ts) => client.create_message_at(&channel_name, &data, ts).await?,
-                None => client.create_message(&channel_name, &data).await?,
-            };
+            let opts =
+                MessageWriteOptions { timestamp_ms: timestamp, qos: qos.unwrap_or_default() };
+            let id =
+                client.create_message_with(channel(&channel_name, agent_id), &data, &opts).await?;
             print_json(&json!(id));
         }
-        DeviceAgentCmd::SendOneshotMessage { channel_name, data, timestamp } => {
-            match timestamp {
-                Some(ts) => client.send_one_shot_message_at(&channel_name, &data, ts).await?,
-                None => client.send_one_shot_message(&channel_name, &data).await?,
-            }
+        DeviceAgentCmd::SendOneshotMessage { channel_name, data, timestamp, agent_id, qos } => {
+            let opts =
+                MessageWriteOptions { timestamp_ms: timestamp, qos: qos.unwrap_or_default() };
+            client
+                .send_one_shot_message_with(channel(&channel_name, agent_id), &data, &opts)
+                .await?;
             print_json(&json!(true));
         }
-        DeviceAgentCmd::FetchMessage { channel_name, message_id } => {
-            let message = client.fetch_message(&channel_name, message_id).await?;
+        DeviceAgentCmd::FetchMessage { channel_name, message_id, agent_id } => {
+            let message =
+                client.fetch_message(channel(&channel_name, agent_id), message_id).await?;
             print_json(&message_json(&message));
         }
-        DeviceAgentCmd::ListMessages { channel_name, before, after, limit, field_names } => {
+        DeviceAgentCmd::ListMessages {
+            channel_name,
+            before,
+            after,
+            limit,
+            field_names,
+            agent_id,
+        } => {
             let opts = ListMessagesOptions { before, after, limit, field_names };
-            let messages = client.list_messages(&channel_name, &opts).await?;
+            let messages =
+                client.list_messages(channel(&channel_name, agent_id), &opts).await?;
             print_json(&Value::Array(messages.iter().map(message_json).collect()));
         }
         DeviceAgentCmd::UpdateMessage {
@@ -389,11 +470,19 @@ pub async fn run(uri: &str, app_key: &str, cmd: DeviceAgentCmd) -> CliResult {
             data,
             replace_data,
             clear_attachments,
+            agent_id,
+            qos,
             files,
         } => {
             files.warn_if_set();
-            let opts = UpdateMessageOptions { replace_data, clear_attachments };
-            let message = client.update_message(&channel_name, message_id, &data, &opts).await?;
+            let opts = UpdateMessageOptions {
+                replace_data,
+                clear_attachments,
+                qos: qos.unwrap_or_default(),
+            };
+            let message = client
+                .update_message(channel(&channel_name, agent_id), message_id, &data, &opts)
+                .await?;
             print_json(&message_json(&message));
         }
         DeviceAgentCmd::FetchMessageAttachment { url, output, force, base64 } => {
@@ -427,12 +516,12 @@ pub async fn run(uri: &str, app_key: &str, cmd: DeviceAgentCmd) -> CliResult {
                 "uris": c.uris,
             }));
         }
-        DeviceAgentCmd::ListenChannel { channel_name, no_replay } => {
+        DeviceAgentCmd::ListenChannel { channel_name, no_replay, agent_id } => {
             let opts = SubscribeOptions { replay_missed_messages: !no_replay };
 
             // Reconnect forever, as pydoover's stream_channel_events does.
             loop {
-                match client.subscribe_events_with(&channel_name, &opts).await {
+                match client.subscribe_events_with(channel(&channel_name, agent_id), &opts).await {
                     Ok(mut stream) => {
                         while let Some(item) = stream.next().await {
                             match item {

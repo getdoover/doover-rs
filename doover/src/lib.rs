@@ -129,7 +129,7 @@ pub use config::{Config, ConfigSchema};
 pub use docker::application::{
     channels, run, run_with, write_export, AppContext, Application, RunOptions,
 };
-pub use docker::device_agent::{DdaStatus, DeviceAgentClient};
+pub use docker::device_agent::{ChannelRef, DdaStatus, DeviceAgentClient, Qos};
 pub use docker::modbus::ModbusClient;
 pub use docker::platform::PlatformClient;
 pub use docker::subscriptions::SubscriptionHub;

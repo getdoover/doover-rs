@@ -5,6 +5,7 @@
 use chrono::{DateTime, Local, NaiveDate, NaiveDateTime};
 use serde_json::Value;
 
+use doover::docker::device_agent::Qos;
 use doover::utils::{generate_snowflake_id_at, SnowflakeType, DOOVER_EPOCH};
 
 /// A list of pins/values parsed from `3`, `[1,2,3]` or `1,2,3`
@@ -117,6 +118,18 @@ pub fn parse_timestamp_ms(s: &str) -> Result<u64, String> {
         Ok(millis) => Ok(millis),
         Err(_) => parse_iso8601_millis(s),
     }
+}
+
+/// A `--qos` level. pydoover exposes the numeric proto value, so take that and
+/// reject anything the agent wouldn't understand rather than silently falling
+/// back to the default — a caller asking for QoS 2 wants a guarantee that does
+/// not exist.
+pub fn parse_qos(s: &str) -> Result<Qos, String> {
+    let value: u32 = s
+        .trim()
+        .parse()
+        .map_err(|_| format!("{s:?} is not a qos level (0 = at-most-once, 1 = default)"))?;
+    Qos::from_value(value).map_err(|e| e.to_string())
 }
 
 /// A `--before` / `--after` message-listing bound. A bare integer is already a

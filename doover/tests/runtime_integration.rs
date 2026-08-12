@@ -15,8 +15,8 @@ use tokio::time::timeout;
 
 use common::spawn_fake_agent;
 use doover::tags::{KeyPath, SetTagOptions, TagsRuntime};
-use doover::docker::SubscribeOptions;
-use doover::{DeviceAgentClient, Event, EventSubscription, SubscriptionHub};
+use doover::docker::{ListChannelsOptions, MessageWriteOptions, SubscribeOptions};
+use doover::{ChannelRef, DeviceAgentClient, Event, EventSubscription, Qos, SubscriptionHub};
 
 const WAIT: Duration = Duration::from_secs(5);
 
@@ -731,4 +731,187 @@ mod declarative_app {
 
         handle.abort();
     }
+}
+
+// ── Cross-agent channels and write QoS (pydoover 2fd4fbd) ──────────────────
+
+/// The default path must stay byte-identical to a pre-`agent_id`/pre-`qos`
+/// client: both fields absent, not `agent_id=0` / `qos=1`. A proto3 enum's zero
+/// value would have made QoS 0 the silent default, which is exactly why the
+/// field is an `optional uint32`.
+#[tokio::test]
+async fn own_channel_writes_omit_agent_id_and_qos() {
+    let (state, uri) = spawn_fake_agent().await;
+    let client = DeviceAgentClient::connect(uri).await.unwrap().with_app_id("test_app");
+
+    client.update_channel_aggregate("ch", &json!({"a": 1}), &Default::default()).await.unwrap();
+    client.create_message("ch", &json!({"a": 1})).await.unwrap();
+    client.send_one_shot_message("ch", &json!({"a": 1})).await.unwrap();
+    client
+        .update_message("ch", 7, &json!({"a": 1}), &doover::UpdateMessageOptions::default())
+        .await
+        .unwrap();
+
+    let write = state.aggregate_writes.lock().unwrap()[0].clone();
+    assert_eq!((write.agent_id, write.qos), (None, None));
+    let message = state.messages.lock().unwrap()[0].clone();
+    assert_eq!((message.agent_id, message.qos), (None, None));
+    let oneshot = state.oneshots.lock().unwrap()[0].clone();
+    assert_eq!((oneshot.agent_id, oneshot.qos), (None, None));
+    let update = state.message_updates.lock().unwrap()[0].clone();
+    assert_eq!((update.agent_id, update.qos), (None, None));
+}
+
+/// `Qos::AtMostOnce` is the only level that reaches the wire, since absent
+/// already means the agent's normal durability routing.
+#[tokio::test]
+async fn at_most_once_is_the_only_qos_on_the_wire() {
+    let (state, uri) = spawn_fake_agent().await;
+    let client = DeviceAgentClient::connect(uri).await.unwrap().with_app_id("test_app");
+
+    let opts = doover::AggregateOptions { qos: Qos::AtMostOnce, ..Default::default() };
+    client.update_channel_aggregate("ch", &json!({"a": 1}), &opts).await.unwrap();
+    let standard = doover::AggregateOptions { qos: Qos::Standard, ..Default::default() };
+    client.update_channel_aggregate("ch", &json!({"a": 2}), &standard).await.unwrap();
+
+    let qos_sent: Vec<_> =
+        state.aggregate_writes.lock().unwrap().iter().map(|w| w.qos).collect();
+    assert_eq!(qos_sent, vec![Some(0), None]);
+
+    let msg_opts = MessageWriteOptions { timestamp_ms: None, qos: Qos::AtMostOnce };
+    client.create_message_with("ch", &json!({"a": 1}), &msg_opts).await.unwrap();
+    assert_eq!(state.messages.lock().unwrap()[0].qos, Some(0));
+
+    assert_eq!(Qos::AtMostOnce.value(), 0);
+    assert_eq!(Qos::Standard.value(), 1);
+    assert_eq!(Qos::from_value(0).unwrap(), Qos::AtMostOnce);
+    assert_eq!(Qos::from_value(1).unwrap(), Qos::Standard);
+    assert!(Qos::from_value(2).is_err(), "an unknown level is rejected, not guessed");
+}
+
+/// A `ChannelRef::on_agent` read/write reaches the owning agent, and does not
+/// collide with a same-named own channel.
+#[tokio::test]
+async fn cross_agent_reads_and_writes_target_the_owning_agent() {
+    let (state, uri) = spawn_fake_agent().await;
+    state.seed_aggregate("shared", json!({"whose": "mine"}));
+    state.seed_agent_aggregate(42, "shared", json!({"whose": "theirs"}));
+    let client = DeviceAgentClient::connect(uri).await.unwrap().with_app_id("test_app");
+
+    let own = client.fetch_channel_data("shared").await.unwrap().unwrap();
+    assert_eq!(own, json!({"whose": "mine"}));
+    let theirs =
+        client.fetch_channel_data(ChannelRef::on_agent("shared", 42)).await.unwrap().unwrap();
+    assert_eq!(theirs, json!({"whose": "theirs"}), "same name, different agent, different state");
+
+    client
+        .update_channel_aggregate(
+            ChannelRef::on_agent("shared", 42),
+            &json!({"pushed": true}),
+            &Default::default(),
+        )
+        .await
+        .unwrap();
+    let write = state.aggregate_writes.lock().unwrap()[0].clone();
+    // The channel name on the wire stays bare — the agent_id is a separate
+    // field, not a prefix the client invents.
+    assert_eq!((write.channel.as_str(), write.agent_id), ("shared", Some(42)));
+    assert_eq!(
+        state.aggregates.lock().unwrap().get("shared").unwrap(),
+        &json!({"whose": "mine"}),
+        "the own channel is untouched"
+    );
+}
+
+/// A listing scoped to another agent asks for it on the wire and reports the
+/// owner back on each entry.
+#[tokio::test]
+async fn agent_scoped_listing_reports_the_owner() {
+    let (state, uri) = spawn_fake_agent().await;
+    state.seed_aggregate("mine", json!({}));
+    state.seed_agent_aggregate(42, "theirs", json!({}));
+    let client = DeviceAgentClient::connect(uri).await.unwrap().with_app_id("test_app");
+
+    let own = client.list_channels(false).await.unwrap();
+    assert_eq!(
+        own.channels.iter().map(|c| (c.name.as_str(), c.agent_id)).collect::<Vec<_>>(),
+        vec![("mine", None)],
+        "an own listing excludes other agents' channels"
+    );
+
+    let opts = ListChannelsOptions { include_aggregate: false, agent_id: Some(42) };
+    let remote = client.list_channels_with(&opts).await.unwrap();
+    assert_eq!(
+        remote.channels.iter().map(|c| (c.name.as_str(), c.agent_id)).collect::<Vec<_>>(),
+        vec![("theirs", Some(42))]
+    );
+}
+
+/// The hub creates a missing *own* channel on read, but never one on another
+/// agent — that would invent a channel on a device we don't own.
+#[tokio::test]
+async fn hub_never_creates_a_missing_channel_on_another_agent() {
+    let (state, uri) = spawn_fake_agent().await;
+    let client = DeviceAgentClient::connect(uri).await.unwrap().with_app_id("test_app");
+    let hub = SubscriptionHub::new(client);
+
+    let (tx, _rx) = mpsc::unbounded_channel();
+    let sink = Arc::new(move |ev: &Event| {
+        let _ = tx.send(ev.clone());
+    });
+    hub.subscribe(ChannelRef::on_agent("absent", 42), EventSubscription::ALL, sink.clone());
+    hub.subscribe("absent", EventSubscription::ALL, sink);
+
+    // Own subscription seeds (and so creates); the cross-agent one must not.
+    assert!(hub.wait_for_channels_sync(&["absent"], WAIT).await);
+    let writes = state.aggregate_writes.lock().unwrap();
+    assert_eq!(
+        writes.iter().map(|w| (w.channel.as_str(), w.agent_id)).collect::<Vec<_>>(),
+        vec![("absent", None)],
+        "only the own channel was created"
+    );
+    drop(writes);
+
+    // The cross-agent stream still opened — it just has no seeded aggregate.
+    let requests = state.subscribe_requests.lock().unwrap();
+    assert!(requests.iter().any(|r| r.agent_id == Some(42) && r.channel == "absent"));
+    assert!(requests.iter().any(|r| r.agent_id.is_none() && r.channel == "absent"));
+}
+
+/// The hub's caches are keyed by owning agent, so two same-named channels on
+/// different agents keep separate cached state and separate sync flags.
+#[tokio::test]
+async fn hub_caches_are_namespaced_by_owning_agent() {
+    let (state, uri) = spawn_fake_agent().await;
+    state.seed_aggregate("shared", json!({"whose": "mine"}));
+    state.seed_agent_aggregate(42, "shared", json!({"whose": "theirs"}));
+    let client = DeviceAgentClient::connect(uri).await.unwrap().with_app_id("test_app");
+    let hub = SubscriptionHub::new(client);
+
+    let (tx, _rx) = mpsc::unbounded_channel();
+    let sink = Arc::new(move |ev: &Event| {
+        let _ = tx.send(ev.clone());
+    });
+    hub.subscribe("shared", EventSubscription::ALL, sink.clone());
+    hub.subscribe(ChannelRef::on_agent("shared", 42), EventSubscription::ALL, sink);
+
+    let remote = ChannelRef::on_agent("shared", 42);
+    assert!(hub.wait_for_channels_sync(&["shared"], WAIT).await);
+    assert!(hub.wait_for_refs_sync(&[remote], WAIT).await);
+
+    assert_eq!(hub.cached_aggregate("shared"), Some(json!({"whose": "mine"})));
+    assert_eq!(hub.cached_aggregate(remote), Some(json!({"whose": "theirs"})));
+
+    // An unsubscribed agent's copy of the same name is not synced.
+    assert!(!hub.is_channel_synced(ChannelRef::on_agent("shared", 99)));
+    let _ = state;
+}
+
+#[test]
+fn channel_ref_cache_keys_match_pydoover() {
+    // Own channels keep their bare name, so existing single-agent cache
+    // contents are unchanged; another agent's are prefixed.
+    assert_eq!(ChannelRef::own("ui_state").cache_key(), "ui_state");
+    assert_eq!(ChannelRef::from("ui_state").cache_key(), "ui_state");
+    assert_eq!(ChannelRef::on_agent("ui_state", 42).cache_key(), "42:ui_state");
 }

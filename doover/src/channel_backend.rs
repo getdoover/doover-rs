@@ -8,7 +8,60 @@
 use async_trait::async_trait;
 use serde_json::{json, Value};
 
-use crate::error::Result;
+use crate::error::{DooverError, Result};
+
+/// How hard the device agent should try to get a write to the cloud
+/// (pydoover's `QOS_AT_MOST_ONCE` / `QOS_DEFAULT`).
+///
+/// QoS governs *cloud* delivery only. The local write, the local cache update
+/// and the local event fan-out are identical at every level, so an app writing
+/// at [`Qos::AtMostOnce`] still sees its own event and still reads its own value
+/// back.
+///
+/// The proto field is an `optional uint32` rather than an enum precisely because
+/// absent must mean `1`: a proto3 enum's zero value is unavoidably its default,
+/// which would silently reclassify every existing client's writes as
+/// fire-and-forget. [`wire`](Self::wire) therefore omits the field on the
+/// default path.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum Qos {
+    /// 0 — fire-and-forget. Attempted once if the cloud is reachable at write
+    /// time, otherwise dropped. Never queued to disk, never retried.
+    AtMostOnce,
+    /// 1 — the agent's normal durability routing. The default, and what every
+    /// client got before `qos` existed (pydoover `QOS_DEFAULT`).
+    #[default]
+    Standard,
+}
+
+impl Qos {
+    /// The proto field value, or `None` when it carries the default meaning and
+    /// should be omitted so the request matches a pre-`qos` client's bytes.
+    pub fn wire(self) -> Option<u32> {
+        match self {
+            Qos::Standard => None,
+            Qos::AtMostOnce => Some(0),
+        }
+    }
+
+    /// The numeric level, always present (pydoover's module constants).
+    pub fn value(self) -> u32 {
+        match self {
+            Qos::AtMostOnce => 0,
+            Qos::Standard => 1,
+        }
+    }
+
+    /// Parse a numeric level, as it arrives on the wire. An absent field is
+    /// [`Qos::Standard`]; an unknown level is rejected rather than guessed.
+    pub fn from_value(value: u32) -> Result<Self> {
+        match value {
+            0 => Ok(Qos::AtMostOnce),
+            1 => Ok(Qos::Standard),
+            other => Err(DooverError::InvalidPayload(format!("unknown qos level {other}"))),
+        }
+    }
+}
 
 /// A file attached to an aggregate or message (pydoover `Attachment`).
 #[derive(Debug, Clone, PartialEq)]
@@ -88,6 +141,13 @@ pub struct AggregateOptions {
     /// returned aggregate; the [`ChannelBackend`] method discards it either way,
     /// so it sets this itself.
     pub suppress_response: bool,
+    /// How hard the device agent should try to get this write to the cloud
+    /// (pydoover's `qos`).
+    ///
+    /// Device-agent only, like `max_age_secs`: an HTTP write goes to the cloud
+    /// itself, so there is no delivery for the agent to route and the cloud
+    /// backend ignores this.
+    pub qos: Qos,
 }
 
 /// Options for `update_message`.
@@ -96,6 +156,9 @@ pub struct UpdateMessageOptions {
     /// Replace the whole payload rather than merge-patch it.
     pub replace_data: bool,
     pub clear_attachments: bool,
+    /// How hard the device agent should try to get this write to the cloud.
+    /// Device-agent only — see [`AggregateOptions::qos`].
+    pub qos: Qos,
 }
 
 /// Async channel reads/writes, independent of the transport.

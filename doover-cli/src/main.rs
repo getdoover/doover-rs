@@ -324,6 +324,21 @@ mod tests {
     }
 
     #[test]
+    fn fetch_do_current_takes_one_or_many_pins() {
+        let cli = parse(&["doover", "platform", "fetch_do_current", "0", "3"]);
+        let Section::Platform { cmd: platform::PlatformCmd::FetchDoCurrent { r#do }, .. } =
+            cli.section
+        else {
+            panic!("expected platform fetch_do_current");
+        };
+        assert_eq!(r#do, vec![0, 3]);
+
+        // the hyphenated alias, and pydoover's "at least one pin" requirement
+        assert!(Cli::try_parse_from(["doover", "platform", "fetch-do-current", "1"]).is_ok());
+        assert!(Cli::try_parse_from(["doover", "platform", "fetch_do_current"]).is_err());
+    }
+
+    #[test]
     fn section_uri_beats_global_then_default() {
         assert_eq!(
             resolve(Some("a:1".into()), Some("b:2".into()), "c:3"),

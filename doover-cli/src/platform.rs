@@ -53,6 +53,14 @@ pub enum PlatformCmd {
         r#do: Vec<i32>,
     },
 
+    /// Read the load current (amps) drawn through one or more digital outputs.
+    #[command(name = "fetch_do_current", alias = "fetch-do-current")]
+    FetchDoCurrent {
+        /// Pin number(s) to read.
+        #[arg(required = true)]
+        r#do: Vec<i32>,
+    },
+
     /// Read one or more analog-output pins.
     #[command(name = "fetch_ao", alias = "fetch-ao")]
     FetchAo {
@@ -360,6 +368,10 @@ pub async fn run(uri: &str, cmd: PlatformCmd) -> CliResult {
         }
         PlatformCmd::FetchDo { r#do } => {
             let values = client.fetch_dos(&r#do).await?;
+            print_pin_values(&r#do, values);
+        }
+        PlatformCmd::FetchDoCurrent { r#do } => {
+            let values = client.fetch_do_currents(&r#do).await?;
             print_pin_values(&r#do, values);
         }
         PlatformCmd::FetchAo { ao } => {

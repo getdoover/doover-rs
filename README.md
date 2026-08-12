@@ -353,6 +353,44 @@ Done (caught up to pydoover 1.11.4):
     `UICommandsManager.call`: issue a UI command as a user would, on
     `ui_cmds`.
 
+Done (caught up to pydoover 1.13.0):
+
+27. ~~**Cross-agent channel access**~~ — every channel-scoped device-agent
+    request now carries an optional owning `agent_id`, addressed through
+    `ChannelRef` (`ChannelRef::on_agent("ui_state", 42)`; a bare `&str` is still
+    this device's own channel, and the proto field stays absent on that path so
+    the request is byte-identical to a pre-`agent_id` client's). `ChannelInfo`
+    reports the owner, `list_channels_with` scopes a listing to one agent, and
+    `SubscriptionHub` keys its caches by `ChannelRef::cache_key` — so a channel
+    on another agent never collides with a same-named own channel. A channel
+    missing on *another* agent is never created on read, unlike an own one.
+28. ~~**Write QoS**~~ — `Qos::AtMostOnce` (attempt the cloud write once if
+    connected, never queue or retry) vs `Qos::Standard` (the agent's normal
+    durability routing). On `AggregateOptions` / `UpdateMessageOptions` /
+    `MessageWriteOptions`; only `AtMostOnce` reaches the wire, since absent
+    already means the default. QoS governs cloud delivery only — the local write,
+    cache update and event fan-out are unchanged at every level.
+29. ~~**Conditional config fields**~~ — `show_if` on `ElementSchema` and
+    `#[config(show_if_eq(other_field, value))]`, compiling to JSON Schema
+    `allOf` `if`/`then` branches (`Condition`/`Comparator`). Fields sharing a
+    controller and condition share one branch; the `if` requires the controller
+    only when its default wouldn't already satisfy the condition; and an inactive
+    conditional field is not demanded of the deployment config. Byte-checked
+    against pydoover-generated fixtures
+    (`tests/compat/fixtures/config_schemas.json`), plus `#[config(required)]` for
+    a field that must stay required without a default.
+30. ~~**Full-width applications**~~ — `config::ApplicationFullWidth`
+    (`interpreter_full_width`) and the `fullWidth` root key in
+    `UiTree::to_schema`, resolving against that config key with a single
+    `:boolean:false` suffix.
+31. ~~**Platform IO inspection**~~ — `fetch_io_details` and
+    `IoDetails`/`IoDevice`/`IoChannel`: the flat channel namespace broken down by
+    owning device (master plus slaves) with per-channel kind, units and
+    capability flags, for apps that adapt to whatever IO a device actually has.
+    Against a platform interface predating `getIoDetails` it falls back to
+    `fetch_io_table` and synthesizes one anonymous master
+    (`IoDetails::from_io_table`, fixture-checked against pydoover).
+
 Still to port:
 
 1. **Cloud auth beyond bearer tokens** — `~/.doover` profiles, refresh-token
@@ -365,6 +403,17 @@ Still to port:
    `dd_permissions` to hang off yet. Also processor-side declarative UI (the
    docker `#[derive(Ui)]` machinery is not yet wired into `ui_state`
    publishing on deployment) and `dv_proc_config.log_level` application.
+3. **Cloud management surface** — the parts of pydoover's HTTP clients a
+   processor never touches: the batch endpoints (both the batch reads that
+   predate the port and pydoover 1.12's batch *mutations* —
+   `batch_{create,update,delete}_messages` / `batch_update_aggregates`, capped at
+   50 items and able to partially succeed), the whole Control API client
+   (applications, installs, deployments, `mint_registry_token`), and
+   ingestion-endpoint management (`put_ingestion_endpoint`, including its
+   `origin` handshake field). `doover/src/api/data.rs` deliberately covers only
+   channels, messages, aggregates, subscription/schedule info, connection pings
+   and notifications. See PARITY.md for the specific 1.13.0 additions parked
+   here.
 
 The proto contract, error taxonomy, `data_json` codec, payload validation, and
 the loop lifecycle — the parts that are easy to get subtly wrong — are already

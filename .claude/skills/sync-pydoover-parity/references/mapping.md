@@ -1,7 +1,7 @@
 # pydoover → doover-rs map
 
 Where a pydoover change lands on the Rust side. Paths are relative to
-`~/Documents/refactor/work/getdoover/`.
+`~/Coding/doover/`.
 
 ## Module map
 
@@ -26,7 +26,7 @@ Where a pydoover change lands on the Rust side. Paths are relative to
 | `pydoover/docker/application.py` | `doover/src/docker/application.rs` (`Application` trait, `AppContext`, `doover::run`) |
 | `pydoover/docker/device_agent/device_agent.py` | `doover/src/docker/device_agent.rs` + `docker/subscriptions.rs` (the stream/reconnect half) |
 | `pydoover/docker/grpc_interface.py` | `doover/src/docker/grpc.rs` (`SharedChannel`) |
-| `pydoover/docker/platform/` | `doover/src/docker/platform.rs` |
+| `pydoover/docker/platform/` | `doover/src/docker/platform.rs` (incl. `platform_types.py`'s `Location`/`Event`/`IoChannel`/`IoDevice`/`IoDetails`) |
 | `pydoover/docker/modbus/` | `doover/src/docker/modbus.rs` |
 | `pydoover/api/data/_async.py` | `doover/src/api/data.rs` (feature `cloud-api`) |
 | `pydoover/api/auth/` | `doover/src/api/auth.rs` — bearer tokens only, see README "Still to port" |
@@ -47,6 +47,8 @@ Not ported at all, so changes to them are gap notes rather than work:
 | keyword arguments | an options struct: `CallOptions`, `AggregateOptions`, `UpdateMessageOptions`, `SubscribeOptions`, `SetTagOptions`, `ListMessagesOptions` |
 | `NotSet` / `NOT_GIVEN` sentinel | `Option<T>` (`Some(Value::Null)` = explicit null, `None` = key omitted) |
 | `bool | X` union kwarg (`requires_confirm`, `audit`) | a two-variant enum + `From` impls (`Confirm`, `Audit`) |
+| a `(channel_name, agent_id)` pair on a DDA request | `ChannelRef` (`impl Into<ChannelRef>`, so `&str` call sites are unchanged); its `cache_key()` is pydoover's `_channel_key` |
+| an `optional` proto field whose absence means a non-zero default (`qos`) | an enum whose `wire()` returns `Option<u32>` — `None` on the default path, so the request matches a pre-field client's bytes |
 | `ui.Option` | `SelectOption` (`Option` is taken) |
 | `IntEnum` the API sends by name | enum + `wire()` / `value()` / `from_value()` / `FromStr` with pydoover's aliases |
 | `Location`, `Aggregate`, `Message` dataclasses | plain structs with `to_json` / `from_proto`-style constructors |
@@ -61,7 +63,8 @@ diff and be able to name the pydoover commit that caused it.
 |---|---|---|
 | `tests/compat/fixtures/ui_elements.json` | `scripts/gen_ui_element_fixtures.py` | `doover/tests/ui_element_fixtures.rs` |
 | `tests/compat/fixtures/log_triggers.json` | `scripts/gen_log_trigger_fixtures.py` | `doover/tests/log_trigger_fixtures.rs` |
-| `tests/compat/fixtures/{diffs,snowflakes,payload_validation}.json` | `scripts/gen_compat_fixtures.py` | `doover/tests/compat_fixtures.rs` |
+| `tests/compat/fixtures/{diffs,snowflakes,payload_validation,io_details}.json` | `scripts/gen_compat_fixtures.py` | `doover/tests/compat_fixtures.rs` |
+| `tests/compat/fixtures/config_schemas.json` | `scripts/gen_config_schema_fixtures.py` | `doover/tests/config_schema_fixtures.rs` |
 | `doover/tests/fixtures/analog_level_sensor_doover_config.json` | the real app's `export-ui` / `export-config` (see SKILL.md step 5) | `doover/tests/{config,ui,export}_golden.rs` |
 | `doover/tests/fixtures/analog_level_sensor_app_config.json` | the app's `simulators/app_config.json` | `doover/tests/config_golden.rs` |
 
@@ -90,3 +93,20 @@ made faithful:
   `:boolean:false` on `hidden`.
 - **Tag write buffering** — one commit per loop, `only_if_changed` diffing,
   max-age 3 s while the app is open vs 900 s otherwise.
+- **Conditional config fields** — `build_object_schema` in `config/schema.rs` is
+  shared by the root schema and every nested `Object`; the `allOf` key sits
+  between `required` and `x-collapsible`, and the `if` gains `required` only when
+  the controller's default would not already satisfy the condition.
+
+`diffs.json` is not byte-stable: pydoover's `generate_diff` takes its deletion
+keys from a `set`, so Python's hash seed reshuffles the keys inside delete-only
+diffs on every run. The Rust replay compares objects, not key order — revert that
+churn instead of committing it.
+
+## Generator gotcha: pydoover's class-attribute state
+
+pydoover config elements are **class** attributes, so a `Schema` subclass reused
+across fixture cases carries the previous case's loaded values into the next one
+(`depth` reads 1.5 in a case that never set it). Build a fresh class per case —
+`gen_config_schema_fixtures.py` takes a factory for exactly this reason — or you
+will bake a Python descriptor artifact into the Rust contract.

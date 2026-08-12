@@ -23,7 +23,9 @@ use serde_json::Value;
 use crate::error::{DooverError, Result};
 
 pub use export::{write_config_schema, write_ui_schema};
-pub use schema::{ElementKind, ElementSchema, NumericBounds, SchemaModel, StringBounds};
+pub use schema::{
+    Comparator, Condition, ElementKind, ElementSchema, NumericBounds, SchemaModel, StringBounds,
+};
 
 // ---------------------------------------------------------------------------
 // Dynamic config (raw JSON access)
@@ -227,7 +229,31 @@ pub fn field_optional<T: FromConfigValue>(v: &Value, key: &str) -> Result<Option
 /// otherwise the schema default applies when the key is absent or null.
 /// This is the workhorse behind `#[derive(Config)]`'s `from_value`.
 pub fn load_element<T: FromConfigValue>(v: &Value, el: &ElementSchema) -> Result<T> {
+    load_element_in(v, el, &[])
+}
+
+/// As [`load_element`], with the element's siblings available so a conditional
+/// element (`show_if`) can resolve its controller's *declared default* when the
+/// config omits the controller — pydoover's `_condition_matches`, which falls
+/// back to `controller.default`.
+///
+/// An inactive conditional element takes its own default and is never reported
+/// missing, however `required` it is: pydoover skips the required check for a
+/// field the deployment was never asked to fill in. `#[derive(Config)]` calls
+/// this; [`load_element`] is the hand-written path, where an absent controller
+/// simply reads as not matching.
+pub fn load_element_in<T: FromConfigValue>(
+    v: &Value,
+    el: &ElementSchema,
+    siblings: &[ElementSchema],
+) -> Result<T> {
     let key = el.name.as_str();
+    if v.get(key).is_none() && !el.condition_holds(v, siblings) {
+        let default = el.default.clone().unwrap_or(Value::Null);
+        return T::from_config_value(&default).map_err(|e| {
+            DooverError::Other(format!("inactive conditional config element '{key}': {e}"))
+        });
+    }
     match v.get(key) {
         Some(val) if !val.is_null() => T::from_config_value(val)
             .map_err(|e| DooverError::Other(format!("config element '{key}': {e}"))),

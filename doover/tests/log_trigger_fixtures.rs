@@ -14,8 +14,8 @@ use doover::tags::{LogTrigger, TriggerSet};
 fn fixture_cases() -> Vec<Value> {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("../tests/compat/fixtures/log_triggers.json");
-    let text = std::fs::read_to_string(&path)
-        .unwrap_or_else(|e| panic!("reading fixture {path:?}: {e}"));
+    let text =
+        std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("reading fixture {path:?}: {e}"));
     serde_json::from_str(&text).expect("fixture parses")
 }
 
@@ -23,7 +23,12 @@ fn fixture_cases() -> Vec<Value> {
 fn trigger_from_spec(spec: &Value) -> LogTrigger {
     let kind = spec["kind"].as_str().unwrap();
     let thresholds = || -> Vec<f64> {
-        spec["thresholds"].as_array().unwrap().iter().map(|t| t.as_f64().unwrap()).collect()
+        spec["thresholds"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|t| t.as_f64().unwrap())
+            .collect()
     };
     let deadband = spec.get("deadband").and_then(Value::as_f64);
     let with_deadband = |t: LogTrigger| match deadband {
@@ -37,7 +42,9 @@ fn trigger_from_spec(spec: &Value) -> LogTrigger {
         "delta" => match spec.get("amount").and_then(Value::as_f64) {
             Some(amount) => LogTrigger::delta_amount(amount),
             None => LogTrigger::delta_percent(
-                spec["percent"].as_f64().expect("delta needs amount or percent"),
+                spec["percent"]
+                    .as_f64()
+                    .expect("delta needs amount or percent"),
             ),
         },
         "any_change" => LogTrigger::any_change(),
@@ -50,20 +57,32 @@ fn trigger_from_spec(spec: &Value) -> LogTrigger {
 #[test]
 fn log_triggers_match_pydoover() {
     let cases = fixture_cases();
-    assert!(cases.len() >= 29, "fixture corpus unexpectedly small: {}", cases.len());
+    assert!(
+        cases.len() >= 29,
+        "fixture corpus unexpectedly small: {}",
+        cases.len()
+    );
 
     for case in &cases {
         let id = case["case"].as_str().unwrap();
-        let triggers: Vec<LogTrigger> =
-            case["triggers"].as_array().unwrap().iter().map(trigger_from_spec).collect();
+        let triggers: Vec<LogTrigger> = case["triggers"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(trigger_from_spec)
+            .collect();
         // "default" absent == pydoover NotSet; present (even null) is a
         // declared default.
         let default = case.get("default").cloned();
         let mut set = TriggerSet::new(triggers, default);
 
         let values = case["values"].as_array().unwrap();
-        let expected: Vec<bool> =
-            case["fired"].as_array().unwrap().iter().map(|f| f.as_bool().unwrap()).collect();
+        let expected: Vec<bool> = case["fired"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|f| f.as_bool().unwrap())
+            .collect();
         let explicit_log: Vec<bool> = case
             .get("explicit_log")
             .and_then(Value::as_array)

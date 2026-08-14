@@ -42,7 +42,11 @@ pub struct SetTagOptions {
 
 impl Default for SetTagOptions {
     fn default() -> Self {
-        Self { only_if_changed: true, flush: false, log: false }
+        Self {
+            only_if_changed: true,
+            flush: false,
+            log: false,
+        }
     }
 }
 
@@ -182,12 +186,7 @@ impl TagsRuntime {
 
     /// Register a callback for updates to a tag path, scoped under
     /// `app_key` (pass this app's key for own tags, `""` for global paths).
-    pub fn subscribe_to_tag(
-        &self,
-        app_key: &str,
-        key: &str,
-        callback: TagCallback,
-    ) {
+    pub fn subscribe_to_tag(&self, app_key: &str, key: &str, callback: TagCallback) {
         let kp = KeyPath::scoped(app_key, [key]);
         let mut st = self.state.lock().unwrap();
         st.subscriptions.retain(|(existing, _)| existing != &kp);
@@ -210,7 +209,8 @@ impl TagsRuntime {
         let kp = KeyPath::scoped(app_key, [key]);
         let mut st = self.state.lock().unwrap();
         st.log_triggers.retain(|(existing, _)| existing != &kp);
-        st.log_triggers.push((kp, TriggerSet::new(triggers, default)));
+        st.log_triggers
+            .push((kp, TriggerSet::new(triggers, default)));
     }
 
     /// Evaluate the registered triggers for one tag path against an
@@ -221,7 +221,11 @@ impl TagsRuntime {
     fn evaluate_log_triggers(&self, kp: &KeyPath, new: &Value) -> bool {
         let mut st = self.state.lock().unwrap();
         let st = &mut *st;
-        let Some(idx) = st.log_triggers.iter().position(|(existing, _)| existing == kp) else {
+        let Some(idx) = st
+            .log_triggers
+            .iter()
+            .position(|(existing, _)| existing == kp)
+        else {
             return false;
         };
         let current = apply_diff(&st.tag_values, &st.pending_aggregate, false);
@@ -285,12 +289,14 @@ impl TagsRuntime {
             return false;
         }
         let st = self.state.lock().unwrap();
-        Self::fresh_entries(&st.ui_sub, "app_open").iter().any(|entry| {
-            entry
-                .get("apps")
-                .and_then(Value::as_array)
-                .is_some_and(|apps| apps.iter().any(|a| a.as_str() == Some(&self.app_key)))
-        })
+        Self::fresh_entries(&st.ui_sub, "app_open")
+            .iter()
+            .any(|entry| {
+                entry
+                    .get("apps")
+                    .and_then(Value::as_array)
+                    .is_some_and(|apps| apps.iter().any(|a| a.as_str() == Some(&self.app_key)))
+            })
     }
 
     fn live_tags_opened(ui_sub: &Value) -> std::collections::HashSet<String> {
@@ -351,7 +357,10 @@ impl TagsRuntime {
     ) -> Result<()> {
         let kp = KeyPath::scoped(app_key, [key]);
         let fired = self.evaluate_log_triggers(&kp, &value);
-        let opts = SetTagOptions { log: opts.log || fired, ..opts.clone() };
+        let opts = SetTagOptions {
+            log: opts.log || fired,
+            ..opts.clone()
+        };
         let nested = kp.construct(value);
         self.set_nested_tags(nested, &opts).await
     }
@@ -400,7 +409,10 @@ impl TagsRuntime {
                 .update_channel_aggregate(
                     TAG_CHANNEL_NAME,
                     &payload,
-                    &AggregateOptions { max_age_secs: max_age, ..Default::default() },
+                    &AggregateOptions {
+                        max_age_secs: max_age,
+                        ..Default::default()
+                    },
                 )
                 .await?;
             let mut st = self.state.lock().unwrap();
@@ -446,7 +458,10 @@ impl TagsRuntime {
             .update_channel_aggregate(
                 TAG_CHANNEL_NAME,
                 &data,
-                &AggregateOptions { max_age_secs: max_age, ..Default::default() },
+                &AggregateOptions {
+                    max_age_secs: max_age,
+                    ..Default::default()
+                },
             )
             .await?;
         let mut st = self.state.lock().unwrap();
@@ -483,7 +498,11 @@ impl TagsRuntime {
             }
             payload
         };
-        if let Err(e) = self.client.send_one_shot_message(LIVE_TAG_CHANNEL_NAME, &payload).await {
+        if let Err(e) = self
+            .client
+            .send_one_shot_message(LIVE_TAG_CHANNEL_NAME, &payload)
+            .await
+        {
             tracing::trace!("live tag flush skipped: {e}");
         }
     }

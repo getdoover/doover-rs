@@ -170,12 +170,18 @@ impl Application for AnalogLevelSensorApp {
 #[test]
 fn write_export_round_trip_is_byte_identical() {
     let mut path = std::env::temp_dir();
-    path.push(format!("doover-rs-export-golden-{}.json", std::process::id()));
+    path.push(format!(
+        "doover-rs-export-golden-{}.json",
+        std::process::id()
+    ));
     std::fs::write(&path, GOLDEN.as_bytes()).unwrap();
 
     let wrote_ui =
         doover::write_export::<AnalogLevelSensorApp>(&path, "analog_level_sensor").unwrap();
-    assert!(wrote_ui, "the app has UI elements, so a ui_schema must be written");
+    assert!(
+        wrote_ui,
+        "the app has UI elements, so a ui_schema must be written"
+    );
 
     let after = std::fs::read(&path).unwrap();
     let _ = std::fs::remove_file(&path);

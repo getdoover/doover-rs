@@ -327,7 +327,11 @@ pub async fn run(uri: &str, cmd: PlatformCmd) -> CliResult {
             let result = client.set_dos(&r#do.0, &value.0).await?;
             print_json(&json!(result));
         }
-        PlatformCmd::ScheduleDo { r#do, value, in_secs } => {
+        PlatformCmd::ScheduleDo {
+            r#do,
+            value,
+            in_secs,
+        } => {
             let result = client.schedule_dos(&r#do.0, &value.0, in_secs).await?;
             print_json(&json!(result));
         }
@@ -391,7 +395,12 @@ pub async fn run(uri: &str, cmd: PlatformCmd) -> CliResult {
             print_json(&json!(client.fetch_io_table().await?));
         }
         PlatformCmd::SyncRtc => client.sync_rtc().await?,
-        PlatformCmd::FetchDiEvents { di_pin, edge, include_system_events, events_from } => {
+        PlatformCmd::FetchDiEvents {
+            di_pin,
+            edge,
+            include_system_events,
+            events_from,
+        } => {
             let (events_synced, events) = client
                 .fetch_di_events(di_pin, edge, include_system_events, events_from)
                 .await?;
@@ -404,8 +413,19 @@ pub async fn run(uri: &str, cmd: PlatformCmd) -> CliResult {
             let config = client.fetch_di_config(pin).await?;
             print_json(&config.as_ref().map(di_config_json).unwrap_or(Value::Null));
         }
-        PlatformCmd::SetDiConfig { pin, pnp_mode, irq_edge, debounce_ms, wake_on_event } => {
-            let update = DiConfigUpdate { pnp_mode, irq_edge, debounce_ms, wake_on_event };
+        PlatformCmd::SetDiConfig {
+            pin,
+            pnp_mode,
+            irq_edge,
+            debounce_ms,
+            wake_on_event,
+        } => {
+            let update = DiConfigUpdate {
+                pnp_mode,
+                irq_edge,
+                debounce_ms,
+                wake_on_event,
+            };
             let config = client.set_di_config(pin, &update).await?;
             print_json(&config.as_ref().map(di_config_json).unwrap_or(Value::Null));
         }

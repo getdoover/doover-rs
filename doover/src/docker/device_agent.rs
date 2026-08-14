@@ -92,7 +92,9 @@ pub struct SubscribeOptions {
 
 impl Default for SubscribeOptions {
     fn default() -> Self {
-        Self { replay_missed_messages: true }
+        Self {
+            replay_missed_messages: true,
+        }
     }
 }
 
@@ -123,6 +125,12 @@ pub struct Message {
     pub author_id: u64,
     pub channel_name: String,
     pub data: Value,
+    /// Files attached to the message (pydoover `Message.attachments`).
+    ///
+    /// Download one with
+    /// [`DeviceAgentClient::fetch_message_attachment`], passing
+    /// [`Attachment::to_proto`].
+    pub attachments: Vec<Attachment>,
 }
 
 impl Message {
@@ -137,6 +145,7 @@ impl Message {
             author_id: m.author_id,
             channel_name: m.channel.map(|c| c.name).unwrap_or_default(),
             data,
+            attachments: m.attachments.iter().map(Attachment::from_proto).collect(),
         }
     }
 }
@@ -190,7 +199,11 @@ impl DeviceAgentClient {
         let inner = GenClient::new(channel)
             .max_decoding_message_size(DEFAULT_MAX_MESSAGE_SIZE)
             .max_encoding_message_size(DEFAULT_MAX_MESSAGE_SIZE);
-        Self { inner, app_id: None, status: Arc::new(DdaStatus::default()) }
+        Self {
+            inner,
+            app_id: None,
+            status: Arc::new(DdaStatus::default()),
+        }
     }
 
     /// Set the `app_id` stamped into every request header (the app key).
@@ -206,7 +219,9 @@ impl DeviceAgentClient {
     }
 
     fn header(&self) -> Option<pb::RequestHeader> {
-        self.app_id.clone().map(|app_id| pb::RequestHeader { app_id: Some(app_id) })
+        self.app_id.clone().map(|app_id| pb::RequestHeader {
+            app_id: Some(app_id),
+        })
     }
 
     /// Update the DDA status flags then map the header to a typed error
@@ -223,7 +238,10 @@ impl DeviceAgentClient {
         let resp = self
             .inner
             .clone()
-            .test_comms(pb::TestCommsRequest { header: self.header(), message: message.into() })
+            .test_comms(pb::TestCommsRequest {
+                header: self.header(),
+                message: message.into(),
+            })
             .await?
             .into_inner();
         Ok(resp.response)
@@ -239,7 +257,8 @@ impl DeviceAgentClient {
         opts: &AggregateOptions,
     ) -> Result<()> {
         // most callers discard the echo — skip the encode.
-        self.update_aggregate_inner(channel, data, opts, false).await?;
+        self.update_aggregate_inner(channel, data, opts, false)
+            .await?;
         Ok(())
     }
 
@@ -382,7 +401,8 @@ impl DeviceAgentClient {
         data: &Value,
         timestamp_ms: u64,
     ) -> Result<()> {
-        self.send_one_shot_inner(channel, data, Some(timestamp_ms)).await
+        self.send_one_shot_inner(channel, data, Some(timestamp_ms))
+            .await
     }
 
     async fn send_one_shot_inner(
@@ -399,7 +419,12 @@ impl DeviceAgentClient {
             data_json: serde_json::to_string(data)?,
             timestamp: timestamp_ms,
         };
-        let resp = self.inner.clone().send_one_shot_message(req).await?.into_inner();
+        let resp = self
+            .inner
+            .clone()
+            .send_one_shot_message(req)
+            .await?
+            .into_inner();
         self.check_header(resp.response_header)?;
         Ok(())
     }
@@ -474,7 +499,8 @@ impl DeviceAgentClient {
         };
         let resp = self.inner.clone().fetch_attachment(req).await?.into_inner();
         self.check_header(resp.response_header)?;
-        resp.file.ok_or_else(|| DooverError::NotFound("attachment file".into()))
+        resp.file
+            .ok_or_else(|| DooverError::NotFound("attachment file".into()))
     }
 
     /// Fetch WebRTC TURN credentials (pydoover `fetch_turn_token`).
@@ -483,7 +509,12 @@ impl DeviceAgentClient {
             header: self.header(),
             camera_name: camera_name.to_string(),
         };
-        let resp = self.inner.clone().get_turn_credential(req).await?.into_inner();
+        let resp = self
+            .inner
+            .clone()
+            .get_turn_credential(req)
+            .await?
+            .into_inner();
         self.check_header(resp.response_header)?;
         let c = resp
             .turn_credential
@@ -505,7 +536,8 @@ impl DeviceAgentClient {
         &self,
         channel: &str,
     ) -> Result<impl Stream<Item = Result<Event>>> {
-        self.subscribe_events_with(channel, &SubscribeOptions::default()).await
+        self.subscribe_events_with(channel, &SubscribeOptions::default())
+            .await
     }
 
     /// As [`subscribe_events`](Self::subscribe_events), with control over what
@@ -521,7 +553,12 @@ impl DeviceAgentClient {
             wire_format: pb::WireFormat::JsonOnly as i32,
             replay_missed_messages: Some(opts.replay_missed_messages),
         };
-        let stream = self.inner.clone().channel_event_subscription(req).await?.into_inner();
+        let stream = self
+            .inner
+            .clone()
+            .channel_event_subscription(req)
+            .await?
+            .into_inner();
         let channel = channel.to_string();
         let status = self.status.clone();
         Ok(stream.map(move |item| {
@@ -613,18 +650,7 @@ fn decode_aggregate(a: &pb::Aggregate) -> ChannelAggregate {
     };
     ChannelAggregate {
         data,
-        attachments: a
-            .attachments
-            .iter()
-            .map(|at| Attachment {
-                filename: at.filename.clone(),
-                // The proto has no presence on this field, so an empty string
-                // is how "unknown" arrives.
-                content_type: (!at.content_type.is_empty()).then(|| at.content_type.clone()),
-                size: at.size_bytes.max(0) as u64,
-                url: at.url.clone(),
-            })
-            .collect(),
+        attachments: a.attachments.iter().map(Attachment::from_proto).collect(),
         last_updated: a.last_updated,
     }
 }
@@ -633,10 +659,16 @@ fn decode_aggregate(a: &pb::Aggregate) -> ChannelAggregate {
 /// `^[a-zA-Z0-9_-]+$`; values are only object/array/string/number/bool/null.
 pub fn validate_payload(data: &Value) -> Result<()> {
     let Value::Object(map) = data else {
-        return Err(DooverError::InvalidPayload("payload root must be an object".into()));
+        return Err(DooverError::InvalidPayload(
+            "payload root must be an object".into(),
+        ));
     };
     for (k, v) in map {
-        if k.is_empty() || !k.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-') {
+        if k.is_empty()
+            || !k
+                .bytes()
+                .all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
+        {
             return Err(DooverError::InvalidPayload(format!("invalid key: {k:?}")));
         }
         validate_value(v)?;
@@ -651,9 +683,13 @@ fn validate_value(v: &Value) -> Result<()> {
         Value::Object(map) => {
             for (k, v) in map {
                 if k.is_empty()
-                    || !k.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
+                    || !k
+                        .bytes()
+                        .all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
                 {
-                    return Err(DooverError::InvalidPayload(format!("invalid nested key: {k:?}")));
+                    return Err(DooverError::InvalidPayload(format!(
+                        "invalid nested key: {k:?}"
+                    )));
                 }
                 validate_value(v)?;
             }

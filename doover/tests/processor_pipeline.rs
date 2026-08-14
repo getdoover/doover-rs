@@ -29,7 +29,9 @@ fn body_json(req: &wiremock::Request) -> Value {
         .is_some_and(|v| v.to_str().unwrap_or_default() == "gzip");
     if gzipped {
         let mut out = Vec::new();
-        flate2::read::GzDecoder::new(req.body.as_slice()).read_to_end(&mut out).unwrap();
+        flate2::read::GzDecoder::new(req.body.as_slice())
+            .read_to_end(&mut out)
+            .unwrap();
         serde_json::from_slice(&out).unwrap()
     } else {
         serde_json::from_slice(&req.body).unwrap()
@@ -228,7 +230,8 @@ impl Processor for DeployProcessor {
         event: &DeploymentEvent,
     ) -> Result<Handled> {
         assert_eq!(event.app_key, "my_app");
-        ctx.publish_ui_schema(&json!({"type": "uiContainer"}), true).await?;
+        ctx.publish_ui_schema(&json!({"type": "uiContainer"}), true)
+            .await?;
         Ok(Handled::Done)
     }
 }
@@ -247,8 +250,12 @@ async fn sns_message_create_full_pipeline() {
 
     // Exact summary shape: pydoover's field names and order, camelCase
     // requestId, agent_id stringified.
-    let keys: Vec<&str> =
-        summary.as_object().unwrap().keys().map(String::as_str).collect();
+    let keys: Vec<&str> = summary
+        .as_object()
+        .unwrap()
+        .keys()
+        .map(String::as_str)
+        .collect();
     assert_eq!(
         keys,
         vec![
@@ -297,24 +304,41 @@ async fn sns_message_create_full_pipeline() {
     // else with the upgraded token.
     let reqs = server.received_requests().await.unwrap();
     let auth = |r: &wiremock::Request| {
-        r.headers.get("authorization").unwrap().to_str().unwrap().to_string()
+        r.headers
+            .get("authorization")
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_string()
     };
-    assert_eq!(reqs[0].url.path(), format!("/processors/subscriptions/{SUB_ARN}"));
+    assert_eq!(
+        reqs[0].url.path(),
+        format!("/processors/subscriptions/{SUB_ARN}")
+    );
     assert_eq!(auth(&reqs[0]), "Bearer initial-token");
 
     // Single tag commit: aggregate write then (LogMode::Always) full log
     // message, both scoped to this app key.
     assert_eq!(reqs[1].method.as_str(), "PATCH");
-    assert_eq!(reqs[1].url.path(), "/agents/1/channels/tag_values/aggregate");
+    assert_eq!(
+        reqs[1].url.path(),
+        "/agents/1/channels/tag_values/aggregate"
+    );
     assert_eq!(auth(&reqs[1]), "Bearer upgraded-token");
     assert_eq!(body_json(&reqs[1]), json!({"my_app": {"counter": 2}}));
 
     assert_eq!(reqs[2].url.path(), "/agents/1/channels/tag_values/messages");
-    assert_eq!(body_json(&reqs[2]), json!({"data": {"my_app": {"counter": 2}}}));
+    assert_eq!(
+        body_json(&reqs[2]),
+        json!({"data": {"my_app": {"counter": 2}}})
+    );
 
     // Invocation summary fanned out to the default target with $app_id
     // substituted.
-    assert_eq!(reqs[3].url.path(), "/agents/1/channels/dv-proc-inv-app-uuid-1/messages");
+    assert_eq!(
+        reqs[3].url.path(),
+        "/agents/1/channels/dv-proc-inv-app-uuid-1/messages"
+    );
     assert_eq!(auth(&reqs[3]), "Bearer upgraded-token");
     assert_eq!(body_json(&reqs[3]), json!({"data": summary}));
     assert_eq!(reqs.len(), 4);
@@ -331,8 +355,9 @@ async fn raw_schedule_event_uses_schedule_info() {
         "token": "sched-token",
         "d": {"schedule_id": "sched-1", "organisation_id": 7},
     });
-    let summary =
-        handle_event_with::<ScheduleProcessor>(event, lambda_options(&server)).await.unwrap();
+    let summary = handle_event_with::<ScheduleProcessor>(event, lambda_options(&server))
+        .await
+        .unwrap();
 
     assert_eq!(summary["status"], "success");
     assert_eq!(summary["event_type"], "on_schedule");
@@ -342,7 +367,10 @@ async fn raw_schedule_event_uses_schedule_info() {
     let reqs = server.received_requests().await.unwrap();
     assert_eq!(reqs[0].url.path(), "/processors/schedules/sched-1");
     // No tag writes (nothing set) — straight to the summary.
-    assert_eq!(reqs[1].url.path(), "/agents/1/channels/dv-proc-inv-app-uuid-1/messages");
+    assert_eq!(
+        reqs[1].url.path(),
+        "/agents/1/channels/dv-proc-inv-app-uuid-1/messages"
+    );
     assert_eq!(reqs.len(), 2);
 }
 
@@ -360,7 +388,8 @@ async fn inline_upgrade_payload_skips_info_endpoint() {
 
     let reqs = server.received_requests().await.unwrap();
     assert!(
-        reqs.iter().all(|r| !r.url.path().starts_with("/processors/")),
+        reqs.iter()
+            .all(|r| !r.url.path().starts_with("/processors/")),
         "inline upgrade payload must not hit the info endpoints"
     );
 }
@@ -392,8 +421,9 @@ async fn no_handler_skip_after_setup() {
 async fn unknown_op_skips_as_no_handler_without_any_api_calls() {
     let server = MockServer::start().await;
     let event = json!({"op": "on_wibble", "token": "t", "d": {}});
-    let summary =
-        handle_event_with::<CounterProcessor>(event, lambda_options(&server)).await.unwrap();
+    let summary = handle_event_with::<CounterProcessor>(event, lambda_options(&server))
+        .await
+        .unwrap();
 
     assert_eq!(summary["status"], "skipped");
     assert_eq!(summary["skip_reason"], "no_handler");
@@ -541,7 +571,10 @@ async fn setup_failure_is_an_error_status() {
 
     assert_eq!(summary["status"], "error");
     assert_eq!(summary["error"]["type"], "NotFoundError");
-    assert!(summary["error"]["message"].as_str().unwrap().contains("no such subscription"));
+    assert!(summary["error"]["message"]
+        .as_str()
+        .unwrap()
+        .contains("no such subscription"));
     assert_eq!(summary["skip_reason"], Value::Null);
 }
 
@@ -549,11 +582,15 @@ async fn setup_failure_is_an_error_status() {
 async fn missing_token_is_an_error() {
     let server = MockServer::start().await;
     let event = json!({"op": "on_manual_invoke", "d": {"organisation_id": 7, "payload": {}}});
-    let summary =
-        handle_event_with::<CounterProcessor>(event, lambda_options(&server)).await.unwrap();
+    let summary = handle_event_with::<CounterProcessor>(event, lambda_options(&server))
+        .await
+        .unwrap();
     assert_eq!(summary["status"], "error");
     assert_eq!(summary["error"]["type"], "RuntimeError");
-    assert_eq!(summary["error"]["message"], "Initial token has not been set.");
+    assert_eq!(
+        summary["error"]["message"],
+        "Initial token has not been set."
+    );
 }
 
 #[tokio::test]

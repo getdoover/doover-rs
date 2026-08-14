@@ -107,11 +107,18 @@ fn schema_matches_golden_subtree() {
 #[test]
 fn export_round_trip_is_byte_identical() {
     let mut path = std::env::temp_dir();
-    path.push(format!("doover-rs-config-golden-{}.json", std::process::id()));
+    path.push(format!(
+        "doover-rs-config-golden-{}.json",
+        std::process::id()
+    ));
     std::fs::write(&path, GOLDEN.as_bytes()).unwrap();
 
-    write_config_schema(&path, "analog_level_sensor", AnalogLevelSensorConfig::schema().to_json())
-        .unwrap();
+    write_config_schema(
+        &path,
+        "analog_level_sensor",
+        AnalogLevelSensorConfig::schema().to_json(),
+    )
+    .unwrap();
 
     let after = std::fs::read(&path).unwrap();
     let _ = std::fs::remove_file(&path);
@@ -170,6 +177,9 @@ fn from_value_missing_required_names_the_key() {
 #[test]
 fn config_enum_display_and_from_str() {
     assert_eq!(SensorType::RadarInverted.to_string(), "Radar Inverted");
-    assert_eq!("Radar Inverted".parse::<SensorType>().unwrap(), SensorType::RadarInverted);
+    assert_eq!(
+        "Radar Inverted".parse::<SensorType>().unwrap(),
+        SensorType::RadarInverted
+    );
     assert!("Sonar".parse::<SensorType>().is_err());
 }

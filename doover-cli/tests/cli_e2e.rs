@@ -35,20 +35,36 @@ async fn update_aggregate_prints_the_aggregate_and_return_flag_silences_it() {
 
     // pydoover's return_aggregate defaults True, so the merged aggregate is
     // echoed to stdout — the whole envelope, as pydoover printed it.
-    let (stdout, _, ok) = run_cli(&uri, &["device_agent", "update_aggregate", "ch", r#"{"level": 42}"#]);
+    let (stdout, _, ok) = run_cli(
+        &uri,
+        &["device_agent", "update_aggregate", "ch", r#"{"level": 42}"#],
+    );
     assert!(ok, "update should succeed");
     let printed: Value = serde_json::from_str(stdout.trim()).expect("stdout should be JSON");
     assert_eq!(printed["data"], json!({"level": 42, "name": "tank"}));
     assert_eq!(printed["attachments"], json!([]));
-    assert!(printed.get("last_updated").is_some(), "last_updated must be present");
+    assert!(
+        printed.get("last_updated").is_some(),
+        "last_updated must be present"
+    );
 
     // ...and passing the flag turns the echo off (pydoover's store_false).
     let (stdout, _, ok) = run_cli(
         &uri,
-        &["device_agent", "update_aggregate", "ch", r#"{"level": 7}"#, "--return_aggregate"],
+        &[
+            "device_agent",
+            "update_aggregate",
+            "ch",
+            r#"{"level": 7}"#,
+            "--return_aggregate",
+        ],
     );
     assert!(ok);
-    assert_eq!(stdout.trim(), "", "--return_aggregate should suppress the echo");
+    assert_eq!(
+        stdout.trim(),
+        "",
+        "--return_aggregate should suppress the echo"
+    );
 
     // Both writes still landed.
     let writes = state.aggregate_writes.lock().unwrap();
@@ -74,7 +90,10 @@ async fn fetch_aggregate_prints_the_whole_envelope() {
         1784504229751,
     );
 
-    let (stdout, _, ok) = run_cli(&uri, &["device_agent", "fetch_channel_aggregate", "ui_state"]);
+    let (stdout, _, ok) = run_cli(
+        &uri,
+        &["device_agent", "fetch_channel_aggregate", "ui_state"],
+    );
     assert!(ok, "fetch should succeed");
     let printed: Value = serde_json::from_str(stdout.trim()).expect("stdout should be JSON");
 
@@ -153,7 +172,10 @@ async fn pydoover_compat_flags_reach_the_wire_unchanged() {
         ],
     );
     assert!(ok, "pydoover-era flags should not fail: {stderr}");
-    assert!(stderr.contains("--files"), "an ignored --files should warn: {stderr}");
+    assert!(
+        stderr.contains("--files"),
+        "an ignored --files should warn: {stderr}"
+    );
 
     let writes = state.aggregate_writes.lock().unwrap();
     assert_eq!(writes.len(), 1);
@@ -168,14 +190,31 @@ async fn create_message_accepts_iso_and_millisecond_timestamps() {
 
     let (stdout, _, ok) = run_cli(
         &uri,
-        &["device_agent", "create_message", "ch", "{}", "--timestamp", "2025-06-15T12:00:00Z"],
+        &[
+            "device_agent",
+            "create_message",
+            "ch",
+            "{}",
+            "--timestamp",
+            "2025-06-15T12:00:00Z",
+        ],
     );
     assert!(ok);
-    assert!(stdout.trim().parse::<u64>().is_ok(), "should print a message id");
+    assert!(
+        stdout.trim().parse::<u64>().is_ok(),
+        "should print a message id"
+    );
 
     let (_, _, ok) = run_cli(
         &uri,
-        &["device_agent", "create_message", "ch", "{}", "--timestamp", "1749988800000"],
+        &[
+            "device_agent",
+            "create_message",
+            "ch",
+            "{}",
+            "--timestamp",
+            "1749988800000",
+        ],
     );
     assert!(ok);
 
@@ -185,4 +224,3 @@ async fn create_message_accepts_iso_and_millisecond_timestamps() {
     assert_eq!(messages[0].timestamp, 1_749_988_800_000);
     assert_eq!(messages[1].timestamp, 1_749_988_800_000);
 }
-

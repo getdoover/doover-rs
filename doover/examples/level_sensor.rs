@@ -175,15 +175,27 @@ struct AnalogLevelSensor {
 impl AnalogLevelSensor {
     /// Sorted `(level, volume)` float pairs (Python `_get_volume`'s `points`).
     fn curve_points(&self) -> Vec<(f64, f64)> {
-        let mut points: Vec<(f64, f64)> =
-            self.config.volume_curve.iter().map(|p| (p.level, p.volume)).collect();
+        let mut points: Vec<(f64, f64)> = self
+            .config
+            .volume_curve
+            .iter()
+            .map(|p| (p.level, p.volume))
+            .collect();
         points.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
         points
     }
 
     /// Python `_map_value`: linear map, inverted for Radar sensors when
     /// `invert` is requested.
-    fn map_value(&self, value: f64, low_a: f64, high_a: f64, low_b: f64, high_b: f64, invert: bool) -> f64 {
+    fn map_value(
+        &self,
+        value: f64,
+        low_a: f64,
+        high_a: f64,
+        low_b: f64,
+        high_b: f64,
+        invert: bool,
+    ) -> f64 {
         if invert && self.config.sensor_type == SensorType::Radar {
             return (high_b - low_b) - ((value - low_a) / (high_a - low_a)) * (high_b - low_b);
         }
@@ -309,13 +321,22 @@ impl Application for AnalogLevelSensor {
         tags: AnalogLevelSensorTags,
         ui: AnalogLevelSensorUi,
     ) -> Self {
-        let simulate =
-            std::env::var("SIMULATE_AI").map(|v| v != "0" && !v.is_empty()).unwrap_or(false);
+        let simulate = std::env::var("SIMULATE_AI")
+            .map(|v| v != "0" && !v.is_empty())
+            .unwrap_or(false);
         let seed = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_nanos() as u64 | 1)
             .unwrap_or(0x9E3779B97F4A7C15);
-        Self { config, tags, ui, plt: None, simulate, rng: seed, t: 0 }
+        Self {
+            config,
+            tags,
+            ui,
+            plt: None,
+            simulate,
+            rng: seed,
+            t: 0,
+        }
     }
 
     fn ui(&self) -> Option<&AnalogLevelSensorUi> {
@@ -378,7 +399,11 @@ impl Application for AnalogLevelSensor {
             self.simulated_ma()
         } else {
             let pin = self.config.ai_pin as i32;
-            self.plt.as_ref().expect("platform connected in setup").fetch_ai(pin).await? as f64
+            self.plt
+                .as_ref()
+                .expect("platform connected in setup")
+                .fetch_ai(pin)
+                .await? as f64
         };
         tracing::info!("Level sensor reading: {reading}");
 
@@ -392,7 +417,10 @@ impl Application for AnalogLevelSensor {
         if let Some(pct) = self.filled_percentage(reading) {
             self.tags.level_filled_percentage.set(pct).await?;
         }
-        self.tags.level_reading.set(self.level_reading(reading)).await?;
+        self.tags
+            .level_reading
+            .set(self.level_reading(reading))
+            .await?;
         self.tags.raw_level_reading.set(reading).await?;
         if !self.config.hide_volume {
             if let Some(volume) = self.volume(reading) {
@@ -410,6 +438,8 @@ impl Application for AnalogLevelSensor {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    tracing_subscriber::fmt().with_max_level(tracing::Level::INFO).init();
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::INFO)
+        .init();
     doover::run::<AnalogLevelSensor>().await
 }

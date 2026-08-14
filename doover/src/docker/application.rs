@@ -202,7 +202,9 @@ impl AppContext {
         // silently replaces a payload it cannot deserialise, so the mistake
         // would otherwise surface as an unreadable phone notification.
         notification.validate()?;
-        self.client.create_message(NOTIFICATIONS_CHANNEL, &notification.to_json()).await
+        self.client
+            .create_message(NOTIFICATIONS_CHANNEL, &notification.to_json())
+            .await
     }
 
     /// Whether some user currently has `tag_name` open in live mode
@@ -239,7 +241,9 @@ impl AppContext {
         data: &Value,
         opts: &AggregateOptions,
     ) -> Result<()> {
-        self.client.update_channel_aggregate(channel, data, opts).await
+        self.client
+            .update_channel_aggregate(channel, data, opts)
+            .await
     }
 
     pub async fn create_message(&self, channel: &str, data: &Value) -> Result<u64> {
@@ -269,7 +273,9 @@ impl AppContext {
             outer.insert(self.app_key.clone(), Value::Object(inner));
             Value::Object(outer)
         };
-        self.tags.set_nested_tags(nested, &SetTagOptions::default()).await
+        self.tags
+            .set_nested_tags(nested, &SetTagOptions::default())
+            .await
     }
 
     /// Read a tag (cached channel state overlaid with pending writes),
@@ -314,7 +320,10 @@ impl AppContext {
             .and_then(|a| a.get(&self.app_key))
             .cloned()
             .unwrap_or_else(|| {
-                tracing::warn!("application key {} not found in deployment config", self.app_key);
+                tracing::warn!(
+                    "application key {} not found in deployment config",
+                    self.app_key
+                );
                 Value::Object(Map::new())
             });
         {
@@ -553,7 +562,9 @@ pub fn wire_rpc(rpc: &Arc<RpcManager>, hub: &SubscriptionHub) {
                 | EventSubscription::MESSAGE_UPDATE
                 | EventSubscription::ONESHOT_MESSAGE,
             Arc::new(move |ev: &Event| {
-                let Some(manager) = weak.upgrade() else { return };
+                let Some(manager) = weak.upgrade() else {
+                    return;
+                };
                 let ev = ev.clone();
                 tokio::spawn(async move { manager.handle_event(&ev).await });
             }),
@@ -653,7 +664,9 @@ pub async fn run_with<A: Application>(opts: RunOptions) -> Result<()> {
 
     let dda_uri = normalize_uri(&opts.dda_uri);
     tracing::info!("connecting to device agent at {dda_uri}");
-    let client = connect_with_retry(&dda_uri).await?.with_app_id(opts.app_key.clone());
+    let client = connect_with_retry(&dda_uri)
+        .await?
+        .with_app_id(opts.app_key.clone());
     let hub = SubscriptionHub::new(client.clone());
     let backend: Arc<dyn ChannelBackend> = Arc::new(client.clone());
 
@@ -800,7 +813,9 @@ pub async fn run_with<A: Application>(opts: RunOptions) -> Result<()> {
 /// including interactions nested inside containers (pydoover
 /// `UI.get_interactions` recurses).
 fn interaction_names<A: Application>(app: &A) -> Vec<String> {
-    app.ui().map(|ui| ui.interaction_names()).unwrap_or_default()
+    app.ui()
+        .map(|ui| ui.interaction_names())
+        .unwrap_or_default()
 }
 
 /// Serialize the UI (config refs resolved against the live deployment
@@ -856,8 +871,10 @@ async fn handle_runner_event<A: Application>(app: &mut A, ctx: &AppContext, even
                 }
                 Err(e) => {
                     tracing::error!("error in on_ui_command for '{}': {e}", cmd.name);
-                    if let Err(e2) =
-                        ctx.ui().respond_error(&cmd, "INTERNAL_ERROR", &e.to_string()).await
+                    if let Err(e2) = ctx
+                        .ui()
+                        .respond_error(&cmd, "INTERNAL_ERROR", &e.to_string())
+                        .await
                     {
                         tracing::error!("failed to send ui command error: {e2}");
                     }

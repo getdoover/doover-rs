@@ -31,7 +31,11 @@ pub struct FloatInput {
 
 impl FloatInput {
     pub fn new(display_name: &str) -> Self {
-        Self { interaction: InteractionCommon::new(display_name), min_val: None, max_val: None }
+        Self {
+            interaction: InteractionCommon::new(display_name),
+            min_val: None,
+            max_val: None,
+        }
     }
 
     pub fn min_val(mut self, min: impl IntoNumber) -> Self {
@@ -69,7 +73,10 @@ pub struct TextInput {
 
 impl TextInput {
     pub fn new(display_name: &str) -> Self {
-        Self { interaction: InteractionCommon::new(display_name), is_text_area: false }
+        Self {
+            interaction: InteractionCommon::new(display_name),
+            is_text_area: false,
+        }
     }
 
     /// Render as a large text area instead of an inline field.
@@ -204,7 +211,10 @@ mod tests {
 
     #[test]
     fn text_input_always_emits_is_text_area() {
-        assert_eq!(TextInput::new("Notes").to_json()["isTextArea"], json!(false));
+        assert_eq!(
+            TextInput::new("Notes").to_json()["isTextArea"],
+            json!(false)
+        );
         assert_eq!(
             TextInput::new("Notes").is_text_area(true).to_json()["isTextArea"],
             json!(true)
@@ -227,6 +237,9 @@ mod tests {
 
     #[test]
     fn time_input_type() {
-        assert_eq!(TimeInput::new("Run At").to_json()["type"], json!("uiTimeInput"));
+        assert_eq!(
+            TimeInput::new("Run At").to_json()["type"],
+            json!("uiTimeInput")
+        );
     }
 }

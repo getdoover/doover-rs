@@ -156,7 +156,10 @@ impl ElementSchema {
     pub fn enumeration(title: &str, name: &str, choices: Vec<Value>) -> Self {
         let ty = if choices.iter().all(|c| c.is_string()) {
             Some("string")
-        } else if choices.iter().all(|c| matches!(c, Value::Number(n) if n.is_f64())) {
+        } else if choices
+            .iter()
+            .all(|c| matches!(c, Value::Number(n) if n.is_f64()))
+        {
             Some("number")
         } else {
             None
@@ -199,14 +202,20 @@ impl ElementSchema {
     fn numeric_bounds_mut(&mut self) -> &mut NumericBounds {
         match &mut self.kind {
             ElementKind::Integer(b) | ElementKind::Number(b) => b,
-            _ => panic!("numeric constraint on non-numeric config element {:?}", self.name),
+            _ => panic!(
+                "numeric constraint on non-numeric config element {:?}",
+                self.name
+            ),
         }
     }
 
     fn string_bounds_mut(&mut self) -> &mut StringBounds {
         match &mut self.kind {
             ElementKind::String(b) => b,
-            _ => panic!("string constraint on non-string config element {:?}", self.name),
+            _ => panic!(
+                "string constraint on non-string config element {:?}",
+                self.name
+            ),
         }
     }
 
@@ -335,7 +344,12 @@ impl ElementSchema {
                     m.insert("pattern".into(), Value::String(p.clone()));
                 }
             }
-            ElementKind::Array { items, min_items, max_items, unique_items } => {
+            ElementKind::Array {
+                items,
+                min_items,
+                max_items,
+                unique_items,
+            } => {
                 m.insert("items".into(), items.to_json());
                 if let Some(n) = min_items {
                     m.insert("minItems".into(), Value::from(*n));
@@ -347,9 +361,16 @@ impl ElementSchema {
                     m.insert("uniqueItems".into(), Value::Bool(*u));
                 }
             }
-            ElementKind::Object { properties, additional_elements, collapsible, default_collapsed } => {
-                let props: Map<String, Value> =
-                    properties.iter().map(|el| (el.name.clone(), el.to_json())).collect();
+            ElementKind::Object {
+                properties,
+                additional_elements,
+                collapsible,
+                default_collapsed,
+            } => {
+                let props: Map<String, Value> = properties
+                    .iter()
+                    .map(|el| (el.name.clone(), el.to_json()))
+                    .collect();
                 m.insert("properties".into(), Value::Object(props));
                 m.insert("additionalElements".into(), additional_elements.clone());
                 let req: Vec<Value> = properties
@@ -407,8 +428,11 @@ impl SchemaModel {
         );
         m.insert("type".into(), Value::String("object".into()));
 
-        let props: Map<String, Value> =
-            self.elements.iter().map(|el| (el.name.clone(), el.to_json())).collect();
+        let props: Map<String, Value> = self
+            .elements
+            .iter()
+            .map(|el| (el.name.clone(), el.to_json()))
+            .collect();
         m.insert("properties".into(), Value::Object(props));
         m.insert("additionalElements".into(), Value::Bool(true));
 
@@ -452,7 +476,9 @@ mod tests {
         assert_eq!(v["type"], json!(["number", "null"]));
         assert_eq!(v["x-required"], json!(false));
         // int/float distinction survives serialization
-        assert!(serde_json::to_string(&v).unwrap().contains("\"default\":4.0"));
+        assert!(serde_json::to_string(&v)
+            .unwrap()
+            .contains("\"default\":4.0"));
     }
 
     #[test]
@@ -464,7 +490,10 @@ mod tests {
         );
         el.default = Some(json!("Submersible"));
         let out = serde_json::to_string(&el.to_json()).unwrap();
-        assert!(out.starts_with(r#"{"enum":["Submersible","Radar"],"title":"#), "{out}");
+        assert!(
+            out.starts_with(r#"{"enum":["Submersible","Radar"],"title":"#),
+            "{out}"
+        );
         assert!(out.contains(r#""type":["string","null"]"#));
     }
 
@@ -485,7 +514,10 @@ mod tests {
         schema.push(opt);
 
         let v = schema.to_json();
-        assert_eq!(v["$schema"], json!("https://json-schema.org/draft/2020-12/schema"));
+        assert_eq!(
+            v["$schema"],
+            json!("https://json-schema.org/draft/2020-12/schema")
+        );
         assert_eq!(v["$id"], json!(""));
         assert_eq!(v["title"], json!("$default"));
         assert_eq!(v["required"], json!(["ai_pin"]));

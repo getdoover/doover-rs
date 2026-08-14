@@ -30,7 +30,10 @@ pub struct MaybeFloat(pub Option<f32>);
 
 fn items(s: &str) -> impl Iterator<Item = &str> {
     let s = s.trim();
-    let s = s.strip_prefix('[').and_then(|s| s.strip_suffix(']')).unwrap_or(s);
+    let s = s
+        .strip_prefix('[')
+        .and_then(|s| s.strip_suffix(']'))
+        .unwrap_or(s);
     s.split(',').map(str::trim).filter(|p| !p.is_empty())
 }
 
@@ -101,11 +104,16 @@ fn parse_iso8601_millis(s: &str) -> Result<u64, String> {
             .or_else(|_| NaiveDateTime::parse_from_str(s, "%Y-%m-%d %H:%M:%S%.f"))
             .or_else(|_| {
                 NaiveDate::parse_from_str(s, "%Y-%m-%d").map(|d| {
-                    d.and_hms_opt(0, 0, 0).expect("midnight is always a valid time")
+                    d.and_hms_opt(0, 0, 0)
+                        .expect("midnight is always a valid time")
                 })
             })
             .map_err(|_| err())?;
-        naive.and_local_timezone(Local).single().ok_or_else(err)?.timestamp_millis()
+        naive
+            .and_local_timezone(Local)
+            .single()
+            .ok_or_else(err)?
+            .timestamp_millis()
     };
     u64::try_from(millis).map_err(|_| format!("{s:?} is before the unix epoch"))
 }
@@ -131,7 +139,13 @@ pub fn parse_snowflake_bound(s: &str) -> Result<u64, String> {
     if millis < DOOVER_EPOCH {
         return Err(format!("{s:?} is before the doover epoch (2025-01-01)"));
     }
-    Ok(generate_snowflake_id_at(millis, SnowflakeType::Unknown, 0, 0, false))
+    Ok(generate_snowflake_id_at(
+        millis,
+        SnowflakeType::Unknown,
+        0,
+        0,
+        false,
+    ))
 }
 
 #[cfg(test)]
@@ -152,15 +166,20 @@ mod tests {
     #[test]
     fn float_lists() {
         assert_eq!(parse_float_list("1.5").unwrap(), FloatList(vec![1.5]));
-        assert_eq!(parse_float_list("[1.5, 2]").unwrap(), FloatList(vec![1.5, 2.0]));
+        assert_eq!(
+            parse_float_list("[1.5, 2]").unwrap(),
+            FloatList(vec![1.5, 2.0])
+        );
         assert!(parse_float_list("nope").is_err());
     }
 
     #[test]
     fn bool_lists_accept_python_and_rust_spellings() {
         assert_eq!(parse_bool_list("True").unwrap(), BoolList(vec![true]));
-        assert_eq!(parse_bool_list("[true, False, 1, 0]").unwrap(),
-            BoolList(vec![true, false, true, false]));
+        assert_eq!(
+            parse_bool_list("[true, False, 1, 0]").unwrap(),
+            BoolList(vec![true, false, true, false])
+        );
         assert!(parse_bool_list("yes").is_err());
     }
 
@@ -180,10 +199,16 @@ mod tests {
 
     #[test]
     fn timestamps_accept_millis_and_iso8601() {
-        assert_eq!(parse_timestamp_ms("1750000000000").unwrap(), 1_750_000_000_000);
+        assert_eq!(
+            parse_timestamp_ms("1750000000000").unwrap(),
+            1_750_000_000_000
+        );
         // An explicit offset is honoured; `Z` is accepted (pydoover replaced it
         // with +00:00 before calling fromisoformat).
-        assert_eq!(parse_timestamp_ms("2025-06-15T12:00:00Z").unwrap(), 1_749_988_800_000);
+        assert_eq!(
+            parse_timestamp_ms("2025-06-15T12:00:00Z").unwrap(),
+            1_749_988_800_000
+        );
         assert_eq!(
             parse_timestamp_ms("2025-06-15T12:00:00+00:00").unwrap(),
             1_749_988_800_000

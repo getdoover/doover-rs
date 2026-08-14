@@ -26,7 +26,14 @@ fn manager(
 }
 
 fn set_logged(tags: &ProcessorTags, key: &str, value: Value) {
-    tags.set_tag_with(key, value, &SetProcessorTagOptions { log: true, ..Default::default() });
+    tags.set_tag_with(
+        key,
+        value,
+        &SetProcessorTagOptions {
+            log: true,
+            ..Default::default()
+        },
+    );
 }
 
 #[tokio::test]
@@ -59,7 +66,11 @@ async fn log_false_respects_record_disabled() {
 #[tokio::test]
 async fn default_mode_is_always_and_logs_full_aggregate() {
     let backend = Arc::new(MockBackend::new());
-    let tags = manager(&backend, json!({"test_app": {"voltage": 12.0, "current": 5.0}}), true);
+    let tags = manager(
+        &backend,
+        json!({"test_app": {"voltage": 12.0, "current": 5.0}}),
+        true,
+    );
     assert_eq!(tags.log_mode(), LogMode::Always);
 
     tags.set_tag("voltage", json!(13.2));
@@ -68,13 +79,20 @@ async fn default_mode_is_always_and_logs_full_aggregate() {
     // ALWAYS (the historical default) logs the whole aggregate.
     let messages = backend.messages();
     assert_eq!(messages.len(), 1);
-    assert_eq!(messages[0].data, json!({"test_app": {"voltage": 13.2, "current": 5.0}}));
+    assert_eq!(
+        messages[0].data,
+        json!({"test_app": {"voltage": 13.2, "current": 5.0}})
+    );
 }
 
 #[tokio::test]
 async fn only_changed_logs_dirty_subset() {
     let backend = Arc::new(MockBackend::new());
-    let tags = manager(&backend, json!({"test_app": {"voltage": 12.0, "current": 5.0}}), true);
+    let tags = manager(
+        &backend,
+        json!({"test_app": {"voltage": 12.0, "current": 5.0}}),
+        true,
+    );
     tags.set_log_mode(LogMode::OnlyChanged);
 
     // voltage moves; current is re-set to the same value.
@@ -110,7 +128,11 @@ async fn only_changed_skips_everything_when_nothing_changed() {
 #[tokio::test]
 async fn only_set_logs_reasserted_values() {
     let backend = Arc::new(MockBackend::new());
-    let tags = manager(&backend, json!({"test_app": {"voltage": 12.0, "current": 5.0}}), true);
+    let tags = manager(
+        &backend,
+        json!({"test_app": {"voltage": 12.0, "current": 5.0}}),
+        true,
+    );
     tags.set_log_mode(LogMode::OnlySet);
 
     tags.set_tag("voltage", json!(13.2)); // changed
@@ -120,7 +142,10 @@ async fn only_set_logs_reasserted_values() {
     // Both the changed and the re-asserted tag are logged...
     let messages = backend.messages();
     assert_eq!(messages.len(), 1);
-    assert_eq!(messages[0].data, json!({"test_app": {"voltage": 13.2, "current": 5.0}}));
+    assert_eq!(
+        messages[0].data,
+        json!({"test_app": {"voltage": 13.2, "current": 5.0}})
+    );
     // ...and the aggregate got the full current state.
     let writes = backend.aggregate_writes();
     assert_eq!(
@@ -157,7 +182,10 @@ async fn never_suppresses_log_but_updates_aggregate() {
 
     assert!(backend.messages().is_empty());
     let writes = backend.aggregate_writes();
-    assert_eq!(writes.last().unwrap().data, json!({"test_app": {"voltage": 13.2}}));
+    assert_eq!(
+        writes.last().unwrap().data,
+        json!({"test_app": {"voltage": 13.2}})
+    );
 }
 
 #[tokio::test]
@@ -180,7 +208,10 @@ async fn external_app_key_widens_commit_scope() {
     tags.set_tag_with(
         "remote",
         json!(1),
-        &SetProcessorTagOptions { app_key: Some("other_app".into()), ..Default::default() },
+        &SetProcessorTagOptions {
+            app_key: Some("other_app".into()),
+            ..Default::default()
+        },
     );
     tags.commit_tags().await.unwrap();
 

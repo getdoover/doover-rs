@@ -31,7 +31,9 @@ fn body_json(req: &wiremock::Request) -> Value {
         .is_some_and(|v| v.to_str().unwrap_or_default() == "gzip");
     if gzipped {
         let mut out = Vec::new();
-        flate2::read::GzDecoder::new(req.body.as_slice()).read_to_end(&mut out).unwrap();
+        flate2::read::GzDecoder::new(req.body.as_slice())
+            .read_to_end(&mut out)
+            .unwrap();
         serde_json::from_slice(&out).unwrap()
     } else {
         serde_json::from_slice(&req.body).unwrap()
@@ -90,11 +92,16 @@ async fn aggregate_404_maps_to_not_found_and_backend_none() {
         .await;
 
     let c = client(&server);
-    let err = c.fetch_channel_aggregate_raw("missing", None).await.unwrap_err();
+    let err = c
+        .fetch_channel_aggregate_raw("missing", None)
+        .await
+        .unwrap_err();
     assert!(matches!(err, DooverError::NotFound(_)), "got {err:?}");
 
     // Through the ChannelBackend trait a missing channel reads as None.
-    let agg = ChannelBackend::fetch_channel_data(&c, "missing").await.unwrap();
+    let agg = ChannelBackend::fetch_channel_data(&c, "missing")
+        .await
+        .unwrap();
     assert_eq!(agg, None);
 }
 
@@ -107,7 +114,10 @@ async fn client_errors_map_to_http_with_code() {
         .mount(&server)
         .await;
 
-    let err = client(&server).fetch_message("c", 9, None).await.unwrap_err();
+    let err = client(&server)
+        .fetch_message("c", 9, None)
+        .await
+        .unwrap_err();
     match err {
         DooverError::Http { code, message } => {
             assert_eq!(code, 403);
@@ -134,7 +144,10 @@ async fn server_errors_are_retried() {
         .mount(&server)
         .await;
 
-    let agg = client(&server).fetch_channel_aggregate_raw("c", None).await.unwrap();
+    let agg = client(&server)
+        .fetch_channel_aggregate_raw("c", None)
+        .await
+        .unwrap();
     assert_eq!(agg["data"]["ok"], json!(true));
 }
 
@@ -151,7 +164,10 @@ async fn update_aggregate_patch_with_flags_and_replace_keys() {
 
     let opts = AggregateOptions {
         save_log: true,
-        replace_keys: vec!["state.children.my_app".to_string(), "state.other".to_string()],
+        replace_keys: vec![
+            "state.children.my_app".to_string(),
+            "state.other".to_string(),
+        ],
         ..Default::default()
     };
     client(&server)
@@ -180,7 +196,10 @@ async fn replace_data_uses_put() {
         .mount(&server)
         .await;
 
-    let opts = AggregateOptions { replace_data: true, ..Default::default() };
+    let opts = AggregateOptions {
+        replace_data: true,
+        ..Default::default()
+    };
     client(&server)
         .update_channel_aggregate_http("c", &json!({"a": 1}), &opts, None)
         .await
@@ -203,13 +222,20 @@ async fn create_message_wraps_data_and_ts() {
         .await;
 
     let c = client(&server);
-    c.create_message_http("c", &json!({"v": 1}), Some(1751000000000), None).await.unwrap();
+    c.create_message_http("c", &json!({"v": 1}), Some(1751000000000), None)
+        .await
+        .unwrap();
     // Trait path: returns the (string) snowflake id parsed to u64.
-    let id = ChannelBackend::create_message(&c, "c", &json!({"v": 1})).await.unwrap();
+    let id = ChannelBackend::create_message(&c, "c", &json!({"v": 1}))
+        .await
+        .unwrap();
     assert_eq!(id, 12345678901234567);
 
     let reqs = server.received_requests().await.unwrap();
-    assert_eq!(body_json(&reqs[0]), json!({"data": {"v": 1}, "ts": 1751000000000u64}));
+    assert_eq!(
+        body_json(&reqs[0]),
+        json!({"data": {"v": 1}, "ts": 1751000000000u64})
+    );
     assert_eq!(body_json(&reqs[1]), json!({"data": {"v": 1}}));
 }
 
@@ -254,7 +280,10 @@ async fn list_messages_query_params() {
         field_names: vec!["a".into(), "b".into()],
         ..Default::default()
     };
-    let messages = client(&server).list_messages("c", &query, None).await.unwrap();
+    let messages = client(&server)
+        .list_messages("c", &query, None)
+        .await
+        .unwrap();
     assert_eq!(messages.len(), 1);
 
     let reqs = server.received_requests().await.unwrap();
@@ -283,7 +312,9 @@ async fn subscription_and_schedule_info_endpoints() {
     });
     // SNS subscription IDs are ARNs — colons ride in the path unescaped.
     Mock::given(method("GET"))
-        .and(path("/processors/subscriptions/arn:aws:sns:ap-southeast-2:1:t:u"))
+        .and(path(
+            "/processors/subscriptions/arn:aws:sns:ap-southeast-2:1:t:u",
+        ))
         .respond_with(ResponseTemplate::new(200).set_body_json(info.clone()))
         .expect(1)
         .mount(&server)
@@ -296,7 +327,10 @@ async fn subscription_and_schedule_info_endpoints() {
         .await;
 
     let c = client(&server);
-    let sub = c.fetch_subscription_info("arn:aws:sns:ap-southeast-2:1:t:u").await.unwrap();
+    let sub = c
+        .fetch_subscription_info("arn:aws:sns:ap-southeast-2:1:t:u")
+        .await
+        .unwrap();
     assert_eq!(sub.agent_id, 42);
     assert_eq!(sub.organisation_id, Some(7));
     assert_eq!(sub.app_key, "my_app");
@@ -320,7 +354,9 @@ async fn gzip_compresses_large_bodies_only() {
     let big = json!({"blob": "x".repeat(200)});
     c.create_message_http("c", &big, None, None).await.unwrap();
     let small = json!({"v": 1});
-    c.create_message_http("c", &small, None, None).await.unwrap();
+    c.create_message_http("c", &small, None, None)
+        .await
+        .unwrap();
 
     let reqs = server.received_requests().await.unwrap();
     let enc = |r: &wiremock::Request| {
@@ -386,7 +422,9 @@ async fn invoking_channel_guard_blocks_recursion() {
     c.set_app_key("my_app");
     c.set_invoking_channel(Some("some_channel".to_string()));
 
-    let err = c.create_message_http("some_channel", &json!({"x": 1}), None, None).await;
+    let err = c
+        .create_message_http("some_channel", &json!({"x": 1}), None, None)
+        .await;
     assert!(err.is_err(), "publishing to the invoking channel must fail");
 
     // tag_values is allowed — but only within this app's key.

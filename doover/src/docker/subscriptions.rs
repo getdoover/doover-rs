@@ -57,7 +57,10 @@ pub struct SubscriptionHub {
 
 impl SubscriptionHub {
     pub fn new(client: DeviceAgentClient) -> Self {
-        Self { client, state: Arc::new(Mutex::new(HubState::default())) }
+        Self {
+            client,
+            state: Arc::new(Mutex::new(HubState::default())),
+        }
     }
 
     /// Register a callback for events on a channel, filtered by `events`.
@@ -69,7 +72,9 @@ impl SubscriptionHub {
         if ch.task.is_none() {
             let hub = self.clone();
             let name = channel.to_string();
-            ch.task = Some(tokio::spawn(async move { hub.run_channel_stream(name).await }));
+            ch.task = Some(tokio::spawn(
+                async move { hub.run_channel_stream(name).await },
+            ));
         }
     }
 

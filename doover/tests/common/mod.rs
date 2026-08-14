@@ -82,7 +82,10 @@ pub struct FakeAgentState {
 impl FakeAgentState {
     /// Pre-seed a channel aggregate before the client connects.
     pub fn seed_aggregate(&self, channel: &str, data: Value) {
-        self.aggregates.lock().unwrap().insert(channel.to_string(), data);
+        self.aggregates
+            .lock()
+            .unwrap()
+            .insert(channel.to_string(), data);
     }
 
     /// Attach the envelope fields a real agent returns alongside `data`.
@@ -92,13 +95,20 @@ impl FakeAgentState {
         attachments: Vec<pb::Attachment>,
         last_updated: u64,
     ) {
-        self.aggregate_meta.lock().unwrap().insert(channel.to_string(), (attachments, last_updated));
+        self.aggregate_meta
+            .lock()
+            .unwrap()
+            .insert(channel.to_string(), (attachments, last_updated));
     }
 
     /// How many event-subscription streams have been opened for a channel
     /// over the fake's lifetime (reconnects open new ones).
     pub fn stream_count(&self, channel: &str) -> usize {
-        self.event_txs.lock().unwrap().get(channel).map_or(0, Vec::len)
+        self.event_txs
+            .lock()
+            .unwrap()
+            .get(channel)
+            .map_or(0, Vec::len)
     }
 
     /// Drop every live event stream (simulates the agent restarting).
@@ -109,7 +119,10 @@ impl FakeAgentState {
     /// Push an `AggregateUpdate` event to a channel's live subscribers,
     /// also updating the stored aggregate. `diff` rides in `request_data`.
     pub async fn publish_aggregate_update(&self, channel: &str, data: Value, diff: Value) {
-        self.aggregates.lock().unwrap().insert(channel.to_string(), data.clone());
+        self.aggregates
+            .lock()
+            .unwrap()
+            .insert(channel.to_string(), data.clone());
         let payload = json!({
             "author_id": 1,
             "channel": {"agent_id": 1, "name": channel},
@@ -117,7 +130,8 @@ impl FakeAgentState {
             "request_data": {"data": diff},
             "organisation_id": 1,
         });
-        self.publish_event(channel, "AggregateUpdate", payload).await;
+        self.publish_event(channel, "AggregateUpdate", payload)
+            .await;
     }
 
     /// Push a raw event to a channel's live subscribers.
@@ -263,13 +277,17 @@ impl DeviceAgent for FakeAgent {
             }
             entry.clone()
         };
-        self.0.aggregate_writes.lock().unwrap().push(RecordedAggregateWrite {
-            channel: req.channel_name,
-            data,
-            max_age_secs: req.max_age_secs,
-            save_log: req.save_log,
-            replace_data: req.replace_data.unwrap_or(false),
-        });
+        self.0
+            .aggregate_writes
+            .lock()
+            .unwrap()
+            .push(RecordedAggregateWrite {
+                channel: req.channel_name,
+                data,
+                max_age_secs: req.max_age_secs,
+                save_log: req.save_log,
+                replace_data: req.replace_data.unwrap_or(false),
+            });
         Ok(Response::new(pb::UpdateAggregateResponse {
             response_header: Some(ok_header()),
             aggregate: Some(pb::Aggregate {
@@ -385,18 +403,25 @@ impl DeviceAgent for FakeAgent {
             .message_id
             .parse()
             .map_err(|e| Status::invalid_argument(format!("bad message_id: {e}")))?;
-        self.0.message_updates.lock().unwrap().push(RecordedMessageUpdate {
-            channel: req.channel_name.clone(),
-            message_id,
-            data: data.clone(),
-            replace_data: req.replace_data.unwrap_or(false),
-        });
+        self.0
+            .message_updates
+            .lock()
+            .unwrap()
+            .push(RecordedMessageUpdate {
+                channel: req.channel_name.clone(),
+                message_id,
+                data: data.clone(),
+                replace_data: req.replace_data.unwrap_or(false),
+            });
         Ok(Response::new(pb::UpdateMessageResponse {
             response_header: Some(ok_header()),
             message: Some(pb::Message {
                 message_id,
                 author_id: 0,
-                channel: Some(pb::ChannelId { agent_id: 0, name: req.channel_name }),
+                channel: Some(pb::ChannelId {
+                    agent_id: 0,
+                    name: req.channel_name,
+                }),
                 data: None,
                 attachments: vec![],
                 data_json: data.to_string(),
@@ -430,7 +455,9 @@ impl DeviceAgent for FakeAgent {
 /// and a `http://…` URI for `DeviceAgentClient::connect`.
 pub async fn spawn_fake_agent() -> (Arc<FakeAgentState>, String) {
     let state = Arc::new(FakeAgentState::default());
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.expect("bind fake agent");
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+        .await
+        .expect("bind fake agent");
     let addr: SocketAddr = listener.local_addr().expect("local addr");
     let service = DeviceAgentServer::new(FakeAgent(state.clone()));
     tokio::spawn(async move {

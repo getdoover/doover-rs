@@ -104,7 +104,10 @@ async fn one_call(client: &DeviceAgentClient, op: &str, channel: &str, i: u64) -
                 .update_channel_aggregate(
                     channel,
                     &payload,
-                    &AggregateOptions { max_age_secs: 0.0, ..Default::default() },
+                    &AggregateOptions {
+                        max_age_secs: 0.0,
+                        ..Default::default()
+                    },
                 )
                 .await?;
         }
@@ -120,7 +123,10 @@ async fn main() -> Result<()> {
     // Read mode: fetch one channel aggregate and print it (round-trip proof).
     if let Some(ch) = &args.read {
         match client.fetch_channel_data(ch).await? {
-            Some(data) => println!("{}", serde_json::to_string_pretty(&data).unwrap_or_default()),
+            Some(data) => println!(
+                "{}",
+                serde_json::to_string_pretty(&data).unwrap_or_default()
+            ),
             None => println!("(channel {ch} not found)"),
         }
         return Ok(());
@@ -132,7 +138,10 @@ async fn main() -> Result<()> {
         client
             .update_channel_aggregate(ch, &data, &Default::default())
             .await?;
-        println!("set {ch} = {}", serde_json::to_string(&data).unwrap_or_default());
+        println!(
+            "set {ch} = {}",
+            serde_json::to_string(&data).unwrap_or_default()
+        );
         return Ok(());
     }
 
@@ -192,7 +201,10 @@ async fn main() -> Result<()> {
                 }
             }));
         }
-        eprintln!(">>> holding {} event subscriptions; SIGINT the agent to test shutdown", args.subscribe);
+        eprintln!(
+            ">>> holding {} event subscriptions; SIGINT the agent to test shutdown",
+            args.subscribe
+        );
         let _ = tokio::signal::ctrl_c().await;
         for h in handles {
             h.abort();
@@ -212,7 +224,11 @@ async fn main() -> Result<()> {
     let latencies = Arc::new(Mutex::new(Vec::<f64>::with_capacity(1_000_000)));
 
     let start = Instant::now();
-    let mode = if args.rps.is_some() { "paced" } else { "saturate" };
+    let mode = if args.rps.is_some() {
+        "paced"
+    } else {
+        "saturate"
+    };
     eprintln!(
         "# load_smasher mode={mode} op={} concurrency={} channels={} duration={}s uri={}",
         args.op, args.concurrency, args.channels, args.duration, args.uri
@@ -229,7 +245,9 @@ async fn main() -> Result<()> {
     }
 
     let mut workers = Vec::new();
-    let per_worker_interval = args.rps.map(|rps| Duration::from_secs_f64(args.concurrency as f64 / rps));
+    let per_worker_interval = args
+        .rps
+        .map(|rps| Duration::from_secs_f64(args.concurrency as f64 / rps));
     for _ in 0..args.concurrency {
         let client = client.clone();
         let channels = channels.clone();
@@ -300,7 +318,11 @@ async fn main() -> Result<()> {
     );
     eprintln!(
         ">>> rust client: {:.0} rps ({} reqs in {:.1}s), p95 {:.2}ms, errors {}",
-        total as f64 / elapsed, total, elapsed, pctl(95.0), errs.load(Ordering::Relaxed)
+        total as f64 / elapsed,
+        total,
+        elapsed,
+        pctl(95.0),
+        errs.load(Ordering::Relaxed)
     );
     Ok(())
 }

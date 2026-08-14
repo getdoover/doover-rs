@@ -26,7 +26,13 @@ pub enum NotificationSeverity {
 }
 
 impl NotificationSeverity {
-    pub const ALL: [Self; 5] = [Self::Trace, Self::Debug, Self::Info, Self::Warn, Self::Critical];
+    pub const ALL: [Self; 5] = [
+        Self::Trace,
+        Self::Debug,
+        Self::Info,
+        Self::Warn,
+        Self::Critical,
+    ];
 
     /// The variant name — how the API represents this member in JSON.
     pub fn wire(self) -> &'static str {
@@ -65,7 +71,10 @@ impl std::str::FromStr for NotificationSeverity {
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         let key = s.trim().to_ascii_lowercase();
-        if let Some(found) = Self::ALL.into_iter().find(|m| m.wire().to_lowercase() == key) {
+        if let Some(found) = Self::ALL
+            .into_iter()
+            .find(|m| m.wire().to_lowercase() == key)
+        {
             return Ok(found);
         }
         match key.as_str() {
@@ -133,12 +142,15 @@ impl std::str::FromStr for NotificationType {
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         let key = s.trim().to_ascii_lowercase();
-        Self::ALL.into_iter().find(|m| m.wire().to_lowercase() == key).ok_or_else(|| {
-            crate::error::DooverError::InvalidPayload(format!(
-                "{s:?} is not a valid NotificationType — expected one of {}",
-                Self::ALL.map(Self::wire).join(", ")
-            ))
-        })
+        Self::ALL
+            .into_iter()
+            .find(|m| m.wire().to_lowercase() == key)
+            .ok_or_else(|| {
+                crate::error::DooverError::InvalidPayload(format!(
+                    "{s:?} is not a valid NotificationType — expected one of {}",
+                    Self::ALL.map(Self::wire).join(", ")
+                ))
+            })
     }
 }
 
@@ -166,7 +178,12 @@ pub struct Notification {
 
 impl Notification {
     pub fn new(message: impl Into<String>) -> Self {
-        Self { message: message.into(), title: None, severity: None, topic: None }
+        Self {
+            message: message.into(),
+            title: None,
+            severity: None,
+            topic: None,
+        }
     }
 
     pub fn title(mut self, title: impl Into<String>) -> Self {
@@ -382,11 +399,20 @@ mod tests {
     fn severity_parses_names_and_common_misspellings() {
         use std::str::FromStr;
         // Names, case-insensitively.
-        assert_eq!(NotificationSeverity::from_str("Warn").unwrap(), NotificationSeverity::Warn);
-        assert_eq!(NotificationSeverity::from_str(" info ").unwrap(), NotificationSeverity::Info);
+        assert_eq!(
+            NotificationSeverity::from_str("Warn").unwrap(),
+            NotificationSeverity::Warn
+        );
+        assert_eq!(
+            NotificationSeverity::from_str(" info ").unwrap(),
+            NotificationSeverity::Info
+        );
         // The aliases people actually reach for, which the server rejects.
         for alias in ["warning", "WARNING"] {
-            assert_eq!(NotificationSeverity::from_str(alias).unwrap(), NotificationSeverity::Warn);
+            assert_eq!(
+                NotificationSeverity::from_str(alias).unwrap(),
+                NotificationSeverity::Warn
+            );
         }
         for alias in ["error", "err", "fatal", "crit", "critical"] {
             assert_eq!(
@@ -400,7 +426,10 @@ mod tests {
         // gives the name for the endpoints that need it.
         assert_eq!(NotificationSeverity::Warn.value(), 6);
         assert_eq!(NotificationSeverity::Warn.wire(), "Warn");
-        assert_eq!(NotificationSeverity::from_value(6), Some(NotificationSeverity::Warn));
+        assert_eq!(
+            NotificationSeverity::from_value(6),
+            Some(NotificationSeverity::Warn)
+        );
     }
 
     #[test]
@@ -410,7 +439,10 @@ mod tests {
         assert_eq!(NotificationType::WebPush.wire(), "WebPush");
         assert_eq!(NotificationType::FirebasePush.wire(), "FirebasePush");
         assert_eq!(NotificationType::FirebasePush.value(), 6);
-        assert_eq!(NotificationType::from_str("email").unwrap(), NotificationType::Email);
+        assert_eq!(
+            NotificationType::from_str("email").unwrap(),
+            NotificationType::Email
+        );
         assert_eq!(
             NotificationType::from_str("firebasepush").unwrap(),
             NotificationType::FirebasePush

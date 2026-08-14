@@ -134,8 +134,16 @@ impl UiRuntime {
             return None;
         }
         let value = data.get("request")?.clone();
-        let message_id = if event.is_one_shot() { None } else { event.message_id() };
-        Some(UiCommand { name: method.to_string(), value, message_id })
+        let message_id = if event.is_one_shot() {
+            None
+        } else {
+            event.message_id()
+        };
+        Some(UiCommand {
+            name: method.to_string(),
+            value,
+            message_id,
+        })
     }
 
     /// The cached current value of an interaction from the `ui_cmds`
@@ -176,7 +184,9 @@ impl UiRuntime {
     /// Update the command's request message with pydoover's `success` status
     /// payload. One-shot commands have no message to respond to (no-op).
     pub(crate) async fn respond_success(&self, cmd: &UiCommand) -> Result<()> {
-        let Some(id) = cmd.message_id else { return Ok(()) };
+        let Some(id) = cmd.message_id else {
+            return Ok(());
+        };
         let data = json!({
             "status": {"code": "success", "message": null},
             "response": {},
@@ -194,7 +204,9 @@ impl UiRuntime {
         code: &str,
         message: &str,
     ) -> Result<()> {
-        let Some(id) = cmd.message_id else { return Ok(()) };
+        let Some(id) = cmd.message_id else {
+            return Ok(());
+        };
         let data = json!({
             "status": {
                 "code": "error",
@@ -223,7 +235,10 @@ impl UiRuntime {
             children.insert(self.app_key.clone(), inner);
             json!({"state": {"children": children}})
         };
-        let opts = AggregateOptions { max_age_secs: -1.0, ..Default::default() };
+        let opts = AggregateOptions {
+            max_age_secs: -1.0,
+            ..Default::default()
+        };
         self.backend
             .update_channel_aggregate(UI_STATE_CHANNEL, &wrap(Value::Null), &opts)
             .await?;
@@ -247,11 +262,16 @@ impl UiRuntime {
 pub fn resolve_config_refs(value: &Value, config: &Value) -> Value {
     match value {
         Value::Object(m) => Value::Object(
-            m.iter().map(|(k, v)| (k.clone(), resolve_config_refs(v, config))).collect(),
+            m.iter()
+                .map(|(k, v)| (k.clone(), resolve_config_refs(v, config)))
+                .collect(),
         ),
-        Value::Array(items) => {
-            Value::Array(items.iter().map(|v| resolve_config_refs(v, config)).collect())
-        }
+        Value::Array(items) => Value::Array(
+            items
+                .iter()
+                .map(|v| resolve_config_refs(v, config))
+                .collect(),
+        ),
         Value::String(s) if s.contains("$config.app().") => resolve_single_ref(s, config),
         other => other.clone(),
     }
@@ -262,7 +282,9 @@ pub fn resolve_config_refs(value: &Value, config: &Value) -> Value {
 /// a non-matching string is returned unchanged.
 fn resolve_single_ref(s: &str, config: &Value) -> Value {
     let unchanged = || Value::String(s.to_string());
-    let Some(rest) = s.strip_prefix("$config.app().") else { return unchanged() };
+    let Some(rest) = s.strip_prefix("$config.app().") else {
+        return unchanged();
+    };
 
     let is_word = |c: char| c.is_ascii_alphanumeric() || c == '_';
     let key_len = rest.chars().take_while(|c| is_word(*c)).count();
@@ -318,7 +340,10 @@ fn resolve_single_ref(s: &str, config: &Value) -> Value {
                 // falling back to raw on failure.
                 let s = python_string_of(other);
                 if s.contains('.') {
-                    s.parse::<f64>().ok().and_then(serde_json::Number::from_f64).map_or(raw.clone(), Value::Number)
+                    s.parse::<f64>()
+                        .ok()
+                        .and_then(serde_json::Number::from_f64)
+                        .map_or(raw.clone(), Value::Number)
                 } else {
                     s.parse::<i64>().map_or(raw.clone(), Value::from)
                 }
@@ -355,7 +380,10 @@ mod tests {
             resolve_single_ref("$config.app().APP_DISPLAY_NAME", &config),
             json!("Level Sensor")
         );
-        assert_eq!(resolve_single_ref("$config.app().APP_KEY", &config), json!("my_app"));
+        assert_eq!(
+            resolve_single_ref("$config.app().APP_KEY", &config),
+            json!("my_app")
+        );
         assert_eq!(
             resolve_single_ref("$config.app().dv_app_position:number:100", &config),
             json!(42)
@@ -443,7 +471,11 @@ mod tests {
 
     #[test]
     fn ui_command_matching() {
-        let cmd = UiCommand { name: "pump".into(), value: json!(true), message_id: Some(1) };
+        let cmd = UiCommand {
+            name: "pump".into(),
+            value: json!(true),
+            message_id: Some(1),
+        };
         assert_eq!(cmd.value_as::<bool>(), Some(true));
         assert_eq!(cmd.value_as::<f64>(), None);
     }

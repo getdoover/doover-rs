@@ -49,7 +49,11 @@ pub enum ModbusCmd {
         #[arg(long, default_value = "default")]
         name: String,
         /// Serial device path.
-        #[arg(long = "serial_port", alias = "serial-port", default_value = "/dev/ttyS0")]
+        #[arg(
+            long = "serial_port",
+            alias = "serial-port",
+            default_value = "/dev/ttyS0"
+        )]
         serial_port: String,
         /// Serial baud rate.
         #[arg(long = "serial_baud", alias = "serial-baud", default_value_t = 9600)]
@@ -67,7 +71,11 @@ pub enum ModbusCmd {
         #[arg(long = "serial_stop", alias = "serial-stop", default_value_t = 1)]
         serial_stop: i32,
         /// Serial timeout in seconds.
-        #[arg(long = "serial_timeout", alias = "serial-timeout", default_value_t = 0.3)]
+        #[arg(
+            long = "serial_timeout",
+            alias = "serial-timeout",
+            default_value_t = 0.3
+        )]
         serial_timeout: f32,
         /// Modbus/TCP target as 'ip:port'.
         #[arg(long = "tcp_uri", alias = "tcp-uri", default_value = "127.0.0.1:5000")]

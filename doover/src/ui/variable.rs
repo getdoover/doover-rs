@@ -306,7 +306,12 @@ mod tests {
             .ranges(vec![Range::new("Low", 0, 15.0, Colour::BLUE)]);
         v.set_position_if_unset(51);
         let out = v.to_json();
-        let keys: Vec<_> = out.as_object().unwrap().keys().map(String::as_str).collect();
+        let keys: Vec<_> = out
+            .as_object()
+            .unwrap()
+            .keys()
+            .map(String::as_str)
+            .collect();
         assert_eq!(
             keys,
             [
@@ -338,9 +343,18 @@ mod tests {
 
     #[test]
     fn var_types() {
-        assert_eq!(BooleanVariable::new("On").to_json()["varType"], json!("bool"));
-        assert_eq!(DateTimeVariable::new("At").to_json()["varType"], json!("time"));
-        assert_eq!(TextVariable::new("Name").to_json()["varType"], json!("string"));
+        assert_eq!(
+            BooleanVariable::new("On").to_json()["varType"],
+            json!("bool")
+        );
+        assert_eq!(
+            DateTimeVariable::new("At").to_json()["varType"],
+            json!("time")
+        );
+        assert_eq!(
+            TextVariable::new("Name").to_json()["varType"],
+            json!("string")
+        );
     }
 
     #[test]
@@ -360,12 +374,19 @@ mod tests {
 
     #[test]
     fn timestamp_precision_quirk_emits_both_keys() {
-        let t = Timestamp::new("Next Run").value(1_700_000_000_000_i64).precision("second");
+        let t = Timestamp::new("Next Run")
+            .value(1_700_000_000_000_i64)
+            .precision("second");
         let out = t.to_json();
         assert_eq!(out["currentValue"], json!(1_700_000_000_000_i64));
         assert_eq!(out["decPrecision"], json!("second"));
         assert_eq!(out["precision"], json!("second"));
-        let keys: Vec<_> = out.as_object().unwrap().keys().map(String::as_str).collect();
+        let keys: Vec<_> = out
+            .as_object()
+            .unwrap()
+            .keys()
+            .map(String::as_str)
+            .collect();
         let dec = keys.iter().position(|k| *k == "decPrecision").unwrap();
         let plain = keys.iter().position(|k| *k == "precision").unwrap();
         assert!(dec < plain, "{keys:?}");

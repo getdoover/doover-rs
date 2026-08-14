@@ -11,11 +11,11 @@
 //! regenerating it from pydoover is a deliberate, reviewed act.
 #![cfg(feature = "macros")]
 
+use doover::config::write_ui_schema;
 use doover::tags::{Tag, TagsCollection};
 use doover::ui::{
     Colour, NumericVariable, Range, UiApplicationInfo, UiBuild, UiElement, UiTree, Widget,
 };
-use doover::config::write_ui_schema;
 use doover::{Tags, Ui};
 use serde_json::Value;
 
@@ -127,7 +127,12 @@ fn export_round_trip_is_byte_identical() {
 fn tags_derive_declarations() {
     assert_eq!(
         AnalogLevelSensorTags::tag_names(),
-        ["level_filled_percentage", "level_reading", "raw_level_reading", "level_volume"]
+        [
+            "level_filled_percentage",
+            "level_reading",
+            "raw_level_reading",
+            "level_volume"
+        ]
     );
     assert_eq!(
         AnalogLevelSensorTags::live_tag_names(),
@@ -145,8 +150,14 @@ fn tags_derive_declarations() {
         tags.level_filled_percentage.ui_reference(),
         "$tag.app().level_filled_percentage:number:null"
     );
-    assert_eq!(tags.level_reading.ui_reference(), "$tag.app().level_reading:number:null");
-    assert_eq!(tags.level_volume.ui_reference(), "$tag.app().level_volume:number:null");
+    assert_eq!(
+        tags.level_reading.ui_reference(),
+        "$tag.app().level_reading:number:null"
+    );
+    assert_eq!(
+        tags.level_volume.ui_reference(),
+        "$tag.app().level_volume:number:null"
+    );
 
     // default=None reads back as no value on a detached handle.
     assert_eq!(tags.level_filled_percentage.get(), None);

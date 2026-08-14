@@ -85,7 +85,8 @@ fn camel_to_title(variant: &str) -> String {
 
 /// pydoover `check_key`: keys may only contain `[ a-zA-Z0-9_-]`.
 fn check_key(key: &str) -> bool {
-    key.chars().all(|c| c == ' ' || c == '-' || c == '_' || c.is_ascii_alphanumeric())
+    key.chars()
+        .all(|c| c == ' ' || c == '-' || c == '_' || c.is_ascii_alphanumeric())
 }
 
 // ---------------------------------------------------------------------------
@@ -160,7 +161,11 @@ fn doc_comment(attrs: &[syn::Attribute]) -> Option<String> {
             continue;
         }
         if let syn::Meta::NameValue(nv) = &attr.meta {
-            if let syn::Expr::Lit(syn::ExprLit { lit: syn::Lit::Str(s), .. }) = &nv.value {
+            if let syn::Expr::Lit(syn::ExprLit {
+                lit: syn::Lit::Str(s),
+                ..
+            }) = &nv.value
+            {
                 let line = s.value();
                 lines.push(line.strip_prefix(' ').unwrap_or(&line).to_string());
             }
@@ -185,7 +190,10 @@ fn number_tokens(lit: &syn::Lit) -> syn::Result<TokenStream2> {
                     .expect("config bound must be finite")
             })
         }
-        other => Err(syn::Error::new(other.span(), "expected an integer or float literal")),
+        other => Err(syn::Error::new(
+            other.span(),
+            "expected an integer or float literal",
+        )),
     }
 }
 
@@ -201,7 +209,9 @@ fn generic_inner<'a>(ty: &'a Type, wrapper: &str) -> Option<&'a Type> {
     if seg.ident != wrapper {
         return None;
     }
-    let syn::PathArguments::AngleBracketed(args) = &seg.arguments else { return None };
+    let syn::PathArguments::AngleBracketed(args) = &seg.arguments else {
+        return None;
+    };
     if args.args.len() != 1 {
         return None;
     }
@@ -231,7 +241,10 @@ fn field_element_block(field: &syn::Field, position: u32) -> syn::Result<TokenSt
         }
     }
     let key = attrs.name.clone().unwrap_or_else(|| field_name.clone());
-    let title = attrs.title.clone().unwrap_or_else(|| title_case(&field_name));
+    let title = attrs
+        .title
+        .clone()
+        .unwrap_or_else(|| title_case(&field_name));
 
     // pydoover derives the key from the title; verify a custom title round-trips
     // to the field name so Rust and Python declarations of the same schema agree.
@@ -370,7 +383,9 @@ fn named_fields(input: &DeriveInput, derive: &str) -> syn::Result<FieldsNamed> {
 #[proc_macro_derive(Config, attributes(config))]
 pub fn derive_config(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
-    expand_config(input).unwrap_or_else(|e| e.to_compile_error()).into()
+    expand_config(input)
+        .unwrap_or_else(|e| e.to_compile_error())
+        .into()
 }
 
 fn expand_config(input: DeriveInput) -> syn::Result<TokenStream2> {
@@ -442,7 +457,9 @@ fn expand_config(input: DeriveInput) -> syn::Result<TokenStream2> {
 #[proc_macro_derive(ConfigObject, attributes(config))]
 pub fn derive_config_object(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
-    expand_config_object(input).unwrap_or_else(|e| e.to_compile_error()).into()
+    expand_config_object(input)
+        .unwrap_or_else(|e| e.to_compile_error())
+        .into()
 }
 
 fn expand_config_object(input: DeriveInput) -> syn::Result<TokenStream2> {
@@ -501,7 +518,9 @@ fn expand_config_object(input: DeriveInput) -> syn::Result<TokenStream2> {
 #[proc_macro_derive(ConfigEnum, attributes(config))]
 pub fn derive_config_enum(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
-    expand_config_enum(input).unwrap_or_else(|e| e.to_compile_error()).into()
+    expand_config_enum(input)
+        .unwrap_or_else(|e| e.to_compile_error())
+        .into()
 }
 
 fn expand_config_enum(input: DeriveInput) -> syn::Result<TokenStream2> {
@@ -653,7 +672,11 @@ impl syn::parse::Parse for TriggerSpec {
                 }
             }
         }
-        Ok(Self { name, positional, named })
+        Ok(Self {
+            name,
+            positional,
+            named,
+        })
     }
 }
 
@@ -816,7 +839,9 @@ fn expr_is_none(expr: &syn::Expr) -> bool {
 #[proc_macro_derive(Tags, attributes(tag))]
 pub fn derive_tags(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
-    expand_tags(input).unwrap_or_else(|e| e.to_compile_error()).into()
+    expand_tags(input)
+        .unwrap_or_else(|e| e.to_compile_error())
+        .into()
 }
 
 fn expand_tags(input: DeriveInput) -> syn::Result<TokenStream2> {
@@ -861,13 +886,15 @@ fn expand_tags(input: DeriveInput) -> syn::Result<TokenStream2> {
         // recognized primitive (unrecognized aliases fall through to the
         // runtime panic in `Tag::with_log_on`).
         let inner_numeric: Option<bool> = if let Type::Path(tp) = inner {
-            tp.path.segments.last().map(|seg| seg.ident.to_string()).and_then(|id| {
-                match id.as_str() {
+            tp.path
+                .segments
+                .last()
+                .map(|seg| seg.ident.to_string())
+                .and_then(|id| match id.as_str() {
                     "f64" | "i64" => Some(true),
                     "bool" | "String" => Some(false),
                     _ => None,
-                }
-            })
+                })
         } else {
             None
         };
@@ -968,13 +995,19 @@ fn expand_tags(input: DeriveInput) -> syn::Result<TokenStream2> {
 #[proc_macro_derive(Ui)]
 pub fn derive_ui(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
-    expand_ui(input).unwrap_or_else(|e| e.to_compile_error()).into()
+    expand_ui(input)
+        .unwrap_or_else(|e| e.to_compile_error())
+        .into()
 }
 
 fn expand_ui(input: DeriveInput) -> syn::Result<TokenStream2> {
     let fields = named_fields(&input, "Ui")?;
     let ident = &input.ident;
-    let field_idents: Vec<_> = fields.named.iter().map(|f| f.ident.as_ref().unwrap()).collect();
+    let field_idents: Vec<_> = fields
+        .named
+        .iter()
+        .map(|f| f.ident.as_ref().unwrap())
+        .collect();
 
     Ok(quote! {
         const _: () = {
@@ -1004,14 +1037,20 @@ mod tests {
 
     #[test]
     fn sanitize_matches_pydoover() {
-        assert_eq!(sanitize_display_name("Sensor Minimum mA"), "sensor_minimum_ma");
+        assert_eq!(
+            sanitize_display_name("Sensor Minimum mA"),
+            "sensor_minimum_ma"
+        );
         assert_eq!(sanitize_display_name("AI Pin"), "ai_pin");
     }
 
     #[test]
     fn title_case_from_field_name() {
         assert_eq!(title_case("sensor_type"), "Sensor Type");
-        assert_eq!(title_case("volume_decimal_precision"), "Volume Decimal Precision");
+        assert_eq!(
+            title_case("volume_decimal_precision"),
+            "Volume Decimal Precision"
+        );
     }
 
     #[test]
@@ -1022,7 +1061,10 @@ mod tests {
 
     fn trigger_tokens(src: &str) -> String {
         let spec: TriggerSpec = syn::parse_str(src).expect("spec parses");
-        spec.to_tokens().expect("tokens generate").to_string().replace(' ', "")
+        spec.to_tokens()
+            .expect("tokens generate")
+            .to_string()
+            .replace(' ', "")
     }
 
     #[test]
@@ -1039,7 +1081,10 @@ mod tests {
             trigger_tokens("delta(percent = 10)"),
             "::doover::tags::LogTrigger::delta_percent((10)asf64)"
         );
-        assert_eq!(trigger_tokens("any_change"), "::doover::tags::LogTrigger::any_change()");
+        assert_eq!(
+            trigger_tokens("any_change"),
+            "::doover::tags::LogTrigger::any_change()"
+        );
         assert!(trigger_tokens("enter(\"fault\")").contains("json!(\"fault\")"));
     }
 

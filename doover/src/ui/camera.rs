@@ -10,7 +10,10 @@ use super::element::{impl_element_common, ElementCommon};
 /// unconditionally.
 fn camera_tail(m: &mut Map<String, Value>, presets: &[Value], active_preset: &Option<Value>) {
     m.insert("presets".into(), Value::Array(presets.to_vec()));
-    m.insert("activePreset".into(), active_preset.clone().unwrap_or(Value::Null));
+    m.insert(
+        "activePreset".into(),
+        active_preset.clone().unwrap_or(Value::Null),
+    );
 }
 
 /// A live camera stream view (pydoover `ui.CameraLiveView`, type

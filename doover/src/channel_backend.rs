@@ -31,6 +31,30 @@ impl Attachment {
             "url": self.url,
         })
     }
+
+    /// Decode the proto form (the aggregate and message decoders share this).
+    pub(crate) fn from_proto(a: &doover_proto::device_agent::Attachment) -> Self {
+        Self {
+            filename: a.filename.clone(),
+            // The proto has no presence on this field, so an empty string is
+            // how "unknown" arrives.
+            content_type: (!a.content_type.is_empty()).then(|| a.content_type.clone()),
+            size: a.size_bytes.max(0) as u64,
+            url: a.url.clone(),
+        }
+    }
+
+    /// The proto form, for
+    /// [`DeviceAgentClient::fetch_message_attachment`](crate::DeviceAgentClient::fetch_message_attachment),
+    /// which takes the raw proto type.
+    pub fn to_proto(&self) -> doover_proto::device_agent::Attachment {
+        doover_proto::device_agent::Attachment {
+            filename: self.filename.clone(),
+            content_type: self.content_type.clone().unwrap_or_default(),
+            size_bytes: self.size as i64,
+            url: self.url.clone(),
+        }
+    }
 }
 
 /// A channel aggregate: the whole object, not just its payload. `data` is the

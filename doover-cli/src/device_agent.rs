@@ -261,9 +261,11 @@ fn write_attachment(file: pb::File, output: Option<PathBuf>, base64: bool) -> Cl
             return Ok(());
         }
         if std::io::stdout().is_terminal() {
-            return Err("Binary attachment cannot be written to an interactive terminal; \
+            return Err(
+                "Binary attachment cannot be written to an interactive terminal; \
                         use --output PATH, --base64, or redirect stdout"
-                .into());
+                    .into(),
+            );
         }
         let mut stdout = std::io::stdout().lock();
         stdout.write_all(&file.data)?;
@@ -352,14 +354,22 @@ pub async fn run(uri: &str, app_key: &str, cmd: DeviceAgentCmd) -> CliResult {
                 ..Default::default()
             };
             if return_aggregate {
-                let aggregate =
-                    client.update_channel_aggregate_returning(&channel_name, &data, &opts).await?;
+                let aggregate = client
+                    .update_channel_aggregate_returning(&channel_name, &data, &opts)
+                    .await?;
                 print_json(&aggregate.map_or(Value::Null, |a| a.to_json()));
             } else {
-                client.update_channel_aggregate(&channel_name, &data, &opts).await?;
+                client
+                    .update_channel_aggregate(&channel_name, &data, &opts)
+                    .await?;
             }
         }
-        DeviceAgentCmd::CreateMessage { channel_name, data, timestamp, files } => {
+        DeviceAgentCmd::CreateMessage {
+            channel_name,
+            data,
+            timestamp,
+            files,
+        } => {
             files.warn_if_set();
             let id = match timestamp {
                 Some(ts) => client.create_message_at(&channel_name, &data, ts).await?,
@@ -367,19 +377,41 @@ pub async fn run(uri: &str, app_key: &str, cmd: DeviceAgentCmd) -> CliResult {
             };
             print_json(&json!(id));
         }
-        DeviceAgentCmd::SendOneshotMessage { channel_name, data, timestamp } => {
+        DeviceAgentCmd::SendOneshotMessage {
+            channel_name,
+            data,
+            timestamp,
+        } => {
             match timestamp {
-                Some(ts) => client.send_one_shot_message_at(&channel_name, &data, ts).await?,
+                Some(ts) => {
+                    client
+                        .send_one_shot_message_at(&channel_name, &data, ts)
+                        .await?
+                }
                 None => client.send_one_shot_message(&channel_name, &data).await?,
             }
             print_json(&json!(true));
         }
-        DeviceAgentCmd::FetchMessage { channel_name, message_id } => {
+        DeviceAgentCmd::FetchMessage {
+            channel_name,
+            message_id,
+        } => {
             let message = client.fetch_message(&channel_name, message_id).await?;
             print_json(&message_json(&message));
         }
-        DeviceAgentCmd::ListMessages { channel_name, before, after, limit, field_names } => {
-            let opts = ListMessagesOptions { before, after, limit, field_names };
+        DeviceAgentCmd::ListMessages {
+            channel_name,
+            before,
+            after,
+            limit,
+            field_names,
+        } => {
+            let opts = ListMessagesOptions {
+                before,
+                after,
+                limit,
+                field_names,
+            };
             let messages = client.list_messages(&channel_name, &opts).await?;
             print_json(&Value::Array(messages.iter().map(message_json).collect()));
         }
@@ -392,17 +424,28 @@ pub async fn run(uri: &str, app_key: &str, cmd: DeviceAgentCmd) -> CliResult {
             files,
         } => {
             files.warn_if_set();
-            let opts = UpdateMessageOptions { replace_data, clear_attachments };
-            let message = client.update_message(&channel_name, message_id, &data, &opts).await?;
+            let opts = UpdateMessageOptions {
+                replace_data,
+                clear_attachments,
+            };
+            let message = client
+                .update_message(&channel_name, message_id, &data, &opts)
+                .await?;
             print_json(&message_json(&message));
         }
-        DeviceAgentCmd::FetchMessageAttachment { url, output, force, base64 } => {
+        DeviceAgentCmd::FetchMessageAttachment {
+            url,
+            output,
+            force,
+            base64,
+        } => {
             if let Some(path) = &output {
                 if path.exists() && !force {
-                    return Err(
-                        format!("{} already exists; use --force to overwrite it", path.display())
-                            .into(),
-                    );
+                    return Err(format!(
+                        "{} already exists; use --force to overwrite it",
+                        path.display()
+                    )
+                    .into());
                 }
             }
             // FetchAttachment only reads the URL, so the remaining fields are
@@ -427,8 +470,13 @@ pub async fn run(uri: &str, app_key: &str, cmd: DeviceAgentCmd) -> CliResult {
                 "uris": c.uris,
             }));
         }
-        DeviceAgentCmd::ListenChannel { channel_name, no_replay } => {
-            let opts = SubscribeOptions { replay_missed_messages: !no_replay };
+        DeviceAgentCmd::ListenChannel {
+            channel_name,
+            no_replay,
+        } => {
+            let opts = SubscribeOptions {
+                replay_missed_messages: !no_replay,
+            };
 
             // Reconnect forever, as pydoover's stream_channel_events does.
             loop {

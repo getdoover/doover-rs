@@ -21,7 +21,10 @@ pub struct ChannelId {
 impl ChannelId {
     fn from_value(data: &Value) -> Result<Self> {
         Ok(Self {
-            agent_id: data.get("agent_id").and_then(value_as_id).unwrap_or_default(),
+            agent_id: data
+                .get("agent_id")
+                .and_then(value_as_id)
+                .unwrap_or_default(),
             name: data
                 .get("name")
                 .and_then(Value::as_str)
@@ -45,7 +48,10 @@ impl EventMessage {
     fn from_value(data: &Value) -> Result<Self> {
         Ok(Self {
             id: data.get("id").and_then(value_as_id).unwrap_or_default(),
-            author_id: data.get("author_id").and_then(value_as_id).unwrap_or_default(),
+            author_id: data
+                .get("author_id")
+                .and_then(value_as_id)
+                .unwrap_or_default(),
             channel: ChannelId::from_value(
                 data.get("channel")
                     .ok_or_else(|| DooverError::InvalidPayload("message missing channel".into()))?,
@@ -66,7 +72,10 @@ pub struct MessageCreateEvent {
 impl MessageCreateEvent {
     pub fn from_value(d: &Value) -> Result<Self> {
         let message = EventMessage::from_value(d.get("message").unwrap_or(d))?;
-        Ok(Self { channel: message.channel.clone(), message })
+        Ok(Self {
+            channel: message.channel.clone(),
+            message,
+        })
     }
 }
 
@@ -145,7 +154,9 @@ pub struct ScheduleEvent {
 
 impl ScheduleEvent {
     pub fn from_value(d: &Value) -> Result<Self> {
-        Ok(Self { schedule_id: id_string(d.get("schedule_id")).unwrap_or_default() })
+        Ok(Self {
+            schedule_id: id_string(d.get("schedule_id")).unwrap_or_default(),
+        })
     }
 }
 
@@ -182,7 +193,10 @@ impl IngestionEndpointEvent {
                 .get("invocation_url")
                 .and_then(Value::as_str)
                 .map(str::to_string),
-            content_type: d.get("content_type").and_then(Value::as_str).map(str::to_string),
+            content_type: d
+                .get("content_type")
+                .and_then(Value::as_str)
+                .map(str::to_string),
         })
     }
 }

@@ -29,7 +29,11 @@ use crate::error::{DooverError, Result};
 /// Read `path` (if present), set `data[app_name]["config_schema"] =
 /// schema_json` and write the file back with Python `json.dumps(indent=4)`
 /// formatting. Other keys (and their order) are preserved.
-pub fn write_config_schema(path: impl AsRef<Path>, app_name: &str, schema_json: Value) -> Result<()> {
+pub fn write_config_schema(
+    path: impl AsRef<Path>,
+    app_name: &str,
+    schema_json: Value,
+) -> Result<()> {
     write_app_entry(path.as_ref(), app_name, "config_schema", schema_json)
 }
 
@@ -80,7 +84,10 @@ mod tests {
 
     fn temp_path(name: &str) -> std::path::PathBuf {
         let mut p = std::env::temp_dir();
-        p.push(format!("doover-rs-export-{}-{name}.json", std::process::id()));
+        p.push(format!(
+            "doover-rs-export-{}-{name}.json",
+            std::process::id()
+        ));
         p
     }
 
@@ -100,8 +107,11 @@ mod tests {
     #[test]
     fn preserves_other_keys_and_order() {
         let path = temp_path("merge");
-        std::fs::write(&path, r#"{"other": 1, "my_app": {"id": 42, "config_schema": {"old": true}, "z": null}}"#)
-            .unwrap();
+        std::fs::write(
+            &path,
+            r#"{"other": 1, "my_app": {"id": 42, "config_schema": {"old": true}, "z": null}}"#,
+        )
+        .unwrap();
         write_config_schema(&path, "my_app", json!({"new": true})).unwrap();
         let text = std::fs::read_to_string(&path).unwrap();
         let v: Value = serde_json::from_str(&text).unwrap();

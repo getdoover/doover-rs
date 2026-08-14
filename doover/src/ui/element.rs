@@ -9,7 +9,10 @@ use crate::config::sanitize_display_name;
 /// `ValueError` — element declaration is startup-time code.
 pub(crate) fn validate_element_name(name: &str) {
     let valid = !name.is_empty() && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_');
-    assert!(valid, "invalid UI element name: {name:?}. Must be [a-zA-Z0-9_]");
+    assert!(
+        valid,
+        "invalid UI element name: {name:?}. Must be [a-zA-Z0-9_]"
+    );
 }
 
 /// The base attributes of a pydoover `ui.Element`. `Option<T>` fields model
@@ -64,7 +67,10 @@ impl ElementCommon {
         let mut m = Map::new();
         m.insert("name".into(), Value::String(self.name.clone()));
         m.insert("type".into(), Value::String(ty.to_string()));
-        m.insert("displayString".into(), Value::String(self.display_name.clone()));
+        m.insert(
+            "displayString".into(),
+            Value::String(self.display_name.clone()),
+        );
         if let Some(v) = &self.is_available {
             m.insert("isAvailable".into(), v.clone());
         }
@@ -486,8 +492,11 @@ impl Multiplot {
     /// `earliestDataDate?`.
     fn element_json(&self) -> Value {
         let mut m = self.common.base_json("uiMultiPlot");
-        let series: Map<String, Value> =
-            self.series.iter().map(|s| (s.name.clone(), s.to_json())).collect();
+        let series: Map<String, Value> = self
+            .series
+            .iter()
+            .map(|s| (s.name.clone(), s.to_json()))
+            .collect();
         m.insert("series".into(), Value::Object(series));
         if let Some(z) = &self.default_zoom {
             m.insert("defaultZoom".into(), Value::String(z.clone()));
@@ -530,6 +539,9 @@ mod tests {
         let keys: Vec<_> = m.keys().map(String::as_str).collect();
         // unset optionals are filtered; hidden=false survives (it's a value,
         // not NotSet) — pydoover filters only None/NotSet.
-        assert_eq!(keys, ["name", "type", "displayString", "showActivity", "hidden"]);
+        assert_eq!(
+            keys,
+            ["name", "type", "displayString", "showActivity", "hidden"]
+        );
     }
 }

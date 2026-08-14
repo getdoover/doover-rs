@@ -74,7 +74,11 @@ impl ProcessorTags {
         tag_values: Value,
         record_tag_update: bool,
     ) -> Self {
-        let tag_values = if tag_values.is_object() { tag_values } else { Value::Object(Map::new()) };
+        let tag_values = if tag_values.is_object() {
+            tag_values
+        } else {
+            Value::Object(Map::new())
+        };
         Self {
             backend,
             app_key: app_key.into(),
@@ -155,7 +159,11 @@ impl ProcessorTags {
             return;
         }
 
-        match st.tag_values.get_mut(app_key).and_then(Value::as_object_mut) {
+        match st
+            .tag_values
+            .get_mut(app_key)
+            .and_then(Value::as_object_mut)
+        {
             Some(map) => {
                 map.insert(key.to_string(), value.clone());
             }
@@ -202,32 +210,37 @@ impl ProcessorTags {
             let update: Option<Value> = if st.update_external_tags {
                 Some(st.tag_values.clone()).filter(|v| !is_falsy(v))
             } else {
-                st.tag_values.get(&self.app_key).filter(|own| !is_falsy(own)).map(|own| {
-                    let mut outer = Map::new();
-                    outer.insert(self.app_key.clone(), own.clone());
-                    Value::Object(outer)
-                })
+                st.tag_values
+                    .get(&self.app_key)
+                    .filter(|own| !is_falsy(own))
+                    .map(|own| {
+                        let mut outer = Map::new();
+                        outer.insert(self.app_key.clone(), own.clone());
+                        Value::Object(outer)
+                    })
             };
 
-            let aggregate_update =
-                if !st.dirty.is_empty() { update.clone() } else { None };
-
-            let log_payload = if (st.record_tag_update || record_log)
-                && st.log_mode != LogMode::Never
-            {
-                match st.log_mode {
-                    LogMode::Always => update,
-                    LogMode::OnlyChanged => {
-                        scope_payload(&st.dirty, &self.app_key, st.update_external_tags)
-                    }
-                    LogMode::OnlySet => {
-                        scope_payload(&st.touched, &self.app_key, st.update_external_tags)
-                    }
-                    LogMode::Never => unreachable!(),
-                }
+            let aggregate_update = if !st.dirty.is_empty() {
+                update.clone()
             } else {
                 None
             };
+
+            let log_payload =
+                if (st.record_tag_update || record_log) && st.log_mode != LogMode::Never {
+                    match st.log_mode {
+                        LogMode::Always => update,
+                        LogMode::OnlyChanged => {
+                            scope_payload(&st.dirty, &self.app_key, st.update_external_tags)
+                        }
+                        LogMode::OnlySet => {
+                            scope_payload(&st.touched, &self.app_key, st.update_external_tags)
+                        }
+                        LogMode::Never => unreachable!(),
+                    }
+                } else {
+                    None
+                };
 
             st.update_tags = false;
             st.dirty = Map::new();
@@ -241,7 +254,9 @@ impl ProcessorTags {
                 .await?;
         }
         if let Some(payload) = log_payload {
-            self.backend.create_message(TAG_CHANNEL_NAME, &payload).await?;
+            self.backend
+                .create_message(TAG_CHANNEL_NAME, &payload)
+                .await?;
         }
         Ok(())
     }

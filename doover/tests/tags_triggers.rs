@@ -50,7 +50,10 @@ fn attribute_grammar_declares_pydoover_equivalent_triggers() {
     // thresholds are sorted; deadband carried (pydoover `_Crossing.__init__`)
     assert_eq!(
         tags.temp.log_on(),
-        &[LogTrigger::Cross { thresholds: vec![50.0, 100.0], deadband: 4.0 }]
+        &[LogTrigger::Cross {
+            thresholds: vec![50.0, 100.0],
+            deadband: 4.0
+        }]
     );
     assert_eq!(
         tags.combined.log_on(),
@@ -61,7 +64,10 @@ fn attribute_grammar_declares_pydoover_equivalent_triggers() {
     assert_eq!(tags.fault.log_on(), &[LogTrigger::any_change()]);
     assert_eq!(
         tags.state.log_on(),
-        &[LogTrigger::enter(json!("error")), LogTrigger::exit(json!("ok"))]
+        &[
+            LogTrigger::enter(json!("error")),
+            LogTrigger::exit(json!("ok"))
+        ]
     );
 }
 
@@ -83,7 +89,10 @@ async fn setup_runtime(
     uri: &str,
 ) -> (Arc<TagsRuntime>, SubscriptionHub) {
     state.seed_aggregate("dv-ui-sub", json!({}));
-    let client = DeviceAgentClient::connect(uri.to_string()).await.unwrap().with_app_id("test_app");
+    let client = DeviceAgentClient::connect(uri.to_string())
+        .await
+        .unwrap()
+        .with_app_id("test_app");
     let hub = SubscriptionHub::new(client.clone());
     let tags = Arc::new(TagsRuntime::new(client, "test_app"));
     tags.setup(&hub).await;
@@ -130,12 +139,18 @@ async fn threshold_crossing_creates_message_via_runtime() {
     // Below the threshold: aggregate write only, no logged message.
     tags.voltage.set(80.0).await.unwrap();
     runtime.commit_tags().await.unwrap();
-    assert!(tag_messages(&state).is_empty(), "80 is below the 100 threshold");
+    assert!(
+        tag_messages(&state).is_empty(),
+        "80 is below the 100 threshold"
+    );
 
     // Crossing up promotes the set to an immediate log message.
     tags.voltage.set(120.0).await.unwrap();
     runtime.commit_tags().await.unwrap();
-    assert_eq!(tag_messages(&state), vec![json!({"test_app": {"voltage": 120.0}})]);
+    assert_eq!(
+        tag_messages(&state),
+        vec![json!({"test_app": {"voltage": 120.0}})]
+    );
 
     // Staying above does not re-log.
     tags.voltage.set(130.0).await.unwrap();
@@ -145,7 +160,10 @@ async fn threshold_crossing_creates_message_via_runtime() {
     // Crossing back down logs again.
     tags.voltage.set(70.0).await.unwrap();
     runtime.commit_tags().await.unwrap();
-    assert_eq!(tag_messages(&state).last(), Some(&json!({"test_app": {"voltage": 70.0}})));
+    assert_eq!(
+        tag_messages(&state).last(),
+        Some(&json!({"test_app": {"voltage": 70.0}}))
+    );
 }
 
 /// pydoover evaluates triggers *before* the manager's `only_if_changed`
@@ -178,7 +196,10 @@ async fn fired_trigger_on_unchanged_value_logs_nothing() {
     assert!(tag_messages(&state).is_empty(), "diff 4 < amount 5");
     tags.abs_delta.set(10.0).await.unwrap();
     runtime.commit_tags().await.unwrap();
-    assert_eq!(tag_messages(&state), vec![json!({"test_app": {"abs_delta": 10.0}})]);
+    assert_eq!(
+        tag_messages(&state),
+        vec![json!({"test_app": {"abs_delta": 10.0}})]
+    );
 }
 
 /// An explicit `set_logged` still advances trigger state (pydoover always
@@ -214,11 +235,17 @@ async fn nested_multi_tag_writes_skip_triggers() {
     prime_periodic_log(&state, &runtime).await;
 
     runtime
-        .set_nested_tags(json!({"test_app": {"voltage": 500.0}}), &SetTagOptions::default())
+        .set_nested_tags(
+            json!({"test_app": {"voltage": 500.0}}),
+            &SetTagOptions::default(),
+        )
         .await
         .unwrap();
     runtime.commit_tags().await.unwrap();
-    assert!(tag_messages(&state).is_empty(), "bulk writes do not consult log_on");
+    assert!(
+        tag_messages(&state).is_empty(),
+        "bulk writes do not consult log_on"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -260,7 +287,10 @@ fn container_fields_finalize_depth_first_and_collect_interactions() {
     let group_json = ui.group.to_json();
     assert_eq!(group_json["children"]["speed"]["position"], json!(52));
     assert_eq!(group_json["children"]["inner"]["position"], json!(54));
-    assert_eq!(group_json["children"]["inner"]["children"]["deep_reset"]["position"], json!(53));
+    assert_eq!(
+        group_json["children"]["inner"]["children"]["deep_reset"]["position"],
+        json!(53)
+    );
     assert_eq!(group_json["children"]["reset"]["position"], json!(55));
 
     // Interactions are collected recursively (pydoover UI.get_interactions).

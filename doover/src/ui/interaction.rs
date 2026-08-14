@@ -193,7 +193,11 @@ pub struct Button {
 
 impl Button {
     pub fn new(display_name: &str) -> Self {
-        Self { interaction: InteractionCommon::new(display_name), disabled: None, label_string: None }
+        Self {
+            interaction: InteractionCommon::new(display_name),
+            disabled: None,
+            label_string: None,
+        }
     }
 
     pub fn disabled(mut self, disabled: bool) -> Self {
@@ -228,7 +232,9 @@ pub struct Switch {
 
 impl Switch {
     pub fn new(display_name: &str) -> Self {
-        Self { interaction: InteractionCommon::new(display_name) }
+        Self {
+            interaction: InteractionCommon::new(display_name),
+        }
     }
 
     fn element_json(&self) -> Value {
@@ -322,7 +328,10 @@ pub struct Select {
 
 impl Select {
     pub fn new(display_name: &str) -> Self {
-        Self { interaction: InteractionCommon::new(display_name), options: Vec::new() }
+        Self {
+            interaction: InteractionCommon::new(display_name),
+            options: Vec::new(),
+        }
     }
 
     pub fn options(mut self, options: Vec<SelectOption>) -> Self {
@@ -337,8 +346,11 @@ impl Select {
 
     fn element_json(&self) -> Value {
         let mut m = self.interaction.interaction_json("uiSelect");
-        let options: Map<String, Value> =
-            self.options.iter().map(|o| (o.name.clone(), o.to_json())).collect();
+        let options: Map<String, Value> = self
+            .options
+            .iter()
+            .map(|o| (o.name.clone(), o.to_json()))
+            .collect();
         m.insert("options".into(), Value::Object(options));
         Value::Object(m)
     }
@@ -356,7 +368,10 @@ pub struct WarningIndicator {
 
 impl WarningIndicator {
     pub fn new(display_name: &str) -> Self {
-        Self { interaction: InteractionCommon::new(display_name), can_cancel: true }
+        Self {
+            interaction: InteractionCommon::new(display_name),
+            can_cancel: true,
+        }
     }
 
     pub fn can_cancel(mut self, can_cancel: bool) -> Self {
@@ -408,7 +423,12 @@ mod tests {
             .disabled(false)
             .label_string("Go");
         let out = b.to_json();
-        let keys: Vec<_> = out.as_object().unwrap().keys().map(String::as_str).collect();
+        let keys: Vec<_> = out
+            .as_object()
+            .unwrap()
+            .keys()
+            .map(String::as_str)
+            .collect();
         // showActivity lands in the base Element slot (pydoover re-assigns an
         // existing key, which does not move it).
         assert_eq!(
@@ -436,7 +456,12 @@ mod tests {
             .command_timeout(Duration::from_secs(10))
             .command_retry_timeout(Duration::from_secs(30));
         let out = b.to_json();
-        let keys: Vec<_> = out.as_object().unwrap().keys().map(String::as_str).collect();
+        let keys: Vec<_> = out
+            .as_object()
+            .unwrap()
+            .keys()
+            .map(String::as_str)
+            .collect();
         assert_eq!(
             keys,
             [
@@ -473,7 +498,10 @@ mod tests {
             .option(SelectOption::new("Fast Mode"))
             .option(SelectOption::new("Slow Mode"));
         let out = s.to_json();
-        assert_eq!(out["options"]["fast_mode"]["displayString"], json!("Fast Mode"));
+        assert_eq!(
+            out["options"]["fast_mode"]["displayString"],
+            json!("Fast Mode")
+        );
         assert_eq!(out["options"]["slow_mode"]["type"], json!("uiElement"));
     }
 

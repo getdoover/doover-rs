@@ -14,24 +14,33 @@ use tokio::sync::mpsc;
 use tokio::time::timeout;
 
 use common::spawn_fake_agent;
-use doover::tags::{KeyPath, SetTagOptions, TagsRuntime};
 use doover::docker::SubscribeOptions;
+use doover::tags::{KeyPath, SetTagOptions, TagsRuntime};
 use doover::{DeviceAgentClient, Event, EventSubscription, SubscriptionHub};
 
 const WAIT: Duration = Duration::from_secs(5);
 
 async fn recv_event(rx: &mut mpsc::UnboundedReceiver<Event>) -> Event {
-    timeout(WAIT, rx.recv()).await.expect("timed out waiting for event").expect("channel closed")
+    timeout(WAIT, rx.recv())
+        .await
+        .expect("timed out waiting for event")
+        .expect("channel closed")
 }
 
 fn now_ms() -> f64 {
-    SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as f64
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_millis() as f64
 }
 
 #[tokio::test]
 async fn subscribe_replay_preference_reaches_the_agent() {
     let (state, uri) = spawn_fake_agent().await;
-    let client = DeviceAgentClient::connect(uri).await.unwrap().with_app_id("test_app");
+    let client = DeviceAgentClient::connect(uri)
+        .await
+        .unwrap()
+        .with_app_id("test_app");
 
     // The default asks for replay explicitly rather than leaving it unset, so
     // the agent's behaviour doesn't depend on its own default.
@@ -39,13 +48,21 @@ async fn subscribe_replay_preference_reaches_the_agent() {
     // Opting out is what a control loop wants: act on current state, not on a
     // backlog of stale commands replayed after a reconnect.
     let _live_only = client
-        .subscribe_events_with("ch", &SubscribeOptions { replay_missed_messages: false })
+        .subscribe_events_with(
+            "ch",
+            &SubscribeOptions {
+                replay_missed_messages: false,
+            },
+        )
         .await
         .unwrap();
 
     let requests = state.subscribe_requests.lock().unwrap();
     assert_eq!(
-        requests.iter().map(|r| r.replay_missed_messages).collect::<Vec<_>>(),
+        requests
+            .iter()
+            .map(|r| r.replay_missed_messages)
+            .collect::<Vec<_>>(),
         vec![Some(true), Some(false)]
     );
 }
@@ -53,7 +70,10 @@ async fn subscribe_replay_preference_reaches_the_agent() {
 #[tokio::test]
 async fn hub_seeds_missing_channel_and_dispatches_events() {
     let (state, uri) = spawn_fake_agent().await;
-    let client = DeviceAgentClient::connect(uri).await.unwrap().with_app_id("test_app");
+    let client = DeviceAgentClient::connect(uri)
+        .await
+        .unwrap()
+        .with_app_id("test_app");
     let hub = SubscriptionHub::new(client);
 
     let (tx, mut rx) = mpsc::unbounded_channel();
@@ -138,7 +158,10 @@ async fn hub_reconnects_after_stream_drop() {
         .await;
     let update = recv_event(&mut rx).await;
     assert!(update.is_aggregate_update());
-    assert_eq!(update.aggregate_data(), Some(&json!({"seed": true, "y": 2})));
+    assert_eq!(
+        update.aggregate_data(),
+        Some(&json!({"seed": true, "y": 2}))
+    );
 }
 
 async fn setup_tags(
@@ -148,7 +171,10 @@ async fn setup_tags(
 ) -> (Arc<TagsRuntime>, SubscriptionHub) {
     state.seed_aggregate("tag_values", json!({}));
     state.seed_aggregate("dv-ui-sub", json!({}));
-    let client = DeviceAgentClient::connect(uri.to_string()).await.unwrap().with_app_id(app_key);
+    let client = DeviceAgentClient::connect(uri.to_string())
+        .await
+        .unwrap()
+        .with_app_id(app_key);
     let hub = SubscriptionHub::new(client.clone());
     let tags = Arc::new(TagsRuntime::new(client, app_key));
     tags.setup(&hub).await;
@@ -171,28 +197,55 @@ async fn tags_buffer_until_commit_and_skip_unchanged() {
     let (state, uri) = spawn_fake_agent().await;
     let (tags, _hub) = setup_tags(&state, &uri, "my_app").await;
 
-    tags.set_tag("my_app", "level", json!(5.5), &SetTagOptions::default()).await.unwrap();
-    assert_eq!(tag_value_writes(&state).len(), 0, "set_tag must buffer, not write");
-    assert_eq!(tags.get_tag("my_app", "level"), Some(json!(5.5)), "pending overlay readable");
+    tags.set_tag("my_app", "level", json!(5.5), &SetTagOptions::default())
+        .await
+        .unwrap();
+    assert_eq!(
+        tag_value_writes(&state).len(),
+        0,
+        "set_tag must buffer, not write"
+    );
+    assert_eq!(
+        tags.get_tag("my_app", "level"),
+        Some(json!(5.5)),
+        "pending overlay readable"
+    );
 
     tags.commit_tags().await.unwrap();
     let writes = tag_value_writes(&state);
     assert_eq!(writes, vec![json!({"my_app": {"level": 5.5}})]);
     // Nobody has the app open → the slow (15-min) max-age applies.
     assert_eq!(
-        state.aggregate_writes.lock().unwrap().last().unwrap().max_age_secs,
+        state
+            .aggregate_writes
+            .lock()
+            .unwrap()
+            .last()
+            .unwrap()
+            .max_age_secs,
         60.0 * 15.0
     );
 
     // Re-setting the same value is suppressed by only_if_changed.
-    tags.set_tag("my_app", "level", json!(5.5), &SetTagOptions::default()).await.unwrap();
+    tags.set_tag("my_app", "level", json!(5.5), &SetTagOptions::default())
+        .await
+        .unwrap();
     tags.commit_tags().await.unwrap();
-    assert_eq!(tag_value_writes(&state).len(), 1, "unchanged value must not re-publish");
+    assert_eq!(
+        tag_value_writes(&state).len(),
+        1,
+        "unchanged value must not re-publish"
+    );
 
     // A changed value publishes again.
-    tags.set_tag("my_app", "level", json!(6.0), &SetTagOptions::default()).await.unwrap();
+    tags.set_tag("my_app", "level", json!(6.0), &SetTagOptions::default())
+        .await
+        .unwrap();
     tags.commit_tags().await.unwrap();
-    assert_eq!(tag_value_writes(&state).last(), Some(&json!({"my_app": {"level": 6.0}})));
+    assert_eq!(
+        tag_value_writes(&state).last(),
+        Some(&json!({"my_app": {"level": 6.0}}))
+    );
 }
 
 #[tokio::test]
@@ -200,13 +253,22 @@ async fn logged_tags_become_messages_on_commit() {
     let (state, uri) = spawn_fake_agent().await;
     let (tags, _hub) = setup_tags(&state, &uri, "my_app").await;
 
-    let log_opts = SetTagOptions { log: true, ..Default::default() };
-    tags.set_tag("my_app", "pump_on", json!(true), &log_opts).await.unwrap();
+    let log_opts = SetTagOptions {
+        log: true,
+        ..Default::default()
+    };
+    tags.set_tag("my_app", "pump_on", json!(true), &log_opts)
+        .await
+        .unwrap();
     assert!(state.messages.lock().unwrap().is_empty());
 
     tags.commit_tags().await.unwrap();
     let messages = state.messages.lock().unwrap();
-    assert_eq!(messages.len(), 1, "log=true flushes as an immediate message");
+    assert_eq!(
+        messages.len(),
+        1,
+        "log=true flushes as an immediate message"
+    );
     assert_eq!(messages[0].channel, "tag_values");
     assert_eq!(messages[0].data, json!({"my_app": {"pump_on": true}}));
 }
@@ -220,13 +282,18 @@ async fn live_tags_stream_as_oneshots_while_watched() {
         json!({"live_tag_open": {"user1": {"ts": now_ms(), "tags": ["my_app.level"]}}}),
     );
     state.seed_aggregate("tag_values", json!({}));
-    let client = DeviceAgentClient::connect(uri.clone()).await.unwrap().with_app_id("my_app");
+    let client = DeviceAgentClient::connect(uri.clone())
+        .await
+        .unwrap()
+        .with_app_id("my_app");
     let hub = SubscriptionHub::new(client.clone());
     let tags = Arc::new(TagsRuntime::new(client, "my_app"));
     tags.setup(&hub).await;
     tags.set_live_tags([KeyPath::scoped("my_app", ["level"])]);
 
-    tags.set_tag("my_app", "level", json!(7.25), &SetTagOptions::default()).await.unwrap();
+    tags.set_tag("my_app", "level", json!(7.25), &SetTagOptions::default())
+        .await
+        .unwrap();
     tags.commit_tags().await.unwrap();
 
     // App open (live claim counts as observed) → fast max-age is NOT implied;
@@ -237,7 +304,10 @@ async fn live_tags_stream_as_oneshots_while_watched() {
     assert_eq!(oneshots[0].data, json!({"my_app": {"level": 7.25}}));
     assert!(tags.is_live_tag_open("level", None));
     assert!(tags.is_being_observed());
-    assert!(!tags.is_app_open(), "live-tag claim alone does not open the app");
+    assert!(
+        !tags.is_app_open(),
+        "live-tag claim alone does not open the app"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -247,10 +317,16 @@ async fn live_tags_stream_as_oneshots_while_watched() {
 #[tokio::test]
 async fn rpc_request_and_call_round_trip() {
     let (state, uri) = spawn_fake_agent().await;
-    let client = DeviceAgentClient::connect(uri).await.unwrap().with_app_id("test_app");
+    let client = DeviceAgentClient::connect(uri)
+        .await
+        .unwrap()
+        .with_app_id("test_app");
     let hub = SubscriptionHub::new(client.clone());
     let backend: Arc<dyn doover::ChannelBackend> = Arc::new(client.clone());
-    let rpc = Arc::new(doover::RpcManager::new(backend, Some("test_app".to_string())));
+    let rpc = Arc::new(doover::RpcManager::new(
+        backend,
+        Some("test_app".to_string()),
+    ));
     doover::docker::wire_rpc(&rpc, &hub);
 
     // Handler side: registering subscribes dv-rpc through the hub.
@@ -297,7 +373,10 @@ async fn rpc_request_and_call_round_trip() {
         let updates = state.message_updates.lock().unwrap();
         assert_eq!(updates[0].channel, "dv-rpc");
         assert_eq!(updates[0].message_id, 42);
-        assert!(!updates[0].replace_data, "responses merge into the request message");
+        assert!(
+            !updates[0].replace_data,
+            "responses merge into the request message"
+        );
         assert_eq!(
             serde_json::to_string(&updates[0].data).unwrap(),
             r#"{"status":{"code":"success","message":null},"response":{"sum":3}}"#
@@ -378,7 +457,10 @@ async fn rpc_request_and_call_round_trip() {
         )
         .await;
     tokio::time::sleep(Duration::from_millis(100)).await;
-    assert!(!call.is_finished(), "acknowledged must keep the call pending");
+    assert!(
+        !call.is_finished(),
+        "acknowledged must keep the call pending"
+    );
 
     state
         .publish_event(
@@ -393,7 +475,11 @@ async fn rpc_request_and_call_round_trip() {
             }),
         )
         .await;
-    let result = timeout(WAIT, call).await.expect("call timed out").unwrap().unwrap();
+    let result = timeout(WAIT, call)
+        .await
+        .expect("call timed out")
+        .unwrap()
+        .unwrap();
     assert_eq!(result, json!({"pong": true}));
 }
 
@@ -480,7 +566,12 @@ mod declarative_app {
         type Ui = TestUi;
 
         fn create(config: TestConfig, tags: TestTags, ui: TestUi) -> Self {
-            Self { config, tags, ui, iterations: 0 }
+            Self {
+                config,
+                tags,
+                ui,
+                iterations: 0,
+            }
         }
 
         fn ui(&self) -> Option<&TestUi> {
@@ -505,9 +596,16 @@ mod declarative_app {
             self.tags.level.set(self.config.gain).await
         }
 
-        async fn on_ui_command(&mut self, _ctx: &AppContext, cmd: &UiCommand) -> doover::Result<()> {
+        async fn on_ui_command(
+            &mut self,
+            _ctx: &AppContext,
+            cmd: &UiCommand,
+        ) -> doover::Result<()> {
             assert!(cmd.is(&self.ui.pump) || cmd.is(&self.ui.level));
-            COMMANDS.lock().unwrap().push((cmd.name.clone(), cmd.value.clone()));
+            COMMANDS
+                .lock()
+                .unwrap()
+                .push((cmd.name.clone(), cmd.value.clone()));
             Ok(())
         }
     }
@@ -516,13 +614,19 @@ mod declarative_app {
     /// the runner task.
     async fn spawn_app(
         healthcheck_port: u16,
-    ) -> (Arc<common::FakeAgentState>, tokio::task::JoinHandle<doover::Result<()>>) {
+    ) -> (
+        Arc<common::FakeAgentState>,
+        tokio::task::JoinHandle<doover::Result<()>>,
+    ) {
         let (state, uri) = spawn_fake_agent().await;
         state.seed_aggregate("tag_values", json!({}));
         state.seed_aggregate("dv-ui-sub", json!({}));
 
         let mut config_path = std::env::temp_dir();
-        config_path.push(format!("doover-rs-runtime-app-{healthcheck_port}-{}.json", std::process::id()));
+        config_path.push(format!(
+            "doover-rs-runtime-app-{healthcheck_port}-{}.json",
+            std::process::id()
+        ));
         std::fs::write(
             &config_path,
             r#"{"gain": 3.0, "APP_KEY": "test_app", "APP_DISPLAY_NAME": "Test App"}"#,
@@ -569,13 +673,22 @@ mod declarative_app {
         let (state, handle) = spawn_app(49301).await;
 
         // pydoover's double publish: clear the app's subtree, then set it.
-        wait_for("initial ui_state double publish", || ui_state_writes(&state).len() >= 2).await;
+        wait_for("initial ui_state double publish", || {
+            ui_state_writes(&state).len() >= 2
+        })
+        .await;
         let writes = ui_state_writes(&state);
-        assert_eq!(writes[0], json!({"state": {"children": {"test_app": null}}}));
+        assert_eq!(
+            writes[0],
+            json!({"state": {"children": {"test_app": null}}})
+        );
         {
             let all = state.aggregate_writes.lock().unwrap();
             let ui_writes: Vec<_> = all.iter().filter(|w| w.channel == "ui_state").collect();
-            assert_eq!(ui_writes[0].max_age_secs, -1.0, "pydoover publishes with max_age=-1");
+            assert_eq!(
+                ui_writes[0].max_age_secs, -1.0,
+                "pydoover publishes with max_age=-1"
+            );
             assert_eq!(ui_writes[1].max_age_secs, -1.0);
         }
 
@@ -583,7 +696,11 @@ mod declarative_app {
         // config, and $tag/$cmds refs left for the site to resolve.
         let schema = &writes[1]["state"]["children"]["test_app"];
         assert_eq!(schema["displayString"], json!("Test App"));
-        assert_eq!(schema["hidden"], json!(false), "doubled :boolean:false quirk resolves false");
+        assert_eq!(
+            schema["hidden"],
+            json!(false),
+            "doubled :boolean:false quirk resolves false"
+        );
         assert_eq!(schema["position"], json!(100));
         assert_eq!(schema["defaultOpen"], Value::Null);
         assert_eq!(schema["type"], json!("uiApplication"));
@@ -594,15 +711,24 @@ mod declarative_app {
         );
         assert_eq!(schema["children"]["level"]["live"], json!(true));
         assert_eq!(schema["children"]["level"]["position"], json!(51));
-        assert_eq!(schema["children"]["pump"]["currentValue"], json!("$cmds.app().pump"));
+        assert_eq!(
+            schema["children"]["pump"]["currentValue"],
+            json!("$cmds.app().pump")
+        );
         assert_eq!(schema["children"]["pump"]["type"], json!("uiSwitch"));
         assert_eq!(schema["children"]["pump"]["position"], json!(52));
 
         // After the app mutates its UI in main_loop, the runner re-publishes
         // (another clear+set pair) — and only then.
-        wait_for("re-publish after UI mutation", || ui_state_writes(&state).len() >= 4).await;
+        wait_for("re-publish after UI mutation", || {
+            ui_state_writes(&state).len() >= 4
+        })
+        .await;
         let writes = ui_state_writes(&state);
-        assert_eq!(writes[2], json!({"state": {"children": {"test_app": null}}}));
+        assert_eq!(
+            writes[2],
+            json!({"state": {"children": {"test_app": null}}})
+        );
         assert_eq!(
             writes[3]["state"]["children"]["test_app"]["children"]["level"]["units"],
             json!("m")
@@ -610,7 +736,11 @@ mod declarative_app {
 
         // No further publishes while the schema is unchanged.
         tokio::time::sleep(Duration::from_millis(300)).await;
-        assert_eq!(ui_state_writes(&state).len(), 4, "unchanged schema must not re-publish");
+        assert_eq!(
+            ui_state_writes(&state).len(),
+            4,
+            "unchanged schema must not re-publish"
+        );
 
         // The typed config drove the tag write.
         wait_for("tag committed", || {
@@ -653,7 +783,10 @@ mod declarative_app {
             )
             .await;
 
-        wait_for("command response", || !state.message_updates.lock().unwrap().is_empty()).await;
+        wait_for("command response", || {
+            !state.message_updates.lock().unwrap().is_empty()
+        })
+        .await;
 
         // 1. on_ui_command fired with the command.
         assert!(COMMANDS
@@ -686,7 +819,10 @@ mod declarative_app {
         // 4. The request message marked successful.
         {
             let updates = state.message_updates.lock().unwrap();
-            let update = updates.iter().find(|u| u.message_id == 555).expect("success update");
+            let update = updates
+                .iter()
+                .find(|u| u.message_id == 555)
+                .expect("success update");
             assert_eq!(update.channel, "ui_cmds");
             assert_eq!(
                 serde_json::to_string(&update.data).unwrap(),
@@ -726,8 +862,20 @@ mod declarative_app {
             )
             .await;
         tokio::time::sleep(Duration::from_millis(300)).await;
-        assert_eq!(state.message_updates.lock().unwrap().len(), 1, "ignored commands must not respond");
-        assert_eq!(COMMANDS.lock().unwrap().iter().filter(|(n, _)| n == "unknown_thing").count(), 0);
+        assert_eq!(
+            state.message_updates.lock().unwrap().len(),
+            1,
+            "ignored commands must not respond"
+        );
+        assert_eq!(
+            COMMANDS
+                .lock()
+                .unwrap()
+                .iter()
+                .filter(|(n, _)| n == "unknown_thing")
+                .count(),
+            0
+        );
 
         handle.abort();
     }

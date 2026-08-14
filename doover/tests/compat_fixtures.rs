@@ -15,8 +15,8 @@ fn fixture(name: &str) -> Vec<Value> {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("../tests/compat/fixtures")
         .join(name);
-    let text = std::fs::read_to_string(&path)
-        .unwrap_or_else(|e| panic!("reading fixture {path:?}: {e}"));
+    let text =
+        std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("reading fixture {path:?}: {e}"));
     serde_json::from_str(&text).expect("fixture parses")
 }
 
@@ -76,6 +76,10 @@ fn snowflake_layout_matches_pydoover() {
             case["instance_id"].as_u64().unwrap() as u16,
             false,
         );
-        assert_eq!(id, case["snowflake"].as_u64().unwrap(), "snowflake case {i}");
+        assert_eq!(
+            id,
+            case["snowflake"].as_u64().unwrap(),
+            "snowflake case {i}"
+        );
     }
 }

@@ -23,10 +23,10 @@ use doover::ui::{
 };
 
 fn fixture_cases() -> Vec<Value> {
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../tests/compat/fixtures/ui_elements.json");
-    let text = std::fs::read_to_string(&path)
-        .unwrap_or_else(|e| panic!("reading fixture {path:?}: {e}"));
+    let path =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../tests/compat/fixtures/ui_elements.json");
+    let text =
+        std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("reading fixture {path:?}: {e}"));
     serde_json::from_str(&text).expect("fixture parses")
 }
 
@@ -44,10 +44,12 @@ fn tag_ref(name: &str, tag_type: &str, default: Option<Value>, live: bool) -> Ui
 /// generator).
 fn submodule_children() -> Vec<Box<dyn UiElement>> {
     vec![
-        Box::new(
-            NumericVariable::new("Speed")
-                .value(tag_ref("speed", "number", Some(Value::Null), true)),
-        ),
+        Box::new(NumericVariable::new("Speed").value(tag_ref(
+            "speed",
+            "number",
+            Some(Value::Null),
+            true,
+        ))),
         Box::new(Button::new("Reset")),
     ]
 }
@@ -72,20 +74,30 @@ fn build(case: &str) -> Option<Box<dyn UiElement>> {
         "submodule_plain" => {
             Box::new(Submodule::new("Pump Details").children(submodule_children()))
         }
-        "submodule_status_and_collapsed" => {
-            Box::new(Submodule::new("Pump Details").status("OK").is_collapsed(true))
-        }
-        "submodule_status_none" => Box::new(Submodule::new("Pump Details").status(Value::Null)),
-        "submodule_default_open_beats_is_collapsed" => {
-            Box::new(Submodule::new("Pump Details").is_collapsed(true).default_open(true))
-        }
-        "submodule_default_open_tag" => Box::new(
+        "submodule_status_and_collapsed" => Box::new(
             Submodule::new("Pump Details")
-                .default_open(tag_ref("pump_open", "boolean", Some(json!(false)), false)),
+                .status("OK")
+                .is_collapsed(true),
         ),
+        "submodule_status_none" => Box::new(Submodule::new("Pump Details").status(Value::Null)),
+        "submodule_default_open_beats_is_collapsed" => Box::new(
+            Submodule::new("Pump Details")
+                .is_collapsed(true)
+                .default_open(true),
+        ),
+        "submodule_default_open_tag" => {
+            Box::new(Submodule::new("Pump Details").default_open(tag_ref(
+                "pump_open",
+                "boolean",
+                Some(json!(false)),
+                false,
+            )))
+        }
         "tabs_plain" => Box::new(TabContainer::new("Views").children(submodule_children())),
         "tabs_default_page" => Box::new(
-            TabContainer::new("Views").child(TextVariable::new("A")).default_page(1),
+            TabContainer::new("Views")
+                .child(TextVariable::new("A"))
+                .default_page(1),
         ),
         "remote_component_plain" => {
             Box::new(RemoteComponent::new("Widget", "https://example.com/c.js"))
@@ -98,9 +110,12 @@ fn build(case: &str) -> Option<Box<dyn UiElement>> {
         ),
         // ---- cameras ----
         "camera_live_view" => Box::new(CameraLiveView::new("front", "hls", true)),
-        "camera_live_view_named" => {
-            Box::new(CameraLiveView::named("Front Camera", "front", "rtsp", false))
-        }
+        "camera_live_view_named" => Box::new(CameraLiveView::named(
+            "Front Camera",
+            "front",
+            "rtsp",
+            false,
+        )),
         "camera_history" => Box::new(CameraHistory::new("front")),
         "camera_history_named" => Box::new(CameraHistory::named("Back History", "back")),
         // ---- connection info ----
@@ -150,19 +165,19 @@ fn build(case: &str) -> Option<Box<dyn UiElement>> {
         "timestamp_unset" => Box::new(Timestamp::new("Last Seen")),
         "timestamp_int_ms" => Box::new(Timestamp::new("Last Seen").value(1_700_000_000_000_i64)),
         // pydoover converts the datetime to epoch milliseconds.
-        "timestamp_datetime" => {
-            Box::new(Timestamp::new("Last Seen").value(1_767_323_045_000_i64))
-        }
+        "timestamp_datetime" => Box::new(Timestamp::new("Last Seen").value(1_767_323_045_000_i64)),
         "timestamp_precision_quirk" => Box::new(
             Timestamp::new("Next Run")
                 .value(1_700_000_000_000_i64)
                 .precision("second")
                 .absolute_format("%Y-%m-%d %H:%M"),
         ),
-        "timestamp_tag_live" => Box::new(
-            Timestamp::new("Last Report")
-                .value(tag_ref("last_report", "number", Some(Value::Null), true)),
-        ),
+        "timestamp_tag_live" => Box::new(Timestamp::new("Last Report").value(tag_ref(
+            "last_report",
+            "number",
+            Some(Value::Null),
+            true,
+        ))),
         // ---- parameter inputs ----
         "float_input_plain" => Box::new(FloatInput::new("Target Level")),
         "float_input_bounds_flavours" => {
@@ -212,8 +227,7 @@ fn build(case: &str) -> Option<Box<dyn UiElement>> {
                 .command_retry_timeout(Duration::from_secs(30)),
         ),
         "button_confirm_audit_flag" => Box::new(
-            Button::new("Reset")
-                .requires_confirm(ConfirmDialog::new().title("Sure?").audit(true)),
+            Button::new("Reset").requires_confirm(ConfirmDialog::new().title("Sure?").audit(true)),
         ),
         "switch_confirm_audit_config" => Box::new(
             Switch::new("Bypass").requires_confirm(
@@ -236,12 +250,16 @@ fn build(case: &str) -> Option<Box<dyn UiElement>> {
 #[test]
 fn ui_elements_match_pydoover() {
     let cases = fixture_cases();
-    assert!(cases.len() >= 42, "fixture corpus unexpectedly small: {}", cases.len());
+    assert!(
+        cases.len() >= 42,
+        "fixture corpus unexpectedly small: {}",
+        cases.len()
+    );
 
     for case in &cases {
         let id = case["case"].as_str().unwrap();
-        let mut element = build(id)
-            .unwrap_or_else(|| panic!("fixture case {id:?} has no Rust construction"));
+        let mut element =
+            build(id).unwrap_or_else(|| panic!("fixture case {id:?} has no Rust construction"));
 
         // The generator resets pydoover's global position counter to 50
         // before each case; replicate with a fresh depth-first walk.
@@ -250,6 +268,9 @@ fn ui_elements_match_pydoover() {
 
         let ours = serde_json::to_string(&element.to_json()).unwrap();
         let expected = serde_json::to_string(&case["expected"]).unwrap();
-        assert_eq!(ours, expected, "case {id}: serialized JSON (incl. key order) differs");
+        assert_eq!(
+            ours, expected,
+            "case {id}: serialized JSON (incl. key order) differs"
+        );
     }
 }

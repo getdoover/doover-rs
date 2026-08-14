@@ -67,14 +67,26 @@ impl Channel {
             .and_then(Value::as_str)
             .ok_or_else(|| DooverError::InvalidPayload("channel missing name".into()))?
             .to_string();
-        let owner_id = raw.get("owner_id").and_then(value_as_id).unwrap_or_default();
-        let is_private = raw.get("is_private").and_then(Value::as_bool).unwrap_or(false);
+        let owner_id = raw
+            .get("owner_id")
+            .and_then(value_as_id)
+            .unwrap_or_default();
+        let is_private = raw
+            .get("is_private")
+            .and_then(Value::as_bool)
+            .unwrap_or(false);
         let aggregate_data = raw
             .get("aggregate")
             .and_then(|a| a.get("data"))
             .filter(|d| !d.is_null())
             .cloned();
-        Ok(Self { name, owner_id, is_private, aggregate_data, raw })
+        Ok(Self {
+            name,
+            owner_id,
+            is_private,
+            aggregate_data,
+            raw,
+        })
     }
 }
 
@@ -205,8 +217,7 @@ impl DataClient {
     fn resolve_agent_id(&self, agent_id: Option<u64>) -> Result<u64> {
         agent_id.or_else(|| self.agent_id()).ok_or_else(|| {
             DooverError::Other(
-                "agent_id must be provided either as a method argument or set on the client"
-                    .into(),
+                "agent_id must be provided either as a method argument or set on the client".into(),
             )
         })
     }
@@ -221,7 +232,9 @@ impl DataClient {
             return Ok(());
         }
         if channel != crate::tags::TAG_CHANNEL_NAME {
-            return Err(DooverError::Other("Cannot publish to the invoking channel.".into()));
+            return Err(DooverError::Other(
+                "Cannot publish to the invoking channel.".into(),
+            ));
         }
         let outside_scope = data
             .as_object()
@@ -255,10 +268,8 @@ impl DataClient {
         if let Some(data) = body {
             let raw = serde_json::to_vec(data)?;
             if self.compress && raw.len() >= MIN_COMPRESS_SIZE {
-                let mut enc = flate2::write::GzEncoder::new(
-                    Vec::new(),
-                    flate2::Compression::new(GZIP_LEVEL),
-                );
+                let mut enc =
+                    flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::new(GZIP_LEVEL));
                 enc.write_all(&raw)
                     .and_then(|_| enc.finish())
                     .map(|out| gzip_body = Some(out))
@@ -325,8 +336,7 @@ impl DataClient {
                 tokio::time::sleep(delay).await;
             }
         }
-        Err(last_err
-            .unwrap_or_else(|| DooverError::Other(format!("request to {url} failed"))))
+        Err(last_err.unwrap_or_else(|| DooverError::Other(format!("request to {url} failed"))))
     }
 
     // -- Channels ----------------------------------------------------------
@@ -390,7 +400,11 @@ impl DataClient {
     ) -> Result<Option<Value>> {
         self.check_invoking_channel(channel_name, data)?;
         let agent_id = self.resolve_agent_id(agent_id)?;
-        let method = if opts.replace_data { reqwest::Method::PUT } else { reqwest::Method::PATCH };
+        let method = if opts.replace_data {
+            reqwest::Method::PUT
+        } else {
+            reqwest::Method::PATCH
+        };
         // pydoover filters falsy params out entirely.
         let mut query: Vec<(&str, String)> = Vec::new();
         if opts.suppress_response {
@@ -515,7 +529,11 @@ impl DataClient {
         agent_id: Option<u64>,
     ) -> Result<Option<Value>> {
         let agent_id = self.resolve_agent_id(agent_id)?;
-        let method = if opts.replace_data { reqwest::Method::PUT } else { reqwest::Method::PATCH };
+        let method = if opts.replace_data {
+            reqwest::Method::PUT
+        } else {
+            reqwest::Method::PATCH
+        };
         let mut query: Vec<(&str, String)> = Vec::new();
         if opts.clear_attachments {
             query.push(("clear_attachments", bool_param(true)));
@@ -567,8 +585,10 @@ impl DataClient {
     /// `ProcessorDataClient.ping_connection_at`).
     pub async fn ping_connection_at(&self, args: &PingConnectionArgs) -> Result<()> {
         let ping_at = args.ping_at_ms.unwrap_or_else(now_ms);
-        let user_agent =
-            args.user_agent.clone().unwrap_or_else(|| "doover-rs-processor".to_string());
+        let user_agent = args
+            .user_agent
+            .clone()
+            .unwrap_or_else(|| "doover-rs-processor".to_string());
         let payload = json!({
             "status": {
                 "status": args.connection_status.as_str(),
@@ -579,7 +599,8 @@ impl DataClient {
             },
             "determination": args.determination.as_str(),
         });
-        self.create_message_http("doover_connection", &payload, None, args.agent_id).await?;
+        self.create_message_http("doover_connection", &payload, None, args.agent_id)
+            .await?;
         self.update_channel_aggregate_http(
             "doover_connection",
             &payload,
@@ -598,7 +619,8 @@ impl DataClient {
         agent_id: Option<u64>,
     ) -> Result<()> {
         let payload = json!({ "config": config });
-        self.create_message_http("doover_connection", &payload, None, agent_id).await?;
+        self.create_message_http("doover_connection", &payload, None, agent_id)
+            .await?;
         self.update_channel_aggregate_http(
             "doover_connection",
             &payload,
@@ -623,8 +645,13 @@ impl DataClient {
         // deserialise with one whose message is the raw JSON, so a bad payload
         // surfaces as an unreadable phone notification rather than an error.
         notification.validate()?;
-        self.create_message_http(NOTIFICATIONS_CHANNEL, &notification.to_json(), None, agent_id)
-            .await
+        self.create_message_http(
+            NOTIFICATIONS_CHANNEL,
+            &notification.to_json(),
+            None,
+            agent_id,
+        )
+        .await
     }
 }
 
@@ -636,11 +663,18 @@ impl Default for DataClient {
 
 /// pydoover `_build_query` renders bools as `"true"`/`"false"`.
 fn bool_param(v: bool) -> String {
-    if v { "true".into() } else { "false".into() }
+    if v {
+        "true".into()
+    } else {
+        "false".into()
+    }
 }
 
 fn now_ms() -> u64 {
-    SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_millis() as u64).unwrap_or(0)
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0)
 }
 
 /// pydoover `_raise_for_status`.
@@ -648,7 +682,10 @@ fn map_status(status: u16, text: String) -> DooverError {
     if status == 404 {
         DooverError::NotFound(text)
     } else {
-        DooverError::Http { code: status as i32, message: text }
+        DooverError::Http {
+            code: status as i32,
+            message: text,
+        }
     }
 }
 
@@ -678,8 +715,12 @@ impl ChannelBackend for DataClient {
         // server to build and send it is pure waste. pydoover reaches the same
         // place from the other direction — `TagsManagerProcessor` passes
         // `suppress_response=True` explicitly on its one commit per invocation.
-        let opts = AggregateOptions { suppress_response: true, ..opts.clone() };
-        self.update_channel_aggregate_http(channel, data, &opts, None).await?;
+        let opts = AggregateOptions {
+            suppress_response: true,
+            ..opts.clone()
+        };
+        self.update_channel_aggregate_http(channel, data, &opts, None)
+            .await?;
         Ok(())
     }
 
@@ -695,7 +736,8 @@ impl ChannelBackend for DataClient {
         data: &Value,
         opts: &UpdateMessageOptions,
     ) -> Result<()> {
-        self.update_message_http(channel, message_id, data, opts, None).await?;
+        self.update_message_http(channel, message_id, data, opts, None)
+            .await?;
         Ok(())
     }
 

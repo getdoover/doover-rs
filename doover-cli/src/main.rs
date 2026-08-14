@@ -59,7 +59,12 @@ pub struct Cli {
     pub plt_uri: Option<String>,
 
     /// Modbus interface gRPC URI [default: localhost:50054]
-    #[arg(long = "modbus-uri", alias = "modbus_uri", global = true, env = "MODBUS_URI")]
+    #[arg(
+        long = "modbus-uri",
+        alias = "modbus_uri",
+        global = true,
+        env = "MODBUS_URI"
+    )]
     pub modbus_uri: Option<String>,
 
     /// App key stamped into request headers [default: pydoover-cli]
@@ -96,11 +101,26 @@ pub struct Cli {
 /// these select anything; accepted and ignored so existing scripts keep parsing.
 #[derive(clap::Args, Debug)]
 pub struct ConnCompat {
-    #[arg(long = "service_name", alias = "service-name", global = true, hide = true)]
+    #[arg(
+        long = "service_name",
+        alias = "service-name",
+        global = true,
+        hide = true
+    )]
     pub service_name: Option<String>,
-    #[arg(long = "dda_timeout", alias = "dda-timeout", global = true, hide = true)]
+    #[arg(
+        long = "dda_timeout",
+        alias = "dda-timeout",
+        global = true,
+        hide = true
+    )]
     pub dda_timeout: Option<u64>,
-    #[arg(long = "max_conn_attempts", alias = "max-conn-attempts", global = true, hide = true)]
+    #[arg(
+        long = "max_conn_attempts",
+        alias = "max-conn-attempts",
+        global = true,
+        hide = true
+    )]
     pub max_conn_attempts: Option<u32>,
     #[arg(
         long = "time_between_connection_attempts",
@@ -296,15 +316,25 @@ mod tests {
         }
         // kebab-case option aliases stay accepted alongside snake_case.
         parse(&[
-            "doover", "device_agent", "update_aggregate", "ch", "{}", "--replace-data",
-            "--max-age-secs", "3",
+            "doover",
+            "device_agent",
+            "update_aggregate",
+            "ch",
+            "{}",
+            "--replace-data",
+            "--max-age-secs",
+            "3",
         ]);
     }
 
     #[test]
     fn invalid_json_payload_is_rejected_at_parse_time() {
         assert!(Cli::try_parse_from([
-            "doover", "device_agent", "create_message", "ch", "not json",
+            "doover",
+            "device_agent",
+            "create_message",
+            "ch",
+            "not json",
         ])
         .is_err());
     }
@@ -312,11 +342,21 @@ mod tests {
     #[test]
     fn global_options_apply_after_the_subcommand() {
         let cli = parse(&[
-            "doover", "platform", "fetch_ai", "0", "2", "--plt-uri", "10.0.0.1:50053", "--debug",
+            "doover",
+            "platform",
+            "fetch_ai",
+            "0",
+            "2",
+            "--plt-uri",
+            "10.0.0.1:50053",
+            "--debug",
         ]);
         assert_eq!(cli.plt_uri.as_deref(), Some("10.0.0.1:50053"));
         assert!(cli.debug);
-        let Section::Platform { cmd: platform::PlatformCmd::FetchAi { ai }, .. } = cli.section
+        let Section::Platform {
+            cmd: platform::PlatformCmd::FetchAi { ai },
+            ..
+        } = cli.section
         else {
             panic!("expected platform fetch_ai");
         };
@@ -337,8 +377,10 @@ mod tests {
 
     #[test]
     fn set_do_accepts_scalar_and_list_forms() {
-        let Section::Platform { cmd: platform::PlatformCmd::SetDo { r#do, value }, .. } =
-            parse_section(&["doover", "platform", "set_do", "[1,2]", "1"])
+        let Section::Platform {
+            cmd: platform::PlatformCmd::SetDo { r#do, value },
+            ..
+        } = parse_section(&["doover", "platform", "set_do", "[1,2]", "1"])
         else {
             panic!("expected set_do");
         };
@@ -364,7 +406,13 @@ mod tests {
             panic!("expected read_registers");
         };
         assert_eq!(
-            (modbus_id, start_address, num_registers, register_type, retries),
+            (
+                modbus_id,
+                start_address,
+                num_registers,
+                register_type,
+                retries
+            ),
             (1, 0, 1, 4, None)
         );
     }
@@ -374,7 +422,13 @@ mod tests {
         // pydoover maps defaulted params to flags and the rest to positionals,
         // so `url` is positional there and must stay positional here.
         let Section::DeviceAgent {
-            cmd: device_agent::DeviceAgentCmd::FetchMessageAttachment { url, output, force, base64 },
+            cmd:
+                device_agent::DeviceAgentCmd::FetchMessageAttachment {
+                    url,
+                    output,
+                    force,
+                    base64,
+                },
             ..
         } = parse_section(&[
             "doover",
@@ -440,13 +494,24 @@ mod tests {
             "--time_between_connection_attempts",
             "10",
         ]);
-        parse(&["doover", "modbus", "read_registers", "--timeout", "7", "--config", "{}"]);
+        parse(&[
+            "doover",
+            "modbus",
+            "read_registers",
+            "--timeout",
+            "7",
+            "--config",
+            "{}",
+        ]);
     }
 
     #[test]
     fn update_aggregate_return_flag_disables_the_echo() {
         let Section::DeviceAgent {
-            cmd: device_agent::DeviceAgentCmd::UpdateChannelAggregate { return_aggregate, .. },
+            cmd:
+                device_agent::DeviceAgentCmd::UpdateChannelAggregate {
+                    return_aggregate, ..
+                },
             ..
         } = parse_section(&[
             "doover",
@@ -470,7 +535,16 @@ mod tests {
         for cmd in ["update_aggregate", "create_message", "update_message"] {
             let args: Vec<&str> = match cmd {
                 "update_message" => {
-                    vec!["doover", "device_agent", cmd, "ch", "1", "{}", "--files", "[]"]
+                    vec![
+                        "doover",
+                        "device_agent",
+                        cmd,
+                        "ch",
+                        "1",
+                        "{}",
+                        "--files",
+                        "[]",
+                    ]
                 }
                 _ => vec!["doover", "device_agent", cmd, "ch", "{}", "--files", "[]"],
             };
@@ -486,7 +560,12 @@ mod tests {
             vec!["doover", "modbus", "write_registers", "--values", "[1,2]"],
         ] {
             let Section::Modbus {
-                cmd: modbus::ModbusCmd::WriteRegisters { values, values_flag, .. },
+                cmd:
+                    modbus::ModbusCmd::WriteRegisters {
+                        values,
+                        values_flag,
+                        ..
+                    },
                 ..
             } = parse_section(&args)
             else {
@@ -496,7 +575,12 @@ mod tests {
         }
         // The two spellings are one argument — giving both is a mistake.
         assert!(Cli::try_parse_from([
-            "doover", "modbus", "write_registers", "[1]", "--values", "[2]",
+            "doover",
+            "modbus",
+            "write_registers",
+            "[1]",
+            "--values",
+            "[2]",
         ])
         .is_err());
         assert!(Cli::try_parse_from(["doover", "modbus", "write_registers"]).is_err());
@@ -512,15 +596,24 @@ mod tests {
             "default",
             "--configure_bus",
         ]);
-        parse(&["doover", "modbus", "write_registers", "[1]", "--bus-id", "my_bus"]);
+        parse(&[
+            "doover",
+            "modbus",
+            "write_registers",
+            "[1]",
+            "--bus-id",
+            "my_bus",
+        ]);
     }
 
     /// pydoover typed `set_do`'s value `int | list[int]` and passed it through
     /// untouched, so any integer was accepted — not just 0/1.
     #[test]
     fn set_do_accepts_arbitrary_ints_as_pydoover_did() {
-        let Section::Platform { cmd: platform::PlatformCmd::SetDo { value, .. }, .. } =
-            parse_section(&["doover", "platform", "set_do", "0", "7"])
+        let Section::Platform {
+            cmd: platform::PlatformCmd::SetDo { value, .. },
+            ..
+        } = parse_section(&["doover", "platform", "set_do", "0", "7"])
         else {
             panic!("expected set_do");
         };

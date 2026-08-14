@@ -240,7 +240,9 @@ impl PlatformClient {
 
     /// Liveness echo (pydoover `test_comms`).
     pub async fn test_comms(&self, message: impl Into<String>) -> Result<String> {
-        let req = pb::TestCommsRequest { message: message.into() };
+        let req = pb::TestCommsRequest {
+            message: message.into(),
+        };
         let resp = self
             .shared
             .call(|ch| {
@@ -259,7 +261,12 @@ impl PlatformClient {
     /// Read one digital-input pin: true = high (pydoover `fetch_di` with a
     /// single pin).
     pub async fn fetch_di(&self, pin: i32) -> Result<bool> {
-        Ok(self.fetch_dis(&[pin]).await?.into_iter().next().unwrap_or(false))
+        Ok(self
+            .fetch_dis(&[pin])
+            .await?
+            .into_iter()
+            .next()
+            .unwrap_or(false))
     }
 
     /// Read several digital-input pins in one transaction (pydoover
@@ -280,7 +287,12 @@ impl PlatformClient {
     /// Read one analog-input pin (mA) (pydoover `fetch_ai` with a single
     /// pin). Errors if the sidecar reports failure.
     pub async fn fetch_ai(&self, pin: i32) -> Result<f32> {
-        Ok(self.fetch_ais(&[pin]).await?.into_iter().next().unwrap_or(0.0))
+        Ok(self
+            .fetch_ais(&[pin])
+            .await?
+            .into_iter()
+            .next()
+            .unwrap_or(0.0))
     }
 
     /// Read several analog-input pins in one transaction (pydoover
@@ -300,13 +312,20 @@ impl PlatformClient {
 
     /// Read one digital-output pin (pydoover `fetch_do` with a single pin).
     pub async fn fetch_do(&self, pin: i32) -> Result<bool> {
-        Ok(self.fetch_dos(&[pin]).await?.into_iter().next().unwrap_or(false))
+        Ok(self
+            .fetch_dos(&[pin])
+            .await?
+            .into_iter()
+            .next()
+            .unwrap_or(false))
     }
 
     /// Read several digital-output pins in one transaction (pydoover
     /// `fetch_do` with several pins).
     pub async fn fetch_dos(&self, pins: &[i32]) -> Result<Vec<bool>> {
-        let req = pb::GetDoRequest { r#do: pins.to_vec() };
+        let req = pb::GetDoRequest {
+            r#do: pins.to_vec(),
+        };
         let resp = self
             .shared
             .call(|ch| {
@@ -321,7 +340,12 @@ impl PlatformClient {
     /// Set one digital-output pin; returns the value that was set
     /// (pydoover `set_do` with a single pin/value).
     pub async fn set_do(&self, pin: i32, value: bool) -> Result<bool> {
-        Ok(self.set_dos(&[pin], &[value]).await?.into_iter().next().unwrap_or(false))
+        Ok(self
+            .set_dos(&[pin], &[value])
+            .await?
+            .into_iter()
+            .next()
+            .unwrap_or(false))
     }
 
     /// Set several digital-output pins in one transaction. A single value
@@ -329,7 +353,10 @@ impl PlatformClient {
     /// (pydoover `set_do` / `_cast_pin_values`).
     pub async fn set_dos(&self, pins: &[i32], values: &[bool]) -> Result<Vec<bool>> {
         let values = broadcast_values(pins, values, "digital output")?;
-        let req = pb::SetDoRequest { r#do: pins.to_vec(), value: values };
+        let req = pb::SetDoRequest {
+            r#do: pins.to_vec(),
+            value: values,
+        };
         let resp = self
             .shared
             .call(|ch| {
@@ -344,7 +371,9 @@ impl PlatformClient {
     /// Schedule one digital-output pin to change in `in_secs` seconds
     /// (pydoover `schedule_do` with a single pin/value).
     pub async fn schedule_do(&self, pin: i32, value: bool, in_secs: u32) -> Result<()> {
-        self.schedule_dos(&[pin], &[value], in_secs).await.map(|_| ())
+        self.schedule_dos(&[pin], &[value], in_secs)
+            .await
+            .map(|_| ())
     }
 
     /// Schedule several digital-output pins to change in `in_secs` seconds;
@@ -375,7 +404,12 @@ impl PlatformClient {
 
     /// Read one analog-output pin (pydoover `fetch_ao` with a single pin).
     pub async fn fetch_ao(&self, pin: i32) -> Result<f32> {
-        Ok(self.fetch_aos(&[pin]).await?.into_iter().next().unwrap_or(0.0))
+        Ok(self
+            .fetch_aos(&[pin])
+            .await?
+            .into_iter()
+            .next()
+            .unwrap_or(0.0))
     }
 
     /// Read several analog-output pins in one transaction (pydoover
@@ -396,7 +430,12 @@ impl PlatformClient {
     /// Set one analog-output pin; returns the value that was set (pydoover
     /// `set_ao` with a single pin/value).
     pub async fn set_ao(&self, pin: i32, value: f32) -> Result<f32> {
-        Ok(self.set_aos(&[pin], &[value]).await?.into_iter().next().unwrap_or(0.0))
+        Ok(self
+            .set_aos(&[pin], &[value])
+            .await?
+            .into_iter()
+            .next()
+            .unwrap_or(0.0))
     }
 
     /// Set several analog-output pins in one transaction. A single value
@@ -404,7 +443,10 @@ impl PlatformClient {
     /// (pydoover `set_ao` / `_cast_ao_pin_values`).
     pub async fn set_aos(&self, pins: &[i32], values: &[f32]) -> Result<Vec<f32>> {
         let values = broadcast_values(pins, values, "analogue output")?;
-        let req = pb::SetAoRequest { ao: pins.to_vec(), value: values };
+        let req = pb::SetAoRequest {
+            ao: pins.to_vec(),
+            value: values,
+        };
         let resp = self
             .shared
             .call(|ch| {
@@ -419,7 +461,9 @@ impl PlatformClient {
     /// Schedule one analog-output pin to change in `in_secs` seconds
     /// (pydoover `schedule_ao` with a single pin/value).
     pub async fn schedule_ao(&self, pin: i32, value: f32, in_secs: u32) -> Result<()> {
-        self.schedule_aos(&[pin], &[value], in_secs).await.map(|_| ())
+        self.schedule_aos(&[pin], &[value], in_secs)
+            .await
+            .map(|_| ())
     }
 
     /// Schedule several analog-output pins to change in `in_secs` seconds;
@@ -458,7 +502,9 @@ impl PlatformClient {
         let resp = self
             .shared
             .call(|ch| async move {
-                GenClient::new(ch).get_input_voltage(pb::GetInputVoltageRequest {}).await
+                GenClient::new(ch)
+                    .get_input_voltage(pb::GetInputVoltageRequest {})
+                    .await
             })
             .await?;
         Self::check(resp.response_header)?;
@@ -471,7 +517,9 @@ impl PlatformClient {
         let resp = self
             .shared
             .call(|ch| async move {
-                GenClient::new(ch).get_system_power(pb::GetSystemPowerRequest {}).await
+                GenClient::new(ch)
+                    .get_system_power(pb::GetSystemPowerRequest {})
+                    .await
             })
             .await?;
         Self::check(resp.response_header)?;
@@ -485,7 +533,9 @@ impl PlatformClient {
         let resp = self
             .shared
             .call(|ch| async move {
-                GenClient::new(ch).get_temperature(pb::GetTemperatureRequest {}).await
+                GenClient::new(ch)
+                    .get_temperature(pb::GetTemperatureRequest {})
+                    .await
             })
             .await?;
         Self::check(resp.response_header)?;
@@ -503,7 +553,9 @@ impl PlatformClient {
         let resp = self
             .shared
             .call(|ch| async move {
-                GenClient::new(ch).get_location(pb::GetLocationRequest {}).await
+                GenClient::new(ch)
+                    .get_location(pb::GetLocationRequest {})
+                    .await
             })
             .await?;
         Self::check(resp.response_header)?;
@@ -528,7 +580,9 @@ impl PlatformClient {
         let resp = self
             .shared
             .call(|ch| async move {
-                GenClient::new(ch).get_io_table(pb::GetIoTableRequest {}).await
+                GenClient::new(ch)
+                    .get_io_table(pb::GetIoTableRequest {})
+                    .await
             })
             .await?;
         Self::check(resp.response_header)?;
@@ -544,7 +598,9 @@ impl PlatformClient {
         let resp = self
             .shared
             .call(|ch| async move {
-                GenClient::new(ch).sync_rtc_time(pb::SyncRtcTimeRequest {}).await
+                GenClient::new(ch)
+                    .sync_rtc_time(pb::SyncRtcTimeRequest {})
+                    .await
             })
             .await?;
         Self::check(resp.response_header)
@@ -608,7 +664,9 @@ impl PlatformClient {
         let resp = self
             .shared
             .call(|ch| async move {
-                GenClient::new(ch).get_wake_on_voltage(pb::GetWakeOnVoltageRequest {}).await
+                GenClient::new(ch)
+                    .get_wake_on_voltage(pb::GetWakeOnVoltageRequest {})
+                    .await
             })
             .await?;
         Self::check(resp.response_header)?;
@@ -635,7 +693,9 @@ impl PlatformClient {
         let resp = self
             .shared
             .call(|ch| async move {
-                GenClient::new(ch).get_wake_reason(pb::GetWakeReasonRequest {}).await
+                GenClient::new(ch)
+                    .get_wake_reason(pb::GetWakeReasonRequest {})
+                    .await
             })
             .await?;
         Self::check(resp.response_header)?;
@@ -645,7 +705,9 @@ impl PlatformClient {
     /// Schedule the device to start up in `time_secs` seconds; returns the
     /// scheduled delay (pydoover `schedule_startup`).
     pub async fn schedule_startup(&self, time_secs: u32) -> Result<Option<f32>> {
-        let req = pb::ScheduleStartupRequest { time_secs: Some(time_secs as f32) };
+        let req = pb::ScheduleStartupRequest {
+            time_secs: Some(time_secs as f32),
+        };
         let resp = self
             .shared
             .call(|ch| async move { GenClient::new(ch).schedule_startup(req).await })
@@ -657,7 +719,9 @@ impl PlatformClient {
     /// Schedule the device to shut down in `time_secs` seconds; returns the
     /// scheduled delay (pydoover `schedule_shutdown`).
     pub async fn schedule_shutdown(&self, time_secs: u32) -> Result<Option<f32>> {
-        let req = pb::ScheduleShutdownRequest { time_secs: Some(time_secs as f32) };
+        let req = pb::ScheduleShutdownRequest {
+            time_secs: Some(time_secs as f32),
+        };
         let resp = self
             .shared
             .call(|ch| async move { GenClient::new(ch).schedule_shutdown(req).await })
@@ -703,7 +767,9 @@ impl PlatformClient {
     /// logging. Returns the interval that was set (pydoover
     /// `set_sleep_log_interval`).
     pub async fn set_sleep_log_interval(&self, interval_secs: i32) -> Result<Option<i32>> {
-        let req = pb::SetSleepLogIntervalRequest { interval_secs: Some(interval_secs) };
+        let req = pb::SetSleepLogIntervalRequest {
+            interval_secs: Some(interval_secs),
+        };
         let resp = self
             .shared
             .call(|ch| async move { GenClient::new(ch).set_sleep_log_interval(req).await })
@@ -719,13 +785,19 @@ impl PlatformClient {
     /// All platform events from `events_from` (event id or epoch
     /// milliseconds; 0 = all available) (pydoover `fetch_events`).
     pub async fn fetch_events(&self, events_from: i64) -> Result<Vec<PlatformEvent>> {
-        let req = pb::GetEventsRequest { events_from: Some(events_from) };
+        let req = pb::GetEventsRequest {
+            events_from: Some(events_from),
+        };
         let resp = self
             .shared
             .call(|ch| async move { GenClient::new(ch).get_events(req).await })
             .await?;
         Self::check(resp.response_header)?;
-        Ok(resp.events.into_iter().map(PlatformEvent::from_proto).collect())
+        Ok(resp
+            .events
+            .into_iter()
+            .map(PlatformEvent::from_proto)
+            .collect())
     }
 
     /// Digital-input events for a pin: whether the event log is synced, and
@@ -752,7 +824,11 @@ impl PlatformClient {
             .call(|ch| async move { GenClient::new(ch).get_di_events(req).await })
             .await?;
         Self::check(resp.response_header)?;
-        let events = resp.events.into_iter().map(PlatformEvent::from_proto).collect();
+        let events = resp
+            .events
+            .into_iter()
+            .map(PlatformEvent::from_proto)
+            .collect();
         Ok((resp.events_synced.unwrap_or(false), events))
     }
 
@@ -810,7 +886,10 @@ impl PlatformClient {
         di: i32,
         edge: Edge,
     ) -> Result<impl Stream<Item = Result<DiPulse>>> {
-        let req = pb::PulseCounterRequest { di, edge: edge.as_str().to_string() };
+        let req = pb::PulseCounterRequest {
+            di,
+            edge: edge.as_str().to_string(),
+        };
         // Stream keepalive settings, without which a half-open connection
         // surfaces nothing to the reader and the reconnect loop in
         // `start_di_pulse_listener` can never fire (pydoover
@@ -820,7 +899,11 @@ impl PlatformClient {
         Ok(stream.map(|item| {
             let resp = item?;
             Self::check(resp.response_header)?;
-            Ok(DiPulse { di: resp.di, value: resp.value, dt_secs: resp.dt_secs })
+            Ok(DiPulse {
+                di: resp.di,
+                value: resp.value,
+                dt_secs: resp.dt_secs,
+            })
         }))
     }
 
@@ -876,7 +959,10 @@ impl PlatformClient {
         });
         let abort = task.abort_handle();
         // Track for close() (pydoover `pulse_counter_listeners`).
-        self.listeners.lock().expect("listener lock poisoned").push(task);
+        self.listeners
+            .lock()
+            .expect("listener lock poisoned")
+            .push(task);
         abort
     }
 
@@ -1038,13 +1124,18 @@ impl PulseCounter {
                 tracing::debug!("received pulse on di={pin} with dt={}s", update.dt_secs);
                 st.count += 1;
                 st.pulse_timestamps.push(now);
-                PulseCounterUpdate { count: st.count, timestamp: None, ..*update }
+                PulseCounterUpdate {
+                    count: st.count,
+                    timestamp: None,
+                    ..*update
+                }
             };
             if let Some(cb) = &user_callback {
                 cb(&update);
             }
         });
-        self.client.start_di_pulse_listener(pin, edge, start_count, on_pulse);
+        self.client
+            .start_di_pulse_listener(pin, edge, start_count, on_pulse);
     }
 
     /// Fetch and process stored offline events for the pin (pydoover
@@ -1059,8 +1150,10 @@ impl PulseCounter {
             }
             st.receiving_events = true;
         }
-        let (_synced, events) =
-            self.client.fetch_di_events(self.pin, self.edge, true, 0).await?;
+        let (_synced, events) = self
+            .client
+            .fetch_di_events(self.pin, self.edge, true, 0)
+            .await?;
         self.receive_events(&events);
         Ok(())
     }
@@ -1151,7 +1244,11 @@ impl PulseCounter {
             return Vec::new();
         };
         let cutoff = newest - st.rate_window_secs;
-        st.pulse_timestamps.iter().copied().filter(|&t| t > cutoff).collect()
+        st.pulse_timestamps
+            .iter()
+            .copied()
+            .filter(|&t| t > cutoff)
+            .collect()
     }
 
     /// Pulses per minute over the rate window (pydoover
@@ -1204,7 +1301,10 @@ mod tests {
 
     #[test]
     fn broadcast_single_value_to_all_pins() {
-        assert_eq!(broadcast_values(&[1, 4, 2], &[true], "do").unwrap(), vec![true; 3]);
+        assert_eq!(
+            broadcast_values(&[1, 4, 2], &[true], "do").unwrap(),
+            vec![true; 3]
+        );
         assert_eq!(
             broadcast_values(&[1, 2], &[false, true], "do").unwrap(),
             vec![false, true]
@@ -1235,10 +1335,9 @@ mod tests {
     fn receive_events_counts_and_dedups() {
         let seen: Arc<Mutex<Vec<PulseCounterUpdate>>> = Arc::new(Mutex::new(Vec::new()));
         let sink = Arc::clone(&seen);
-        let counter =
-            test_counter(Some(Arc::new(move |u: &PulseCounterUpdate| {
-                sink.lock().unwrap().push(*u);
-            })));
+        let counter = test_counter(Some(Arc::new(move |u: &PulseCounterUpdate| {
+            sink.lock().unwrap().push(*u);
+        })));
 
         counter.receive_events(&[
             di_event("DI_R", 10_000),

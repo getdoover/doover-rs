@@ -57,7 +57,11 @@ pub async fn spawn_healthcheck_server(port: u16, state: HealthState) {
                 // this a request worth answering.
                 let mut buf = [0u8; 1024];
                 let _ = socket.read(&mut buf).await;
-                let response = if state.is_healthy() { RESPONSE_OK } else { RESPONSE_ERROR };
+                let response = if state.is_healthy() {
+                    RESPONSE_OK
+                } else {
+                    RESPONSE_ERROR
+                };
                 let _ = socket.write_all(response).await;
                 let _ = socket.shutdown().await;
             });

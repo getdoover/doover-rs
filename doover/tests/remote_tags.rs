@@ -26,7 +26,10 @@ struct UpstreamTags {
     online: Tag<bool>,
 }
 
-async fn setup_runtime(state: &Arc<common::FakeAgentState>, uri: &str) -> (Arc<TagsRuntime>, SubscriptionHub) {
+async fn setup_runtime(
+    state: &Arc<common::FakeAgentState>,
+    uri: &str,
+) -> (Arc<TagsRuntime>, SubscriptionHub) {
     state.seed_aggregate("dv-ui-sub", json!({}));
     // Two apps publish into the shared tag_values aggregate; "test_app" is us.
     state.seed_aggregate(
@@ -36,7 +39,10 @@ async fn setup_runtime(state: &Arc<common::FakeAgentState>, uri: &str) -> (Arc<T
             "test_app": {"own": 1.0},
         }),
     );
-    let client = DeviceAgentClient::connect(uri.to_string()).await.unwrap().with_app_id("test_app");
+    let client = DeviceAgentClient::connect(uri.to_string())
+        .await
+        .unwrap()
+        .with_app_id("test_app");
     let hub = SubscriptionHub::new(client.clone());
     let tags = Arc::new(TagsRuntime::new(client, "test_app"));
     tags.setup(&hub).await;
@@ -50,7 +56,8 @@ async fn remote_tag_reads_other_app_namespace() {
     let (state, uri) = spawn_fake_agent().await;
     let (rt, _hub) = setup_runtime(&state, &uri).await;
 
-    let level = RemoteTag::<f64>::from_parts(rt.clone(), "platform_interface_1", "ai_reading", None);
+    let level =
+        RemoteTag::<f64>::from_parts(rt.clone(), "platform_interface_1", "ai_reading", None);
     assert_eq!(level.get(), Some(12.5));
     assert_eq!(level.app_key(), "platform_interface_1");
     assert_eq!(level.tag_name(), "ai_reading");
@@ -61,8 +68,12 @@ async fn remote_tag_reads_other_app_namespace() {
     // Absent upstream tag → declared default (None here, or the supplied one).
     let missing = RemoteTag::<f64>::from_parts(rt.clone(), "platform_interface_1", "nope", None);
     assert_eq!(missing.get(), None);
-    let missing_defaulted =
-        RemoteTag::<f64>::from_parts(rt.clone(), "platform_interface_1", "nope", Some(json!(-1.0)));
+    let missing_defaulted = RemoteTag::<f64>::from_parts(
+        rt.clone(),
+        "platform_interface_1",
+        "nope",
+        Some(json!(-1.0)),
+    );
     assert_eq!(missing_defaulted.get(), Some(-1.0));
 
     // Reading a non-existent app is just an absent value, not an error.

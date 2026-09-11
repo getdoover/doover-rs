@@ -34,7 +34,8 @@ use crate::tags::TAG_CHANNEL_NAME;
 use super::application::{now_ms, Handled, Processor, ProcessorContext, SkipReason};
 use super::config::ProcConfig;
 use super::events::{
-    id_string, AggregateUpdateEvent, DeploymentEvent, EventPayload, IngestionEndpointEvent,
+    id_string, AggregateUpdateEvent, AlarmTriggerEvent, DeploymentEvent, EventPayload,
+    IngestionEndpointEvent,
     ManualInvokeEvent, MessageCreateEvent, ScheduleEvent,
 };
 use super::tags::ProcessorTags;
@@ -275,6 +276,9 @@ fn decode_payload<P: Processor>(
         "on_aggregate_update" => {
             EventPayload::AggregateUpdate(AggregateUpdateEvent::from_value(d).map_err(decode_err)?)
         }
+        "on_alarm_trigger" => {
+            EventPayload::AlarmTrigger(AlarmTriggerEvent::from_value(d).map_err(decode_err)?)
+        }
         "on_deployment" => {
             EventPayload::Deployment(DeploymentEvent::from_value(d).map_err(decode_err)?)
         }
@@ -416,6 +420,7 @@ async fn dispatch_handler<P: Processor>(
     match payload {
         EventPayload::MessageCreate(e) => processor.on_message_create(ctx, e).await,
         EventPayload::AggregateUpdate(e) => processor.on_aggregate_update(ctx, e).await,
+        EventPayload::AlarmTrigger(e) => processor.on_alarm_trigger(ctx, e).await,
         EventPayload::Deployment(e) => processor.on_deployment(ctx, e).await,
         EventPayload::Schedule(e) => processor.on_schedule(ctx, e).await,
         EventPayload::IngestionEndpoint(e) => processor.on_ingestion_endpoint(ctx, e).await,

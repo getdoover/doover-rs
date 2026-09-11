@@ -24,7 +24,7 @@ use crate::models::{ConnectionDetermination, ConnectionStatus, Notification};
 
 use super::config::ProcConfig;
 use super::events::{
-    AggregateUpdateEvent, DeploymentEvent, EventPayload, IngestionEndpointEvent,
+    AggregateUpdateEvent, AlarmTriggerEvent, DeploymentEvent, EventPayload, IngestionEndpointEvent,
     ManualInvokeEvent, MessageCreateEvent, ScheduleEvent,
 };
 use super::tags::{ProcessorTags, SetProcessorTagOptions};
@@ -324,6 +324,20 @@ pub trait Processor: Send {
         &mut self,
         _ctx: &ProcessorContext,
         _event: &AggregateUpdateEvent,
+    ) -> Result<Handled> {
+        Ok(Handled::NotImplemented)
+    }
+
+    /// Invoked when an alarm on a subscribed channel changes state.
+    ///
+    /// Fires for every transition (including into and out of
+    /// `AlarmPending`), and independently of whether the transition sends a
+    /// user-facing notification — an alarm whose `messages` overrides silence
+    /// a state still invokes this handler.
+    async fn on_alarm_trigger(
+        &mut self,
+        _ctx: &ProcessorContext,
+        _event: &AlarmTriggerEvent,
     ) -> Result<Handled> {
         Ok(Handled::NotImplemented)
     }

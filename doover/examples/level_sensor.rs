@@ -303,6 +303,7 @@ impl Application for AnalogLevelSensor {
     type Config = AnalogLevelSensorConfig;
     type Tags = AnalogLevelSensorTags;
     type Ui = AnalogLevelSensorUi;
+    type Notifications = ();
 
     fn create(
         config: AnalogLevelSensorConfig,

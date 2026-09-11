@@ -27,13 +27,18 @@ use tokio::sync::mpsc;
 use tokio::time::{Instant, MissedTickBehavior};
 
 use crate::channel_backend::ChannelBackend;
-use crate::config::{write_config_schema, write_ui_schema, Config, ConfigSchema, TagRef};
+use crate::config::{
+    write_config_schema, write_notification_schema, write_ui_schema, Config, ConfigSchema, TagRef,
+};
+use crate::notifications::{NotificationSet, PendingNotification};
 use crate::docker::device_agent::{AggregateOptions, ChannelRef, DeviceAgentClient};
 use crate::docker::healthcheck::{spawn_healthcheck_server, HealthState};
 use crate::docker::subscriptions::SubscriptionHub;
 use crate::error::Result;
 use crate::events::{Event, EventSubscription};
-use crate::models::{Notification, NOTIFICATIONS_CHANNEL};
+use crate::models::{
+    Notification, NotificationPolicy, NotificationTopic, NOTIFICATIONS_CHANNEL,
+};
 use crate::rpc::{CallOptions, RpcManager};
 use crate::tags::{KeyPath, RemoteTag, SetTagOptions, TagValue, TagsCollection, TagsRuntime};
 use crate::ui::runtime::resolve_config_refs;
@@ -215,6 +220,34 @@ impl AppContext {
         self.client.create_message(NOTIFICATIONS_CHANNEL, &notification.to_json()).await
     }
 
+    /// Send a declared notification (pydoover
+    /// `self.notifications.<name>.send()`), on its canonical topic and with
+    /// every field falling back to the declaration.
+    pub async fn notify(&self, notification: impl Into<PendingNotification>) -> Result<u64> {
+        let notification = notification.into().build(&self.app_key)?;
+        self.send_notification(notification).await
+    }
+
+    /// Send a notification under a canonical application topic
+    /// (`dev/applications/<policy>/<app_key>/<event>`) — pydoover's
+    /// `send_notification(event=...)`.
+    ///
+    /// A raw `topic` on the notification is replaced: the two are mutually
+    /// exclusive in pydoover, and `event` is what builds the topic. Sending
+    /// under a canonical topic is what puts the notification in the structured
+    /// hierarchy rather than the `legacy/default` bucket, which is what lets
+    /// the Doover site offer a per-notification opt-out.
+    pub async fn send_notification_event(
+        &self,
+        notification: impl Into<Notification>,
+        event: &str,
+        policy: NotificationPolicy,
+    ) -> Result<u64> {
+        let topic = NotificationTopic::application(&self.app_key, event, policy)?;
+        let notification = notification.into().topic(topic.as_str());
+        self.send_notification(notification).await
+    }
+
     /// Whether some user currently has `tag_name` open in live mode
     /// (pydoover `is_live_tag_open`). Tags are qualified `<app_key>.<tag>`.
     pub fn is_live_tag_open(&self, tag_name: &str) -> bool {
@@ -369,6 +402,10 @@ pub trait Application: Send + Sized + 'static {
     /// Declared UI; `()` for UI-less apps (nothing is published to
     /// `ui_state`).
     type Ui: UiTree + UiBuild<Tags = Self::Tags> + Send;
+    /// Declared notifications; `()` for apps that declare none (no
+    /// `notification_schema` is exported, and notifications can still be sent
+    /// ad hoc through [`AppContext::send_notification`]).
+    type Notifications: NotificationSet;
 
     /// Construct the app from its loaded config, attached tags and built UI.
     fn create(config: Self::Config, tags: Self::Tags, ui: Self::Ui) -> Self;
@@ -655,6 +692,13 @@ pub async fn run<A: Application>() -> Result<()> {
 pub fn write_export<A: Application>(path: impl AsRef<Path>, app_name: &str) -> Result<bool> {
     let path = path.as_ref();
     write_config_schema(path, app_name, A::Config::schema().to_json())?;
+
+    // Declaring nothing must not write an empty schema over one a previous
+    // export wrote — pydoover's `Notifications.export` is only called by apps
+    // that declare a notification set.
+    if !A::Notifications::declarations().is_empty() {
+        write_notification_schema(path, app_name, A::Notifications::to_schema())?;
+    }
 
     let tags = A::Tags::detached();
     let mut ui = A::Ui::build(&tags);

@@ -47,6 +47,7 @@
 //!     type Config = (); // or #[derive(Config)] for a typed schema
 //!     type Tags = MyTags;
 //!     type Ui = MyUi;
+//!     type Notifications = (); // or #[derive(Notifications)] to declare some
 //!
 //!     fn create(_config: (), tags: MyTags, ui: MyUi) -> Self {
 //!         Self { tags, ui, reading: 0.0 }
@@ -111,6 +112,7 @@ pub mod docker;
 pub mod error;
 pub mod events;
 pub mod models;
+pub mod notifications;
 #[cfg(feature = "processor")]
 pub mod processor;
 pub mod rpc;
@@ -144,7 +146,7 @@ pub use ui::{UiCommand, UiRuntime};
 // `doover::Config` the derive and `doover::Config` the dynamic config struct
 // coexist (likewise `doover::Tags` the derive and `doover::tags` the module).
 #[cfg(feature = "macros")]
-pub use doover_macros::{Config, ConfigEnum, ConfigObject, Tags, Ui};
+pub use doover_macros::{Config, ConfigEnum, ConfigObject, Notifications, Tags, Ui};
 
 // Re-exports for macro-generated code; not public API.
 #[doc(hidden)]

@@ -478,6 +478,7 @@ mod declarative_app {
         type Config = TestConfig;
         type Tags = TestTags;
         type Ui = TestUi;
+        type Notifications = ();
 
         fn create(config: TestConfig, tags: TestTags, ui: TestUi) -> Self {
             Self { config, tags, ui, iterations: 0 }

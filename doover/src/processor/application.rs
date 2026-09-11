@@ -20,7 +20,9 @@ use crate::api::data::{DataClient, PingConnectionArgs};
 use crate::api::Channel;
 use crate::channel_backend::AggregateOptions;
 use crate::error::Result;
-use crate::models::{ConnectionDetermination, ConnectionStatus, Notification};
+use crate::models::{
+    ConnectionDetermination, ConnectionStatus, Notification, NotificationPolicy, NotificationTopic,
+};
 
 use super::config::ProcConfig;
 use super::events::{
@@ -197,6 +199,23 @@ impl ProcessorContext {
     /// subscriptions. Returns the created message payload.
     pub async fn send_notification(&self, notification: impl Into<Notification>) -> Result<Value> {
         self.api.send_notification(notification, None).await
+    }
+
+    /// Send a notification under a canonical application topic
+    /// (`dev/applications/<policy>/<app_key>/<event>`) — pydoover's
+    /// `send_notification(event=...)`.
+    ///
+    /// A raw `topic` on the notification is replaced: the two are mutually
+    /// exclusive in pydoover, and `event` is what builds the topic.
+    pub async fn send_notification_event(
+        &self,
+        notification: impl Into<Notification>,
+        event: &str,
+        policy: NotificationPolicy,
+    ) -> Result<Value> {
+        let topic = NotificationTopic::application(&self.app_key, event, policy)?;
+        let notification = notification.into().topic(topic.as_str());
+        self.send_notification(notification).await
     }
 
     /// pydoover `Application.publish_ui_schema` — write a UI schema under

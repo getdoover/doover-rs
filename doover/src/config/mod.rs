@@ -22,7 +22,7 @@ use serde_json::Value;
 
 use crate::error::{DooverError, Result};
 
-pub use export::{write_config_schema, write_ui_schema};
+pub use export::{write_config_schema, write_notification_schema, write_ui_schema};
 pub use schema::{
     Comparator, Condition, ElementKind, ElementSchema, NumericBounds, SchemaModel, StringBounds,
 };

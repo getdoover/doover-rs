@@ -41,6 +41,16 @@ pub fn write_ui_schema(path: impl AsRef<Path>, app_name: &str, ui_json: Value) -
     write_app_entry(path.as_ref(), app_name, "ui_schema", ui_json)
 }
 
+/// Like [`write_config_schema`] but for `data[app_name]["notification_schema"]`
+/// — pydoover `Notifications.export`.
+pub fn write_notification_schema(
+    path: impl AsRef<Path>,
+    app_name: &str,
+    schema_json: Value,
+) -> Result<()> {
+    write_app_entry(path.as_ref(), app_name, "notification_schema", schema_json)
+}
+
 /// The shared read-merge-write: set `data[app_name][key] = value` preserving
 /// every other key (and their order).
 fn write_app_entry(path: &Path, app_name: &str, key: &str, value: Value) -> Result<()> {

@@ -142,6 +142,91 @@ impl std::str::FromStr for NotificationType {
     }
 }
 
+/// Whether broad default notification subscriptions include a notification
+/// (pydoover `NotificationPolicy`). Part of a canonical topic, so changing it
+/// on a published app changes the topic and orphans any exclusion a subscriber
+/// had written against the old one.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum NotificationPolicy {
+    #[default]
+    Default,
+    OptIn,
+}
+
+impl NotificationPolicy {
+    pub fn wire(self) -> &'static str {
+        match self {
+            Self::Default => "default",
+            Self::OptIn => "opt-in",
+        }
+    }
+}
+
+/// A validated, canonical notification topic (pydoover `NotificationTopic`).
+///
+/// Alarm topics are built server-side. Application topics are not — anything
+/// an app sends that does not already start with `dev/` is filed under
+/// `legacy/default/<topic>`, so an application that wants to appear in the
+/// structured hierarchy has to send the full topic itself. That is what this
+/// builds.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NotificationTopic(String);
+
+impl NotificationTopic {
+    /// Build `dev/applications/<policy>/<app_key>/<event>`.
+    ///
+    /// `app_key` is the *app install* name (`pump_controller_1`), which is
+    /// what makes the topic unique per device per install.
+    pub fn application(
+        app_key: &str,
+        event: &str,
+        policy: NotificationPolicy,
+    ) -> crate::error::Result<Self> {
+        validate_topic_segment("app_key", app_key)?;
+        validate_topic_segment("event", event)?;
+        Ok(Self(format!(
+            "dev/applications/{}/{app_key}/{event}",
+            policy.wire()
+        )))
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl std::fmt::Display for NotificationTopic {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+impl From<NotificationTopic> for String {
+    fn from(t: NotificationTopic) -> Self {
+        t.0
+    }
+}
+
+/// Matches what the server and the frontend both anchor on (`[^/]+`),
+/// narrowed to the spellings an app key or event name can actually take — app
+/// keys are `<application name>_<n>` and application names are validated
+/// `^[0-9a-z_]*$` server-side (pydoover `_TOPIC_SEGMENT_RE`).
+fn validate_topic_segment(name: &str, value: &str) -> crate::error::Result<()> {
+    let valid = value
+        .chars()
+        .next()
+        .is_some_and(|c| c.is_ascii_lowercase() || c.is_ascii_digit())
+        && value
+            .chars()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || matches!(c, '.' | '_' | '-'));
+    if !valid {
+        return Err(crate::error::DooverError::InvalidPayload(format!(
+            "notification topic {name} must match ^[a-z0-9][a-z0-9._-]*$, got {value:?}"
+        )));
+    }
+    Ok(())
+}
+
 /// A notification message sent via the `notifications` channel — mirrors the
 /// server-side `NotificationChannelMessagePayload`. Publishing a message with
 /// this payload causes the Doover cloud to fan the notification out to

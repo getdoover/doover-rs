@@ -48,6 +48,14 @@ pub struct InteractionCommon {
     pub global_interaction: Option<bool>,
     /// Emitted as `commandTimeout` (pydoover `duration_ms`).
     pub command_timeout_ms: Option<i64>,
+    /// Emitted as `commandPendingTimeout`: how long the command may stay in
+    /// flight once the device has answered it — acknowledged it, or reported
+    /// progress via [`RpcContext::progress`](crate::rpc::RpcContext::progress).
+    /// `command_timeout_ms` only covers the wait to hear from the device at
+    /// all, and a healthy device should answer that within a few seconds
+    /// however long the work then takes. The device must report progress at
+    /// least this often. Unset means the site reuses the command timeout.
+    pub command_pending_timeout_ms: Option<i64>,
     /// Emitted as `commandRetryTimeout`: the maximum *additional* time the site
     /// waits after the user accepts a retry of a timed-out command. Unset means
     /// the site reuses the command timeout.
@@ -66,13 +74,15 @@ impl InteractionCommon {
             requires_confirm: None,
             global_interaction: None,
             command_timeout_ms: None,
+            command_pending_timeout_ms: None,
             command_retry_timeout_ms: None,
             direct: None,
         }
     }
 
     /// pydoover `Interaction.to_dict()`: base keys, then `currentValue`,
-    /// `requiresConfirm`, `global`, `commandTimeout`, `commandRetryTimeout`,
+    /// `requiresConfirm`, `global`, `commandTimeout`, `commandPendingTimeout`,
+    /// `commandRetryTimeout`,
     /// `direct`, `default` (`showActivity` lands in the base slot when set).
     pub(crate) fn interaction_json(&self, ty: &str) -> Map<String, Value> {
         let mut m = self.element.base_json(ty);
@@ -100,6 +110,9 @@ impl InteractionCommon {
         }
         if let Some(t) = self.command_timeout_ms {
             m.insert("commandTimeout".into(), Value::from(t));
+        }
+        if let Some(t) = self.command_pending_timeout_ms {
+            m.insert("commandPendingTimeout".into(), Value::from(t));
         }
         if let Some(t) = self.command_retry_timeout_ms {
             m.insert("commandRetryTimeout".into(), Value::from(t));
@@ -149,6 +162,15 @@ macro_rules! impl_interaction_builders {
             /// command before marking it failed (emitted in ms).
             pub fn command_timeout(mut self, timeout: Duration) -> Self {
                 self.interaction.command_timeout_ms = Some(timeout.as_millis() as i64);
+                self
+            }
+
+            /// How long the command may stay in flight once the device has
+            /// answered it — acknowledged it, or reported progress (emitted
+            /// in ms). Set this on interactions whose handler keeps working
+            /// for a while; unset means the site reuses the command timeout.
+            pub fn command_pending_timeout(mut self, timeout: Duration) -> Self {
+                self.interaction.command_pending_timeout_ms = Some(timeout.as_millis() as i64);
                 self
             }
 

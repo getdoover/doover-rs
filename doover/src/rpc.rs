@@ -21,7 +21,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use futures_util::future::BoxFuture;
 use serde_json::{json, Map, Value};
-use tokio::sync::oneshot;
+use tokio::sync::{oneshot, Notify};
 
 use crate::channel_backend::{ChannelBackend, UpdateMessageOptions};
 use crate::error::{DooverError, Result};
@@ -42,6 +42,14 @@ pub struct RpcError {
 }
 
 impl RpcError {
+    /// The error a cancelled command unwinds with (pydoover `RPCCancelled`).
+    pub fn cancelled(method: &str) -> Self {
+        Self {
+            code: "CANCELLED".to_string(),
+            message: format!("RPC call '{method}' was cancelled by the caller"),
+        }
+    }
+
     pub fn new(code: impl Into<String>, message: impl Into<String>) -> Self {
         Self { code: code.into(), message: message.into() }
     }
@@ -85,6 +93,55 @@ pub fn command_is_expired(message_id: u64, data: &Value) -> bool {
     }
 }
 
+/// Whether a command `status` block marks the command as cancelled (pydoover
+/// `status_is_cancelled`).
+///
+/// There is no dedicated status code: the site's cancel patches the command
+/// message to a terminal `error` carrying a marker in its `message` body
+/// (customer-site `handleCancelCommand`):
+///
+/// ```json
+/// {"status": {"code": "error",
+///             "message": {"info": "Command cancelled",
+///                         "cancelled_at": 1787812081613,
+///                         "cancelled_by": {}}}}
+/// ```
+///
+/// So a cancellation is a *kind of* error rather than a status of its own.
+/// The checks below mirror the site's own reader (`isCancelledStatus`),
+/// including its tolerance of the single-l spelling and of a bare string
+/// message from older writers — if the two ever disagree, the site's version
+/// is canonical.
+pub fn status_is_cancelled(status: &Value) -> bool {
+    fn is_cancelled_text(s: &str) -> bool {
+        let s = s.trim().to_ascii_lowercase();
+        s == "command cancelled" || s == "command canceled"
+    }
+
+    if status.get("code").and_then(Value::as_str) != Some("error") {
+        return false;
+    }
+    match status.get("message") {
+        Some(Value::String(text)) => is_cancelled_text(text),
+        Some(Value::Object(message)) => {
+            if message.contains_key("cancelled_at") || message.contains_key("cancelled_by") {
+                return true;
+            }
+            message
+                .get("info")
+                .and_then(Value::as_str)
+                .is_some_and(is_cancelled_text)
+        }
+        _ => false,
+    }
+}
+
+/// Whether an RPC command's message has been cancelled by its issuer
+/// (pydoover `command_is_cancelled`).
+pub fn command_is_cancelled(data: &Value) -> bool {
+    data.get("status").is_some_and(status_is_cancelled)
+}
+
 /// Context handed to an RPC handler (pydoover `RPCContext`): identifies the
 /// request message and lets the handler send intermediate statuses.
 #[derive(Clone)]
@@ -100,6 +157,12 @@ pub struct RpcContext {
     /// (pydoover reads these off `RPCContext.message.data`).
     pub data: Value,
     backend: Arc<dyn ChannelBackend>,
+    /// Set when the issuer withdraws this command while the handler is still
+    /// running, along with the cancelling update's `status.message` body
+    /// (which carries who cancelled it and when).
+    cancelled: Arc<Mutex<Option<Value>>>,
+    /// Fires once on cancellation, for [`RpcContext::wait_cancelled`].
+    cancel_tx: Arc<Notify>,
 }
 
 impl RpcContext {
@@ -146,12 +209,143 @@ impl RpcContext {
         }
     }
 
+    // -- cancellation ----------------------------------------------------
+    //
+    // A long-running handler — a pump pre-start warning, a panel reboot, a
+    // firmware push — outlives the operator's patience, so the site lets them
+    // withdraw a command that is still in flight. That arrives as an update to
+    // the command's own message, which the manager routes here.
+    //
+    // Cancellation is cooperative: nothing interrupts the handler. A handler
+    // that ignores it behaves exactly as it does today. This is deliberate —
+    // killing a half-finished sequence mid-step (part-way through putting a
+    // panel into Auto, say) is rarely safer than letting it decide where it
+    // can safely stop.
+
+    /// Whether the issuer has withdrawn this command since it started.
+    pub fn is_cancelled(&self) -> bool {
+        self.cancelled.lock().unwrap().is_some()
+    }
+
+    /// Block until this command is cancelled — for handlers waiting on
+    /// something else anyway (`tokio::select!` over this and the real work).
+    pub async fn wait_cancelled(&self) {
+        loop {
+            // Register before testing the flag: a cancellation landing between
+            // the two would otherwise be missed and this would wait forever.
+            let notified = self.cancel_tx.notified();
+            tokio::pin!(notified);
+            notified.as_mut().enable();
+            if self.is_cancelled() {
+                return;
+            }
+            notified.await;
+        }
+    }
+
+    /// `Err(RpcError)` with pydoover's `CANCELLED` code if the command has
+    /// been cancelled — for handlers that step through phases and want to bail
+    /// at each boundary (pydoover `raise_if_cancelled`).
+    pub fn error_if_cancelled(&self) -> std::result::Result<(), RpcError> {
+        if self.is_cancelled() {
+            return Err(RpcError::cancelled(&self.method));
+        }
+        Ok(())
+    }
+
+    /// When the command was cancelled, in unix milliseconds, if it was and the
+    /// issuer said so.
+    ///
+    /// The timestamp is whatever the canceller wrote, so a nonsensical value
+    /// yields `None`: a handler reading this for an audit line must not be
+    /// able to blow up over a malformed field.
+    pub fn cancelled_at(&self) -> Option<i64> {
+        let guard = self.cancelled.lock().unwrap();
+        let raw = guard.as_ref()?.get("cancelled_at")?;
+        raw.as_i64().or_else(|| raw.as_f64().map(|f| f as i64))
+    }
+
+    /// Audit info for whoever cancelled the command, if the issuer said so.
+    pub fn cancelled_by(&self) -> Option<Value> {
+        self.cancelled.lock().unwrap().as_ref()?.get("cancelled_by").cloned()
+    }
+
+    fn mark_cancelled(&self, status: &Value) {
+        let body = match status.get("message") {
+            Some(v @ Value::Object(_)) => v.clone(),
+            _ => json!({}),
+        };
+        *self.cancelled.lock().unwrap() = Some(body);
+        self.cancel_tx.notify_waiters();
+    }
+
+    /// Whether it is still our place to write to this command's message
+    /// (pydoover `_may_write`).
+    ///
+    /// Once cancelled, the command carries the canceller's terminal status and
+    /// the site renders it from that. A later `progress` would put it back to
+    /// `pending` and quietly un-cancel it in the UI — so every status write
+    /// stops here, not just the terminal one.
+    fn may_write(&self) -> bool {
+        !self.is_cancelled()
+    }
+
+    /// Report intermediate progress on a command that is still running
+    /// (pydoover `RPCContext.progress`).
+    ///
+    /// Handlers that take a while should call this as they move between
+    /// phases, so the operator watches the sequence advance instead of a bare
+    /// spinner. The `pending` status is non-terminal: the command stays in
+    /// flight and the site keeps the control locked until the handler returns.
+    ///
+    /// `text` is the one-line summary shown beside the spinner; `fields` ride
+    /// alongside it for consumers that want structure rather than prose.
+    ///
+    /// Reporting progress also tells the site the device is alive, so the
+    /// longer `command_pending_timeout` governs from the first report onwards,
+    /// in place of the short "no response from device" window. Call it at
+    /// least that often.
+    pub async fn progress(&self, text: Option<&str>, fields: Value) -> Result<()> {
+        let Some(id) = self.message_id else {
+            return Err(DooverError::Other(
+                "cannot report progress on a one-shot rpc request".into(),
+            ));
+        };
+        if !self.may_write() {
+            return Ok(());
+        }
+        let mut message = match fields {
+            Value::Object(m) => m,
+            Value::Null => serde_json::Map::new(),
+            other => {
+                return Err(DooverError::Other(format!(
+                    "progress fields must be a JSON object, got {other}"
+                )))
+            }
+        };
+        if let Some(text) = text {
+            message.insert("text".to_string(), json!(text));
+        }
+        let payload = json!({"status": {"code": "pending", "message": message}});
+        self.backend
+            .update_message(
+                &self.channel,
+                id,
+                &payload,
+                &UpdateMessageOptions::default(),
+            )
+            .await
+    }
+
     /// Mark the request as received but not yet complete — pydoover
     /// `RPCContext.acknowledge`, ms timestamp included.
     pub async fn acknowledge(&self) -> Result<()> {
         let Some(id) = self.message_id else {
             return Err(DooverError::Other("cannot acknowledge a one-shot rpc request".into()));
         };
+        if !self.may_write() {
+            return Ok(());
+        }
         let payload = json!({
             "status": {
                 "code": "acknowledged",
@@ -169,6 +363,9 @@ impl RpcContext {
         let Some(id) = self.message_id else {
             return Err(DooverError::Other("cannot defer a one-shot rpc request".into()));
         };
+        if !self.may_write() {
+            return Ok(());
+        }
         let now = now_unix_ms();
         let payload = json!({
             "status": {
@@ -318,6 +515,11 @@ struct RpcState {
     /// (pydoover's global handlers).
     handlers: HashMap<(Option<String>, String), RpcHandler>,
     pending: HashMap<u64, PendingSender>,
+    /// Inbound commands we are currently serving, by message id, so an update
+    /// to one (notably a cancellation) can be routed to the running handler.
+    /// Always removed again once the handler returns: a leak would pin every
+    /// command's context for the life of the app.
+    inflight: HashMap<u64, RpcContext>,
     subscribed: HashSet<String>,
     /// Installed by the runtime; called once per newly-needed channel so the
     /// transport can route that channel's events into [`RpcManager::handle_event`].
@@ -549,6 +751,16 @@ impl RpcManager {
             }
         }
 
+        // Drop commands that were already withdrawn before we got to them — a
+        // backlog delivered after a reconnect can carry both the command and
+        // the cancellation, and the create event may well arrive second.
+        if command_is_cancelled(data) {
+            tracing::info!(
+                "skipping cancelled RPC command '{method}' (message {request_message_id:?})"
+            );
+            return;
+        }
+
         let Some(handler) = self.get_handler(&event.channel, method) else { return };
 
         // One-shots are fire-and-forget: there is no persisted message to
@@ -561,19 +773,44 @@ impl RpcManager {
             request_message_id,
             data: data.clone(),
             backend: self.backend.clone(),
+            cancelled: Arc::new(Mutex::new(None)),
+            cancel_tx: Arc::new(Notify::new()),
         };
 
-        match handler(ctx, payload.clone()).await {
+        // Track the command before awaiting the handler, so a cancellation
+        // arriving mid-flight finds it. Only responses for a command that is
+        // still live get written: a cancellation already put the message in a
+        // terminal `error` state, and the site renders it as "Cancelled" from
+        // that — writing our own outcome over the top would relabel a command
+        // the operator cancelled as having succeeded.
+        if let Some(id) = request_message_id {
+            self.state.lock().unwrap().inflight.insert(id, ctx.clone());
+        }
+        let result = handler(ctx.clone(), payload.clone()).await;
+        if let Some(id) = request_message_id {
+            self.state.lock().unwrap().inflight.remove(&id);
+        }
+
+        let should_respond = message_id.filter(|_| !ctx.is_cancelled());
+        match result {
             Ok(response) => {
-                if let Some(id) = message_id {
+                if let Some(id) = should_respond {
                     if let Err(e) = self.send_result(&event.channel, id, response).await {
                         tracing::error!("failed to send RPC result: {e}");
                     }
                 }
             }
+            Err(rpc_err) if ctx.is_cancelled() => {
+                // The handler chose to unwind via `error_if_cancelled`. The
+                // command already carries the canceller's terminal status, so
+                // there is nothing to report back and this is not a failure.
+                tracing::info!(
+                    "RPC handler for '{method}' stopped: command was cancelled ({rpc_err})"
+                );
+            }
             Err(rpc_err) => {
                 tracing::error!("error in RPC handler '{method}': {rpc_err}");
-                if let Some(id) = message_id {
+                if let Some(id) = should_respond {
                     if let Err(e) =
                         self.send_error(&event.channel, id, &rpc_err.code, &rpc_err.message).await
                     {
@@ -592,9 +829,41 @@ impl RpcManager {
         };
         let Some(message_id) = event.message_id() else { return };
 
+        let cancelled = status_is_cancelled(status);
+
+        // Inbound: a command we're serving has been withdrawn by its issuer.
+        // Updates arrive for both directions, keyed by message id, and the two
+        // id spaces are disjoint, so the lookups can't collide.
+        if cancelled {
+            let ctx = self.state.lock().unwrap().inflight.get(&message_id).cloned();
+            if let Some(ctx) = ctx {
+                tracing::info!(
+                    "RPC command '{}' (message {message_id}) was cancelled by the issuer; \
+                     notifying the running handler",
+                    ctx.method
+                );
+                ctx.mark_cancelled(status);
+                return;
+            }
+        }
+
         let code = status.get("code").and_then(Value::as_str).unwrap_or_default();
         // Intermediate statuses keep the future pending (pydoover).
         if matches!(code, "sent" | "acknowledged" | "deferred" | "pending") {
+            return;
+        }
+
+        // A cancellation reaches us as a terminal `error`, so it must be
+        // tested before the generic error branch or it would surface as an
+        // opaque RpcError instead.
+        if cancelled {
+            let method = data
+                .get("method")
+                .and_then(Value::as_str)
+                .unwrap_or("unknown");
+            if let Some(tx) = self.state.lock().unwrap().pending.remove(&message_id) {
+                let _ = tx.send(Err(RpcError::cancelled(method)));
+            }
             return;
         }
 

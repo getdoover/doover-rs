@@ -263,6 +263,25 @@ def build_cases():
                 command_retry_timeout=timedelta(seconds=30),
             ),
         ),
+        # ---- in-flight progress timeout (pydoover 4aeab8c) ----
+        (
+            "button_command_pending_timeout",
+            lambda: ui.Button(
+                "Start Pump",
+                command_timeout=timedelta(seconds=10),
+                command_pending_timeout=timedelta(minutes=5),
+                command_retry_timeout=timedelta(seconds=30),
+            ),
+        ),
+        (
+            "slider_command_pending_timeout_only",
+            lambda: ui.Slider(
+                "Setpoint",
+                min_val=0,
+                max_val=100,
+                command_pending_timeout=timedelta(seconds=90),
+            ),
+        ),
         (
             "button_confirm_audit_flag",
             lambda: ui.Button(

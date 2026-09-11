@@ -84,6 +84,30 @@ impl Attachment {
             "url": self.url,
         })
     }
+
+    /// Decode the proto form (the aggregate and message decoders share this).
+    pub(crate) fn from_proto(a: &doover_proto::device_agent::Attachment) -> Self {
+        Self {
+            filename: a.filename.clone(),
+            // The proto has no presence on this field, so an empty string is
+            // how "unknown" arrives.
+            content_type: (!a.content_type.is_empty()).then(|| a.content_type.clone()),
+            size: a.size_bytes.max(0) as u64,
+            url: a.url.clone(),
+        }
+    }
+
+    /// The proto form, for
+    /// [`DeviceAgentClient::fetch_message_attachment`](crate::DeviceAgentClient::fetch_message_attachment),
+    /// which takes the raw proto type.
+    pub fn to_proto(&self) -> doover_proto::device_agent::Attachment {
+        doover_proto::device_agent::Attachment {
+            filename: self.filename.clone(),
+            content_type: self.content_type.clone().unwrap_or_default(),
+            size_bytes: self.size as i64,
+            url: self.url.clone(),
+        }
+    }
 }
 
 /// A channel aggregate: the whole object, not just its payload. `data` is the
@@ -201,4 +225,44 @@ pub trait ChannelBackend: Send + Sync {
     /// processor over HTTP: no — pydoover's `is_processor` checks gate
     /// subscription-dependent behaviour on this).
     fn has_persistent_connection(&self) -> bool;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn proto(content_type: &str, size_bytes: i64) -> doover_proto::device_agent::Attachment {
+        doover_proto::device_agent::Attachment {
+            filename: "deployment.zip".to_string(),
+            content_type: content_type.to_string(),
+            size_bytes,
+            url: "https://example.invalid/deployment.zip".to_string(),
+        }
+    }
+
+    /// The proto has no presence on `content_type`, so an empty string is the
+    /// only way "unknown" can arrive — and it must not become `Some("")`.
+    #[test]
+    fn empty_content_type_decodes_as_unknown() {
+        assert_eq!(Attachment::from_proto(&proto("", 10)).content_type, None);
+        assert_eq!(
+            Attachment::from_proto(&proto("application/zip", 10)).content_type,
+            Some("application/zip".to_string())
+        );
+    }
+
+    /// A decoded attachment has to be handable straight back to
+    /// `fetch_message_attachment`, which takes the raw proto type.
+    #[test]
+    fn decode_and_re_encode_round_trips() {
+        let original = proto("application/zip", 2048);
+        assert_eq!(Attachment::from_proto(&original).to_proto(), original);
+    }
+
+    /// A negative size is nonsense the agent should never send; clamp rather
+    /// than wrap it into a huge `u64`.
+    #[test]
+    fn negative_size_clamps_to_zero() {
+        assert_eq!(Attachment::from_proto(&proto("", -1)).size, 0);
+    }
 }

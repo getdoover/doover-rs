@@ -231,6 +231,12 @@ pub struct Message {
     pub author_id: u64,
     pub channel_name: String,
     pub data: Value,
+    /// Files attached to the message (pydoover `Message.attachments`).
+    ///
+    /// Download one with
+    /// [`DeviceAgentClient::fetch_message_attachment`], passing
+    /// [`Attachment::to_proto`].
+    pub attachments: Vec<Attachment>,
 }
 
 impl Message {
@@ -245,6 +251,7 @@ impl Message {
             author_id: m.author_id,
             channel_name: m.channel.map(|c| c.name).unwrap_or_default(),
             data,
+            attachments: m.attachments.iter().map(Attachment::from_proto).collect(),
         }
     }
 }
@@ -809,18 +816,7 @@ fn decode_aggregate(a: &pb::Aggregate) -> ChannelAggregate {
     };
     ChannelAggregate {
         data,
-        attachments: a
-            .attachments
-            .iter()
-            .map(|at| Attachment {
-                filename: at.filename.clone(),
-                // The proto has no presence on this field, so an empty string
-                // is how "unknown" arrives.
-                content_type: (!at.content_type.is_empty()).then(|| at.content_type.clone()),
-                size: at.size_bytes.max(0) as u64,
-                url: at.url.clone(),
-            })
-            .collect(),
+        attachments: a.attachments.iter().map(Attachment::from_proto).collect(),
         last_updated: a.last_updated,
     }
 }

@@ -475,6 +475,35 @@ impl PlatformClient {
         Ok(resp.r#do)
     }
 
+    /// Read the load current (amps) drawn through one digital output
+    /// (pydoover `fetch_do_current` with a single pin).
+    pub async fn fetch_do_current(&self, pin: i32) -> Result<f32> {
+        Ok(self.fetch_do_currents(&[pin]).await?.into_iter().next().unwrap_or(0.0))
+    }
+
+    /// Read the load current (amps) drawn through several digital outputs
+    /// (pydoover `fetch_do_current` with several pins).
+    ///
+    /// This measures what the output is switching, not the system supply
+    /// current — for that see [`fetch_system_power`](Self::fetch_system_power).
+    /// The sidecar briefly enables each output driver's diagnostic mode to take
+    /// the reading and reads the pins one at a time, so this is slower than
+    /// [`fetch_dos`](Self::fetch_dos) and is not meant to be polled tightly.
+    /// Platforms without per-output current sensing answer with a failure
+    /// header, which surfaces here as an error rather than an empty vec.
+    pub async fn fetch_do_currents(&self, pins: &[i32]) -> Result<Vec<f32>> {
+        let req = pb::GetDoCurrentRequest { r#do: pins.to_vec() };
+        let resp = self
+            .shared
+            .call(|ch| {
+                let req = req.clone();
+                async move { GenClient::new(ch).get_do_current(req).await }
+            })
+            .await?;
+        Self::check(resp.response_header)?;
+        Ok(resp.current)
+    }
+
     /// Set one digital-output pin; returns the value that was set
     /// (pydoover `set_do` with a single pin/value).
     pub async fn set_do(&self, pin: i32, value: bool) -> Result<bool> {

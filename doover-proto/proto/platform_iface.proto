@@ -1,8 +1,10 @@
-// Vendored VERBATIM from pydoover: protos/platform_iface.proto
-// Source: /Users/josh/Coding/doover/pydoover/protos/platform_iface.proto
-// pydoover version: verified identical against 1.13.0 (proto last touched at
-// commit 51d436f06c777b272e4e3e2bc3730d7acf5da5bb)
-// Do not edit here — re-vendor from pydoover when it changes (CI sync check planned).
+// Vendored from pydoover: protos/platform_iface.proto
+// pydoover version: identical to 1.13.0 (proto last touched at commit
+// 51d436f06c777b272e4e3e2bc3730d7acf5da5bb) EXCEPT for getDOCurrent and its two
+// messages, which are carried ahead of their pydoover release — see
+// getdoover/pydoover#157 and the "Ported ahead of the base" note in PARITY.md.
+// Re-vendoring from a release that predates that PR would silently drop them.
+// Do not otherwise edit here — re-vendor from pydoover when it changes.
 
 syntax = "proto3";
 
@@ -18,6 +20,7 @@ service platformIface {
     rpc startPulseCounter (pulseCounterRequest) returns (stream pulseCounterResponse) {}
 
     rpc getDO (getDORequest) returns (getDOResponse) {}
+    rpc getDOCurrent (getDOCurrentRequest) returns (getDOCurrentResponse) {}
     rpc setDO (setDORequest) returns (setDOResponse) {}
     rpc scheduleDO (scheduleDORequest) returns (scheduleDOResponse) {}
 
@@ -121,6 +124,16 @@ message getDORequest {
 message getDOResponse {
     ResponseHeader response_header = 1;
     repeated bool do = 2;
+}
+
+message getDOCurrentRequest {
+    repeated int32 do = 1;
+}
+
+message getDOCurrentResponse {
+    ResponseHeader response_header = 1;
+    // Load current drawn by each requested output, in amps, in request order.
+    repeated float current = 2;
 }
 
 message setDORequest {

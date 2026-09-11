@@ -270,6 +270,8 @@ Done (M2/M3 — declarative framework + runtime wiring):
     `fire_and_forget`, runtime handler registration) and
     `ctx.send_notification`.
 13. ~~**`platform_iface` + `modbus_iface` clients**~~ and the **Rust CLI**.
+    Includes `fetch_do_current` / `fetch_do_currents` — per-output load current
+    in amps, ported ahead of its pydoover release (see [`PARITY.md`](PARITY.md)).
 
 Done (M6 — processor client):
 

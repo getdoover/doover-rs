@@ -20,6 +20,23 @@ The vendored protos under `doover-proto/proto/` were verified byte-identical
 `platform_iface.proto` were re-vendored in this sync (cross-agent `agent_id` /
 `qos` fields, and `getIoDetails`).
 
+### Ported ahead of the base
+
+One item sits *outside* the range the base above describes, because it was
+ported from in-development pydoover work rather than a released commit:
+
+- **`getDOCurrent` / `fetch_do_current`** (2026-08-13) — per-output load
+  current. Tracked by getdoover/pydoover#157; unreleased at time of porting.
+
+So `platform_iface.proto` is **no longer byte-identical to 1.13.0**: it carries
+one extra RPC and two extra messages. The proto's own header says so too.
+
+This matters for the next sync: re-vendoring `platform_iface.proto` from any
+pydoover release that predates #157 silently deletes `getDOCurrent`, and the
+Rust that calls it stops compiling. Once #157 ships, re-vendor from a release
+that contains it and delete this note. Until then, re-vendor by hand and keep
+the three blocks.
+
 ## Deliberate divergences
 
 Things pydoover does that doover-rs intentionally does **not** copy, so a future

@@ -142,6 +142,7 @@ impl Application for AnalogLevelSensorApp {
     type Config = AnalogLevelSensorConfig;
     type Tags = AnalogLevelSensorTags;
     type Ui = AnalogLevelSensorUi;
+    type Notifications = ();
 
     fn create(
         config: AnalogLevelSensorConfig,
@@ -198,6 +199,7 @@ fn write_export_skips_ui_schema_without_elements() {
         type Config = ();
         type Tags = ();
         type Ui = ();
+        type Notifications = ();
 
         fn create(_: (), _: (), _: ()) -> Self {
             Self

@@ -105,6 +105,26 @@ pub struct Location {
     pub timestamp: Option<String>,
 }
 
+/// One digital input's level, plus its hardware pulse counters if it has any
+/// (pydoover `platform_types.DIReading`).
+///
+/// `pulse_count` is the device's own totaliser, not a tally kept here: it
+/// survives an app restart, and on some platforms it wraps rather than
+/// resetting. `None` means the pin has no hardware counter; `Some(0)` means it
+/// has one and has seen nothing — so test for `None`, not zero.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct DiReading {
+    pub pin: i32,
+    /// Pin level: true is high (1), false is low (0).
+    pub value: bool,
+    pub pulse_count: Option<u64>,
+    /// `None` means the platform does not measure rate on this pin — a driver
+    /// with only a totaliser leaves it unset rather than differencing counts,
+    /// because the caller knows its own sampling interval and the driver does
+    /// not. Derive the rate from successive `pulse_count` readings instead.
+    pub pulse_rate_hz: Option<f32>,
+}
+
 /// One IO channel in the flat namespace shared with
 /// [`fetch_di`](PlatformClient::fetch_di) / [`set_do`](PlatformClient::set_do)
 /// and friends (pydoover `platform_types.IoChannel`).
@@ -129,6 +149,15 @@ pub struct IoChannel {
     /// Whether DI config (PNP/NPN, debounce, wake-on-event) works on this
     /// channel.
     pub supports_di_config: bool,
+    /// Whether this channel has a hardware pulse totaliser, read through
+    /// [`fetch_di_readings`](PlatformClient::fetch_di_readings). Distinct from
+    /// `supports_pulse_counter`: that promises per-pulse *timing*, which needs
+    /// an edge source, while this is a number that can simply be read. A
+    /// platform can have either, both or neither — an ELPRO Quantum counts on
+    /// DIO1-4 and can time nothing.
+    pub supports_pulse_count: bool,
+    /// Whether the hardware measures pulse frequency on this channel.
+    pub supports_pulse_rate: bool,
 }
 
 impl IoChannel {
@@ -142,6 +171,8 @@ impl IoChannel {
             supports_events: c.supports_events,
             supports_pulse_counter: c.supports_pulse_counter,
             supports_di_config: c.supports_di_config,
+            supports_pulse_count: c.supports_pulse_count,
+            supports_pulse_rate: c.supports_pulse_rate,
         }
     }
 }
@@ -422,7 +453,10 @@ impl PlatformClient {
     /// Read several digital-input pins in one transaction (pydoover
     /// `fetch_di` with several pins).
     pub async fn fetch_dis(&self, pins: &[i32]) -> Result<Vec<bool>> {
-        let req = pb::GetDiRequest { di: pins.to_vec() };
+        let req = pb::GetDiRequest {
+            di: pins.to_vec(),
+            include_pulses: None,
+        };
         let resp = self
             .shared
             .call(|ch| {
@@ -432,6 +466,62 @@ impl PlatformClient {
             .await?;
         Self::check(resp.response_header)?;
         Ok(resp.di)
+    }
+
+    /// Read digital-input levels together with their hardware pulse counters
+    /// (pydoover `fetch_di_readings`).
+    ///
+    /// Unlike [`fetch_dis`](Self::fetch_dis) this returns the pin level *and*,
+    /// on platforms that have them, the hardware pulse totaliser and rate.
+    /// Level and counts come from the same read, so they describe the same
+    /// instant.
+    ///
+    /// Support is per-pin, not per-device, so `pulse_count`/`pulse_rate_hz`
+    /// are `None` on a pin without the hardware and `Some(0)` on one that has
+    /// it and has seen nothing.
+    pub async fn fetch_di_readings(&self, pins: &[i32]) -> Result<Vec<DiReading>> {
+        let req = pb::GetDiRequest {
+            di: pins.to_vec(),
+            include_pulses: Some(true),
+        };
+        let resp = self
+            .shared
+            .call(|ch| {
+                let req = req.clone();
+                async move { GenClient::new(ch).get_di(req).await }
+            })
+            .await?;
+        Self::check(resp.response_header)?;
+
+        if resp.readings.is_empty() {
+            // Either the platform interface predates `DIReading`, or its
+            // counter read failed and it fell back to levels. Both mean the
+            // same thing to a caller — levels are known, counts are not —
+            // which is exactly what `pulse_count: None` says.
+            return Ok(pins
+                .iter()
+                .zip(resp.di)
+                .map(|(&pin, value)| DiReading {
+                    pin,
+                    value,
+                    pulse_count: None,
+                    pulse_rate_hz: None,
+                })
+                .collect());
+        }
+
+        Ok(resp
+            .readings
+            .into_iter()
+            .map(|r| DiReading {
+                pin: r.pin,
+                value: r.value,
+                // Proto presence, not zero-testing: a pin that has counted 0
+                // pulses is not the same as a pin that cannot count.
+                pulse_count: r.pulse_count,
+                pulse_rate_hz: r.pulse_rate_hz,
+            })
+            .collect())
     }
 
     /// Read one analog-input pin (mA) (pydoover `fetch_ai` with a single
@@ -1065,9 +1155,19 @@ impl PlatformClient {
                         while let Some(item) = stream.next().await {
                             match item {
                                 Ok(pulse) => {
-                                    let dt_secs = pulse.dt_secs.unwrap_or(0.0);
-                                    // pydoover only counts pulses with dt > 0.
-                                    if dt_secs > 0.0 {
+                                    // Presence, not `> 0`. The stream opens
+                                    // with a handshake carrying only `di` and
+                                    // no `dt_secs`, which is what this guard is
+                                    // for — but the firmware measures dt as the
+                                    // gap since the previous edge, so it has
+                                    // nothing to measure on the FIRST edge (or
+                                    // after a dropped transition) and sends
+                                    // 0.0. A `> 0` test swallows the first
+                                    // pulse of a burst, and where the pulse
+                                    // COUNT is the payload — a vending terminal
+                                    // pulsing a product number — that is not a
+                                    // lost tick, it is the wrong product sold.
+                                    if let Some(dt_secs) = pulse.dt_secs {
                                         counter += 1;
                                         callback(&PulseCounterUpdate {
                                             pin: di,

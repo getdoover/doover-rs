@@ -783,6 +783,39 @@
     }
   },
   {
+    "case": "button_command_pending_timeout",
+    "element": "Button",
+    "expected": {
+      "name": "start_pump",
+      "type": "uiButton",
+      "displayString": "Start Pump",
+      "position": 51,
+      "hidden": false,
+      "currentValue": "$cmds.app().start_pump",
+      "commandTimeout": 10000,
+      "commandPendingTimeout": 300000,
+      "commandRetryTimeout": 30000
+    }
+  },
+  {
+    "case": "slider_command_pending_timeout_only",
+    "element": "Slider",
+    "expected": {
+      "name": "setpoint",
+      "type": "uiSlider",
+      "displayString": "Setpoint",
+      "position": 51,
+      "hidden": false,
+      "currentValue": "$cmds.app().setpoint",
+      "commandPendingTimeout": 90000,
+      "min": 0,
+      "max": 100,
+      "stepSize": 0.1,
+      "dualSlider": true,
+      "isInverted": true
+    }
+  },
+  {
     "case": "button_confirm_audit_flag",
     "element": "Button",
     "expected": {

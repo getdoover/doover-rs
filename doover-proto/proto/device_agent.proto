@@ -1,7 +1,7 @@
 // Vendored VERBATIM from pydoover: protos/device_agent.proto
 // Source: /Users/josh/Coding/doover/pydoover/protos/device_agent.proto
-// pydoover version: verified identical against 1.13.0 (proto last touched at
-// commit 2fd4fbdfe03886443ef354d798d4bac816b04ff4)
+// pydoover version: verified identical against 1.17.1 (proto last touched at
+// commit 688fe8586cbb755bdf8360004f19d151c87a956a)
 // Do not edit here — re-vendor from pydoover when it changes (CI sync check planned).
 
 syntax = "proto3";
@@ -49,6 +49,13 @@ enum WireFormat {
   WIRE_FORMAT_BOTH = 0;         // default: populate both `data` (Struct) and `data_json` (backward compatible)
   WIRE_FORMAT_JSON_ONLY = 1;    // populate only `data_json`; skip the Struct build
   WIRE_FORMAT_STRUCT_ONLY = 2;  // populate only `data` (Struct)
+}
+
+enum CachePolicy {
+  CACHE_POLICY_DEFAULT = 0;       // default: serve the read, hold nothing new
+  // track the channel and cache the aggregate, so a later read is served with no uplink
+  // this is automatically handled for most channels, but you can 'force' an offline-hold for e.g. HMI widgets
+  CACHE_POLICY_HOLD_OFFLINE = 1;
 }
 
 // The doover device agent service definition.
@@ -382,6 +389,7 @@ message GetAggregateRequest {
   RequestHeader header = 1;
   string channel_name = 2;
   optional uint64 agent_id = 3;
+  CachePolicy cache_policy = 4;
 }
 
 message GetAggregateResponse {

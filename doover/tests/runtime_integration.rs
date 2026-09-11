@@ -478,6 +478,7 @@ mod declarative_app {
         type Config = TestConfig;
         type Tags = TestTags;
         type Ui = TestUi;
+        type Notifications = ();
 
         fn create(config: TestConfig, tags: TestTags, ui: TestUi) -> Self {
             Self { config, tags, ui, iterations: 0 }
@@ -538,6 +539,7 @@ mod declarative_app {
             healthcheck_port,
             debug: false,
             error_wait: Duration::from_secs(1),
+            config_sync_timeout: Duration::from_secs(5),
         };
         let handle = tokio::spawn(doover::run_with::<TestApp>(opts));
         (state, handle)

@@ -11,31 +11,28 @@ its diff base and rewrites this file when it finishes.
 
 | | |
 |---|---|
-| pydoover commit | `4fa3e74` (`origin/main`) |
-| pydoover version | 1.13.0 |
-| Date of sync | 2026-08-12 |
+| pydoover commit | `3c406420b68d97f5004a7bb161c1c27833b27ab0` |
+| pydoover version | 1.17.1 |
+| Date of sync | 2026-09-11 |
 
 The vendored protos under `doover-proto/proto/` were verified byte-identical
 (comments aside) to `pydoover/protos/` at that commit. `device_agent.proto` and
-`platform_iface.proto` were re-vendored in this sync (cross-agent `agent_id` /
-`qos` fields, and `getIoDetails`).
+`platform_iface.proto` were re-vendored in this sync (`CachePolicy`, and
+`getDI`'s `include_pulses` / `DIReading` / the two pulse capability flags).
 
-### Ported ahead of the base
+### Ported ahead of pydoover's own client
 
-One item sits *outside* the range the base above describes, because it was
-ported from in-development pydoover work rather than a released commit:
+- **`CachePolicy` on aggregate reads** (pydoover `688fe85`) — pydoover added
+  the proto enum and the `GetAggregateRequest.cache_policy` field, but its
+  Python client never sets either. doover-rs exposes it as
+  `DeviceAgentClient::fetch_channel_aggregate_with`. The default sends the
+  same bytes pydoover does, so this is additive; if pydoover later gives the
+  knob a different shape, pydoover wins.
 
-- **`getDOCurrent` / `fetch_do_current`** (2026-08-13) — per-output load
-  current. Tracked by getdoover/pydoover#157; unreleased at time of porting.
-
-So `platform_iface.proto` is **no longer byte-identical to 1.13.0**: it carries
-one extra RPC and two extra messages. The proto's own header says so too.
-
-This matters for the next sync: re-vendoring `platform_iface.proto` from any
-pydoover release that predates #157 silently deletes `getDOCurrent`, and the
-Rust that calls it stops compiling. Once #157 ships, re-vendor from a release
-that contains it and delete this note. Until then, re-vendor by hand and keep
-the three blocks.
+The previous entry here — `getDOCurrent` carried ahead of its pydoover
+release — is resolved: getdoover/pydoover#157 shipped in 1.14.0, so
+`platform_iface.proto` is byte-identical to 1.17.1 again and needs no
+hand-merging on the next re-vendor.
 
 ## Deliberate divergences
 
@@ -97,6 +94,19 @@ sync doesn't "fix" them back:
   channel per stream. The sidecar clients do get a dedicated
   `SharedChannel::stream_channel` with pydoover's 60 s cadence — see the
   comment there for its coupling to doover-platform-interface's 30 s ping floor.
+
+- **A required conditional config element must be `Option<T>`.** pydoover
+  leaves an inactive `show_if` element at `NotSet` and skips its required
+  check; a typed Rust struct has no such state for a bare `T`.
+- **RPC cancellation unwinds via `Err(RpcError::cancelled)`**, not a distinct
+  exception type. pydoover's `RPCCancelled` is caught by name in the dispatch
+  loop; here the manager tests `ctx.is_cancelled()` around the handler result,
+  so a cancelled handler's error — whatever its code — is logged rather than
+  written back over the canceller's terminal status.
+- **`ModbusInterface._parse_register_output` list coercion** (pydoover
+  `35081cd`) — pydoover was returning a protobuf repeated-field container
+  where callers' `isinstance(result, list)` checks expected a list.
+  `read_registers` already returns a `Vec` here.
 
 ## Not ported yet
 

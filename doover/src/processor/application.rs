@@ -20,11 +20,13 @@ use crate::api::data::{DataClient, PingConnectionArgs};
 use crate::api::Channel;
 use crate::channel_backend::AggregateOptions;
 use crate::error::Result;
-use crate::models::{ConnectionDetermination, ConnectionStatus, Notification};
+use crate::models::{
+    ConnectionDetermination, ConnectionStatus, Notification, NotificationPolicy, NotificationTopic,
+};
 
 use super::config::ProcConfig;
 use super::events::{
-    AggregateUpdateEvent, DeploymentEvent, EventPayload, IngestionEndpointEvent,
+    AggregateUpdateEvent, AlarmTriggerEvent, DeploymentEvent, EventPayload, IngestionEndpointEvent,
     ManualInvokeEvent, MessageCreateEvent, ScheduleEvent,
 };
 use super::tags::{ProcessorTags, SetProcessorTagOptions};
@@ -199,6 +201,23 @@ impl ProcessorContext {
         self.api.send_notification(notification, None).await
     }
 
+    /// Send a notification under a canonical application topic
+    /// (`dev/applications/<policy>/<app_key>/<event>`) — pydoover's
+    /// `send_notification(event=...)`.
+    ///
+    /// A raw `topic` on the notification is replaced: the two are mutually
+    /// exclusive in pydoover, and `event` is what builds the topic.
+    pub async fn send_notification_event(
+        &self,
+        notification: impl Into<Notification>,
+        event: &str,
+        policy: NotificationPolicy,
+    ) -> Result<Value> {
+        let topic = NotificationTopic::application(&self.app_key, event, policy)?;
+        let notification = notification.into().topic(topic.as_str());
+        self.send_notification(notification).await
+    }
+
     /// pydoover `Application.publish_ui_schema` — write a UI schema under
     /// this app's key in the `ui_state` aggregate. With `clear`, the app's
     /// subtree is *replaced* (`replace_keys=["state.children.<app_key>"]`)
@@ -324,6 +343,20 @@ pub trait Processor: Send {
         &mut self,
         _ctx: &ProcessorContext,
         _event: &AggregateUpdateEvent,
+    ) -> Result<Handled> {
+        Ok(Handled::NotImplemented)
+    }
+
+    /// Invoked when an alarm on a subscribed channel changes state.
+    ///
+    /// Fires for every transition (including into and out of
+    /// `AlarmPending`), and independently of whether the transition sends a
+    /// user-facing notification — an alarm whose `messages` overrides silence
+    /// a state still invokes this handler.
+    async fn on_alarm_trigger(
+        &mut self,
+        _ctx: &ProcessorContext,
+        _event: &AlarmTriggerEvent,
     ) -> Result<Handled> {
         Ok(Handled::NotImplemented)
     }

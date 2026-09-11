@@ -141,6 +141,28 @@ pub struct DeviceAgentClient {
 }
 
 /// Options for [`DeviceAgentClient::subscribe_events_with`].
+/// What the device agent should hold locally as a result of an aggregate read
+/// (pydoover's `CachePolicy`, `GetAggregateRequest.cache_policy`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum CachePolicy {
+    /// Serve the read, hold nothing new.
+    #[default]
+    Default,
+    /// Track the channel and cache the aggregate, so a later read is served
+    /// with no uplink. Most channels get this automatically; ask for it
+    /// explicitly to force an offline hold for e.g. an HMI widget.
+    HoldOffline,
+}
+
+impl CachePolicy {
+    fn wire(self) -> i32 {
+        match self {
+            Self::Default => pb::CachePolicy::Default as i32,
+            Self::HoldOffline => pb::CachePolicy::HoldOffline as i32,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SubscribeOptions {
     /// Whether to receive messages the agent replays after a reconnect — ones
@@ -421,11 +443,23 @@ impl DeviceAgentClient {
         &self,
         channel: impl Into<ChannelRef<'a>>,
     ) -> Result<Option<ChannelAggregate>> {
+        self.fetch_channel_aggregate_with(channel, CachePolicy::Default)
+            .await
+    }
+
+    /// As [`fetch_channel_aggregate`](Self::fetch_channel_aggregate), asking
+    /// the agent to hold the aggregate for later offline reads.
+    pub async fn fetch_channel_aggregate_with<'a>(
+        &self,
+        channel: impl Into<ChannelRef<'a>>,
+        cache_policy: CachePolicy,
+    ) -> Result<Option<ChannelAggregate>> {
         let channel = channel.into();
         let req = pb::GetAggregateRequest {
             header: self.header(),
             channel_name: channel.name.to_string(),
             agent_id: channel.agent_id,
+            cache_policy: cache_policy.wire(),
         };
         let resp = self.inner.clone().get_aggregate(req).await?.into_inner();
         match self.check_header(resp.response_header) {

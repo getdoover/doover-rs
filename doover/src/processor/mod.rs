@@ -47,7 +47,8 @@ pub use application::{
 };
 pub use config::{InvocationPublishTarget, ProcConfig};
 pub use events::{
-    AggregateUpdateEvent, ChannelId, DeploymentEvent, EventMessage, EventPayload,
+    Alarm, AlarmState, AlarmTriggerEvent, AggregateUpdateEvent, ChannelId, DeploymentEvent,
+    EventMessage, EventPayload,
     IngestionEndpointEvent, ManualInvokeEvent, MessageCreateEvent, ScheduleEvent,
 };
 pub use handler::{handle_event_local, handle_event_with, run_processor, ProcessorOptions};

@@ -1164,3 +1164,211 @@ mod tests {
         }
     }
 }
+// ---------------------------------------------------------------------------
+// #[derive(Notifications)]
+
+/// Derive a [`NotificationSet`] from a struct of declared notifications — the
+/// counterpart of a pydoover `notifications.Notifications` subclass.
+///
+/// Each field must be of type `NotificationDecl`, and carries a
+/// `#[notification(...)]` attribute:
+///
+/// ```ignore
+/// #[derive(Notifications)]
+/// struct MyNotifications {
+///     /// Fires when the battery drops below the configured cutoff.
+///     #[notification(message = "The battery is low", severity = "warn")]
+///     low_battery: NotificationDecl,
+/// }
+/// ```
+///
+/// The event name is the field name unless `event = "..."` overrides it, and
+/// each declaration is exposed as an associated constant in SCREAMING_CASE.
+#[proc_macro_derive(Notifications, attributes(notification))]
+pub fn derive_notifications(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    expand_notifications(input)
+        .unwrap_or_else(|e| e.to_compile_error())
+        .into()
+}
+
+#[derive(Default)]
+struct NotificationAttrs {
+    event: Option<String>,
+    message: Option<String>,
+    display_name: Option<String>,
+    severity: Option<String>,
+    title: Option<String>,
+    policy: Option<String>,
+}
+
+fn parse_notification_attrs(attrs: &[syn::Attribute]) -> syn::Result<NotificationAttrs> {
+    let mut out = NotificationAttrs::default();
+    for attr in attrs {
+        if !attr.path().is_ident("notification") {
+            continue;
+        }
+        attr.parse_nested_meta(|meta| {
+            let ident = meta
+                .path
+                .get_ident()
+                .ok_or_else(|| meta.error("expected a #[notification(...)] option name"))?
+                .to_string();
+            let value = || -> syn::Result<String> { Ok(meta.value()?.parse::<LitStr>()?.value()) };
+            match ident.as_str() {
+                "event" => out.event = Some(value()?),
+                "message" => out.message = Some(value()?),
+                "display_name" => out.display_name = Some(value()?),
+                "severity" => out.severity = Some(value()?),
+                "title" => out.title = Some(value()?),
+                "policy" => out.policy = Some(value()?),
+                other => return Err(meta.error(format!("unknown #[notification] option `{other}`"))),
+            }
+            Ok(())
+        })?;
+    }
+    Ok(out)
+}
+
+fn expand_notifications(input: DeriveInput) -> syn::Result<TokenStream2> {
+    let fields = named_fields(&input, "Notifications")?;
+    let ident = &input.ident;
+
+    let mut declarations = Vec::new();
+    let mut consts = Vec::new();
+    let mut seen: Vec<String> = Vec::new();
+
+    let field_idents: Vec<_> = fields
+        .named
+        .iter()
+        .map(|f| f.ident.as_ref().expect("named field"))
+        .collect();
+
+    for field in fields.named.iter() {
+        let fident = field.ident.as_ref().expect("named field");
+        let attrs = parse_notification_attrs(&field.attrs)?;
+
+        let event = attrs.event.unwrap_or_else(|| fident.to_string());
+        // Validated here rather than at send time: the event name is the last
+        // topic segment, and a field like `lowBattery` would otherwise only
+        // fail much later, from a device in the field.
+        if !event
+            .chars()
+            .next()
+            .is_some_and(|c| c.is_ascii_lowercase() || c.is_ascii_digit())
+            || !event
+                .chars()
+                .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || matches!(c, '.' | '_' | '-'))
+        {
+            return Err(syn::Error::new(
+                field.span(),
+                format!("notification event name must match ^[a-z0-9][a-z0-9._-]*$, got {event:?}"),
+            ));
+        }
+        if seen.contains(&event) {
+            return Err(syn::Error::new(
+                field.span(),
+                format!("duplicate notification event name {event:?}"),
+            ));
+        }
+        seen.push(event.clone());
+
+        let message = attrs.message.ok_or_else(|| {
+            syn::Error::new(field.span(), "#[notification(message = \"...\")] is required")
+        })?;
+        if message.trim().is_empty() {
+            return Err(syn::Error::new(
+                field.span(),
+                "notification message must not be empty",
+            ));
+        }
+
+        let description = doc_comment(&field.attrs);
+        let opt_str = |v: &Option<String>| match v {
+            Some(s) => quote! { ::core::option::Option::Some(#s) },
+            None => quote! { ::core::option::Option::None },
+        };
+        let display_name = opt_str(&attrs.display_name);
+        let title = opt_str(&attrs.title);
+        let description = opt_str(&description);
+
+        let severity = match attrs.severity.as_deref() {
+            None => quote! { ::doover::models::NotificationSeverity::Info },
+            Some(s) => {
+                let variant = match s.to_ascii_lowercase().as_str() {
+                    "trace" => quote!(Trace),
+                    "debug" => quote!(Debug),
+                    "info" => quote!(Info),
+                    "warn" | "warning" => quote!(Warn),
+                    "critical" | "error" | "fatal" | "crit" => quote!(Critical),
+                    other => {
+                        return Err(syn::Error::new(
+                            field.span(),
+                            format!("unknown notification severity `{other}`"),
+                        ))
+                    }
+                };
+                quote! { ::doover::models::NotificationSeverity::#variant }
+            }
+        };
+        let policy = match attrs.policy.as_deref() {
+            None | Some("default") => quote! { ::doover::models::NotificationPolicy::Default },
+            Some("opt_in") | Some("opt-in") => {
+                quote! { ::doover::models::NotificationPolicy::OptIn }
+            }
+            Some(other) => {
+                return Err(syn::Error::new(
+                    field.span(),
+                    format!("unknown notification policy `{other}`; expected `default` or `opt_in`"),
+                ))
+            }
+        };
+
+        let decl = quote! {
+            ::doover::notifications::NotificationDecl {
+                event: #event,
+                message: #message,
+                display_name: #display_name,
+                description: #description,
+                severity: #severity,
+                title: #title,
+                policy: #policy,
+            }
+        };
+        declarations.push(decl.clone());
+
+        let const_ident = syn::Ident::new(&fident.to_string().to_uppercase(), fident.span());
+        consts.push(quote! {
+            #[allow(non_upper_case_globals)]
+            pub const #const_ident: ::doover::notifications::NotificationDecl = #decl;
+        });
+    }
+
+    let count = declarations.len();
+    Ok(quote! {
+        const _: () = {
+            static __DECLARATIONS: [::doover::notifications::NotificationDecl; #count] =
+                [#(#declarations),*];
+
+            // The struct's fields are pure declaration markers — everything
+            // lives in the consts and the static above — so without this they
+            // read as dead code in every app that uses the derive.
+            #[allow(dead_code)]
+            fn __fields_are_markers(__v: &#ident) {
+                #(let _ = &__v.#field_idents;)*
+            }
+
+            #[automatically_derived]
+            impl ::doover::notifications::NotificationSet for #ident {
+                fn declarations() -> &'static [::doover::notifications::NotificationDecl] {
+                    &__DECLARATIONS
+                }
+            }
+        };
+
+        #[automatically_derived]
+        impl #ident {
+            #(#consts)*
+        }
+    })
+}

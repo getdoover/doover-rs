@@ -1,10 +1,8 @@
-// Vendored from pydoover: protos/platform_iface.proto
-// pydoover version: identical to 1.13.0 (proto last touched at commit
-// 51d436f06c777b272e4e3e2bc3730d7acf5da5bb) EXCEPT for getDOCurrent and its two
-// messages, which are carried ahead of their pydoover release — see
-// getdoover/pydoover#157 and the "Ported ahead of the base" note in PARITY.md.
-// Re-vendoring from a release that predates that PR would silently drop them.
-// Do not otherwise edit here — re-vendor from pydoover when it changes.
+// Vendored VERBATIM from pydoover: protos/platform_iface.proto
+// Source: /Users/josh/Coding/doover/pydoover/protos/platform_iface.proto
+// pydoover version: verified identical against 1.17.1 (proto last touched at
+// commit 7885671d20d231c2acd4c5469cb77624f6edb1dd)
+// Do not edit here — re-vendor from pydoover when it changes (CI sync check planned).
 
 syntax = "proto3";
 
@@ -89,11 +87,34 @@ message TestCommsResponse {
 
 message getDIRequest {
     repeated int32 di = 1;
+    // Also read the hardware pulse totaliser and rate for each pin. Off by
+    // default: on some platforms these are a separate round trip to the MCU,
+    // and every existing caller wants the level only.
+    optional bool include_pulses = 2;
+}
+
+// One pin's reading. A message rather than parallel `repeated` arrays because
+// pulse support is per-pin, not per-device - an ELPRO Quantum counts on DIO1-4
+// and not on DIO5-8 - and proto3 repeated scalars have no per-element
+// presence, so a parallel array would need a sentinel to mean "cannot count".
+message DIReading {
+    int32 pin = 1;
+    bool value = 2;
+    // Absent means this pin has no hardware counter. Present and 0 means it
+    // has one and nothing has been counted yet - not the same thing.
+    optional uint64 pulse_count = 3;
+    // Absent means the platform does not measure rate on this pin. A driver
+    // with only a totaliser leaves this unset rather than differencing counts:
+    // the caller knows its own sampling interval and the driver does not.
+    optional float pulse_rate_hz = 4;
 }
 
 message getDIResponse {
     ResponseHeader response_header = 1;
     repeated bool di = 2;
+    // Populated only when the request set include_pulses. Parallel to `di`,
+    // and `di` is still filled either way so existing clients are unaffected.
+    repeated DIReading readings = 3;
 }
 
 message getAIRequest {
@@ -182,8 +203,16 @@ message IoChannelDetail {
     optional string kind = 4;     // analog channels: e.g. "voltage", "current", "temperature"
     optional string units = 5;    // e.g. "V", "mA", "degC"
     bool supports_events = 6;     // DI edge events (getDIEvents)
-    bool supports_pulse_counter = 7;
+    bool supports_pulse_counter = 7;  // per-pulse edge stream (startPulseCounter)
     bool supports_di_config = 8;  // PNP/NPN, debounce, wake-on-event (get/setDIConfig)
+    // Hardware totaliser / rate register on this DI, read via getDI with
+    // include_pulses. Distinct from supports_pulse_counter above: that
+    // promises per-pulse *timing*, which needs an edge source, while these
+    // are numbers that can simply be read. A platform can have either,
+    // both, or neither — an ELPRO Quantum counts on DIO1-4 but can time
+    // nothing.
+    bool supports_pulse_count = 9;
+    bool supports_pulse_rate = 10;
 }
 
 // The master or one slave, with the channels it contributes to the flat namespace.

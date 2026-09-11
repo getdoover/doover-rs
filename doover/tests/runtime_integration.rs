@@ -538,6 +538,7 @@ mod declarative_app {
             healthcheck_port,
             debug: false,
             error_wait: Duration::from_secs(1),
+            config_sync_timeout: Duration::from_secs(5),
         };
         let handle = tokio::spawn(doover::run_with::<TestApp>(opts));
         (state, handle)

@@ -475,6 +475,10 @@ pub struct RunOptions {
     pub healthcheck_port: u16,
     pub debug: bool,
     pub error_wait: Duration,
+    /// How long to wait for the `deployment_config` channel to sync with the
+    /// device agent before trying to read it anyway (pydoover
+    /// `Application.config_sync_timeout`).
+    pub config_sync_timeout: Duration,
 }
 
 impl Default for RunOptions {
@@ -541,6 +545,7 @@ impl RunOptions {
             healthcheck_port,
             debug,
             error_wait: Duration::from_secs(10),
+            config_sync_timeout: Duration::from_secs(120),
         }
     }
 }
@@ -713,10 +718,31 @@ pub async fn run_with<A: Application>(opts: RunOptions) -> Result<()> {
                     let _ = tx.send(RunnerEvent::ConfigUpdate(ev.clone()));
                 }),
             );
-            hub.wait_for_channels_sync(&[channels::DEPLOYMENT_CONFIG], Duration::from_secs(5))
+            let synced = hub
+                .wait_for_channels_sync(&[channels::DEPLOYMENT_CONFIG], opts.config_sync_timeout)
                 .await;
+            if !synced {
+                tracing::warn!(
+                    "deployment_config did not sync with the DDA within {:?}; \
+                     trying to fetch it anyway",
+                    opts.config_sync_timeout
+                );
+            }
             match hub.fetch_channel_data(channels::DEPLOYMENT_CONFIG).await {
                 Ok(Some(agg)) => ctx.apply_deployment_config(&agg),
+                // Fatal for an app that declares a schema: falling back to
+                // defaults makes "configured to do nothing" indistinguishable
+                // from "never got its config" — the app runs, reports healthy,
+                // and does nothing until someone notices. Restart instead.
+                other if !A::Config::schema().elements.is_empty() => {
+                    let reason = match other {
+                        Err(e) => format!("{e}"),
+                        _ => "the DDA has no deployment config for this device".to_string(),
+                    };
+                    return Err(crate::DooverError::Other(format!(
+                        "failed to load initial deployment config: {reason}"
+                    )));
+                }
                 _ => tracing::warn!("no initial deployment config available from DDA"),
             }
         }

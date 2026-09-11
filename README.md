@@ -393,6 +393,61 @@ Done (caught up to pydoover 1.13.0):
     `fetch_io_table` and synthesizes one anonymous master
     (`IoDetails::from_io_table`, fixture-checked against pydoover).
 
+Done (caught up to pydoover 1.17.1):
+
+32. ~~**Pulse counts and rates**~~ — `fetch_di_readings` / `DiReading`: pin
+    level plus the *hardware* totaliser and rate from the same read, so they
+    describe the same instant. Support is per-pin, not per-device, so a pin
+    without the hardware reports `None` and one that has it and has seen
+    nothing reports `Some(0)` — and `IoChannel` gained
+    `supports_pulse_count` / `supports_pulse_rate` to advertise which is
+    which. Against a platform interface predating `DIReading` it degrades to
+    levels rather than an empty list. Also on the CLI
+    (`doover platform fetch_di_readings`).
+33. ~~**Pulse-counter first-edge fix**~~ — a live pulse is counted when
+    `dt_secs` is *present*, not when it is `> 0`. The firmware has no gap to
+    measure on the first edge (or after a dropped transition) and sends `0.0`,
+    so the old test swallowed the first pulse of every burst — which, where the
+    pulse count is the payload, is the wrong product sold rather than a lost
+    tick.
+34. ~~**RPC cancellation**~~ — `status_is_cancelled` / `command_is_cancelled`
+    mirroring the site's own reader (a cancellation is a terminal `error`
+    carrying a marker, not a status of its own), an in-flight context registry
+    that routes a cancelling update to the running handler
+    (`RpcContext::is_cancelled` / `wait_cancelled` / `error_if_cancelled` /
+    `cancelled_at` / `cancelled_by`), a write gate that stops *every* status
+    write once cancelled so the canceller's record stands, and dropping
+    commands that were already withdrawn before dispatch. Cancellation is
+    cooperative: nothing interrupts a handler that ignores it.
+35. ~~**In-flight RPC progress**~~ — `RpcContext::progress`, writing a
+    non-terminal `pending` status so an operator watches a long sequence
+    advance instead of a bare spinner, plus `command_pending_timeout`
+    (`commandPendingTimeout`) on interactions, byte-checked against
+    pydoover-generated fixtures.
+36. ~~**Processor alarm triggers**~~ — `on_alarm_trigger` /
+    `AlarmTriggerEvent` (`Alarm`, `AlarmState` including `AlarmPending`,
+    `is_alarm` / `is_cleared` / `value`), wired through the `op` dispatch with
+    the same invoking-channel anti-recursion guard as an aggregate update.
+    Fires for every transition, including ones whose user-facing notification
+    the alarm's `messages` overrides silence.
+37. ~~**Declarative notifications**~~ — `#[derive(Notifications)]` /
+    `NotificationSet` / `NotificationDecl`, the canonical
+    `dev/applications/<policy>/<app_key>/<event>` topics
+    (`NotificationTopic::application`) that keep a notification out of the
+    `legacy/default` bucket, `AppContext::notify` and `send_notification_event`
+    (both app kinds), and the `notification_schema` export beside
+    `config_schema` / `ui_schema` — which is what lets the Doover site offer a
+    per-notification opt-out instead of an all-or-nothing switch.
+38. ~~**Config-sync gating on startup**~~ — wait `config_sync_timeout` (120 s)
+    for `deployment_config` to sync before reading it, and treat a failed read
+    as fatal for an app that declares a schema. Falling back to defaults makes
+    "configured to do nothing" indistinguishable from "never got its config":
+    the app runs, reports healthy, and does nothing until someone notices.
+39. ~~**Aggregate read cache policy**~~ — `CachePolicy::HoldOffline` via
+    `fetch_channel_aggregate_with`, asking the agent to track a channel so a
+    later read is served with no uplink (an HMI widget, say). Ahead of
+    pydoover's own client, which only carries the proto field — see PARITY.md.
+
 Still to port:
 
 1. **Cloud auth beyond bearer tokens** — `~/.doover` profiles, refresh-token
@@ -414,8 +469,19 @@ Still to port:
    ingestion-endpoint management (`put_ingestion_endpoint`, including its
    `origin` handshake field). `doover/src/api/data.rs` deliberately covers only
    channels, messages, aggregates, subscription/schedule info, connection pings
-   and notifications. See PARITY.md for the specific 1.13.0 additions parked
-   here.
+   and notifications. 1.17.1 parks more here: alarm CRUD (the full alarm model,
+   rate-of-change alarms, per-state notification `messages`),
+   `fetch_agent_permissions`, channel `archive`/`unarchive` and
+   `history_since`/`default_ttl`, the notification-endpoint admin routes
+   (endpoint summaries, default-subscription updates, the web-push public key,
+   and `topic_filter_mode`/`topic_filter_exclude` on subscriptions),
+   `regenerate_schedule_token` / `invoke_ingestion_endpoint`, and the
+   ingestion-result unwrapping fix. The *processor-side* half of the alarms
+   work is ported (item 36). See PARITY.md for the per-commit list.
+4. **Report generators** (`pydoover/reports/`) — the shared `ReportConfig` /
+   `EmailConfig` schema, the failed-report status, and the processor
+   log-handler preservation (`preserve_handler`) that the report log capture
+   depends on.
 
 The proto contract, error taxonomy, `data_json` codec, payload validation, and
 the loop lifecycle — the parts that are easy to get subtly wrong — are already

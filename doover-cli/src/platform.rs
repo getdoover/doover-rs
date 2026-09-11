@@ -37,6 +37,18 @@ pub enum PlatformCmd {
         di: Vec<i32>,
     },
 
+    /// Read digital-input pins with their hardware pulse counters.
+    ///
+    /// Unlike fetch_di this reports the pin level *and*, where the hardware
+    /// has them, the pulse totaliser and rate. A null count means the pin
+    /// cannot count; 0 means it can and has seen nothing.
+    #[command(name = "fetch_di_readings", alias = "fetch-di-readings")]
+    FetchDiReadings {
+        /// Pin number(s) to read.
+        #[arg(required = true)]
+        di: Vec<i32>,
+    },
+
     /// Read one or more analog-input pins (mA).
     #[command(name = "fetch_ai", alias = "fetch-ai")]
     FetchAi {
@@ -361,6 +373,22 @@ pub async fn run(uri: &str, cmd: PlatformCmd) -> CliResult {
         PlatformCmd::FetchDi { di } => {
             let values = client.fetch_dis(&di).await?;
             print_pin_values(&di, values);
+        }
+        PlatformCmd::FetchDiReadings { di } => {
+            let readings = client.fetch_di_readings(&di).await?;
+            print_json(&Value::Array(
+                readings
+                    .iter()
+                    .map(|r| {
+                        json!({
+                            "pin": r.pin,
+                            "value": r.value,
+                            "pulse_count": r.pulse_count,
+                            "pulse_rate_hz": r.pulse_rate_hz,
+                        })
+                    })
+                    .collect(),
+            ));
         }
         PlatformCmd::FetchAi { ai } => {
             let values = client.fetch_ais(&ai).await?;

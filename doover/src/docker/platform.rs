@@ -422,7 +422,10 @@ impl PlatformClient {
     /// Read several digital-input pins in one transaction (pydoover
     /// `fetch_di` with several pins).
     pub async fn fetch_dis(&self, pins: &[i32]) -> Result<Vec<bool>> {
-        let req = pb::GetDiRequest { di: pins.to_vec() };
+        let req = pb::GetDiRequest {
+            di: pins.to_vec(),
+            include_pulses: None,
+        };
         let resp = self
             .shared
             .call(|ch| {

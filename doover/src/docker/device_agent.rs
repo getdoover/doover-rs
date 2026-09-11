@@ -426,6 +426,7 @@ impl DeviceAgentClient {
             header: self.header(),
             channel_name: channel.name.to_string(),
             agent_id: channel.agent_id,
+            cache_policy: pb::CachePolicy::Default as i32,
         };
         let resp = self.inner.clone().get_aggregate(req).await?.into_inner();
         match self.check_header(resp.response_header) {

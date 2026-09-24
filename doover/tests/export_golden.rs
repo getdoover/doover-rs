@@ -223,3 +223,53 @@ fn write_export_skips_ui_schema_without_elements() {
     assert!(v["bare_app"]["config_schema"].is_object());
     assert!(v["bare_app"].get("ui_schema").is_none());
 }
+
+/// A tagged app with no UI uses `NoUi<Tags>` (`()` only builds from `()`
+/// tags) and exports exactly like a UI-less one.
+#[test]
+fn no_ui_with_tags_skips_ui_schema() {
+    use doover::ui::NoUi;
+
+    #[derive(Tags)]
+    #[allow(dead_code)]
+    struct CounterTags {
+        #[tag(default = 0)]
+        count: Tag<i64>,
+    }
+
+    struct TaggedApp {
+        _tags: CounterTags,
+    }
+
+    #[doover::async_trait]
+    impl Application for TaggedApp {
+        type Config = ();
+        type Tags = CounterTags;
+        type Ui = NoUi<CounterTags>;
+        type Notifications = ();
+
+        fn create(_: (), tags: CounterTags, _: NoUi<CounterTags>) -> Self {
+            Self { _tags: tags }
+        }
+
+        async fn main_loop(&mut self, _ctx: &AppContext) -> doover::Result<()> {
+            Ok(())
+        }
+    }
+
+    let mut path = std::env::temp_dir();
+    path.push(format!(
+        "doover-rs-export-noui-tags-{}.json",
+        std::process::id()
+    ));
+    let _ = std::fs::remove_file(&path);
+
+    let wrote_ui = doover::write_export::<TaggedApp>(&path, "tagged_app").unwrap();
+    assert!(!wrote_ui);
+
+    let text = std::fs::read_to_string(&path).unwrap();
+    let _ = std::fs::remove_file(&path);
+    let v: serde_json::Value = serde_json::from_str(&text).unwrap();
+    assert!(v["tagged_app"]["config_schema"].is_object());
+    assert!(v["tagged_app"].get("ui_schema").is_none());
+}

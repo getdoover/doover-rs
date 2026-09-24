@@ -38,6 +38,8 @@ mod submodule;
 mod value;
 mod variable;
 
+use std::marker::PhantomData;
+
 use serde_json::{Map, Value};
 
 pub use crate::config::sanitize_display_name;
@@ -237,6 +239,9 @@ pub trait UiBuild: Sized {
 /// UI-less apps (`type Ui = ()`): no children, so the runtime publishes
 /// nothing to `ui_state` — matching pydoover, where an app without a dynamic
 /// UI skips the runtime schema publish.
+///
+/// `()` builds from `()` tags only; an app that declares tags but no UI uses
+/// [`NoUi`] instead.
 impl UiTree for () {
     fn children(&self) -> Vec<&dyn UiElement> {
         Vec::new()
@@ -251,4 +256,42 @@ impl UiBuild for () {
     type Tags = ();
 
     fn build(_tags: &()) -> Self {}
+}
+
+/// An empty UI for an app that declares tags but no UI:
+/// `type Ui = NoUi<Self::Tags>`.
+///
+/// Behaves exactly like `type Ui = ()` — nothing is published to `ui_state`
+/// and no `ui_schema` is exported — but builds from any tags collection,
+/// where `()` pairs only with `type Tags = ()`.
+pub struct NoUi<T = ()>(PhantomData<fn() -> T>);
+
+impl<T> Default for NoUi<T> {
+    fn default() -> Self {
+        Self(PhantomData)
+    }
+}
+
+impl<T> std::fmt::Debug for NoUi<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("NoUi")
+    }
+}
+
+impl<T> UiTree for NoUi<T> {
+    fn children(&self) -> Vec<&dyn UiElement> {
+        Vec::new()
+    }
+
+    fn children_mut(&mut self) -> Vec<&mut dyn UiElement> {
+        Vec::new()
+    }
+}
+
+impl<T> UiBuild for NoUi<T> {
+    type Tags = T;
+
+    fn build(_tags: &T) -> Self {
+        Self::default()
+    }
 }

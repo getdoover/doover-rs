@@ -190,6 +190,49 @@ impl<T: ToConfigValue> ToConfigValue for Vec<T> {
     }
 }
 
+/// Map fields: a JSON object whose values each load as `T`. A bad value
+/// names its key.
+fn map_from_config_value<T: FromConfigValue, M: FromIterator<(String, T)>>(v: &Value) -> Result<M> {
+    let obj = v
+        .as_object()
+        .ok_or_else(|| DooverError::Other(format!("expected object, got {v}")))?;
+    obj.iter()
+        .map(|(k, item)| {
+            T::from_config_value(item)
+                .map(|t| (k.clone(), t))
+                .map_err(|e| DooverError::Other(format!("key '{k}': {e}")))
+        })
+        .collect()
+}
+
+impl<T: FromConfigValue> FromConfigValue for std::collections::BTreeMap<String, T> {
+    fn from_config_value(v: &Value) -> Result<Self> {
+        map_from_config_value(v)
+    }
+}
+
+impl<T: FromConfigValue, S: std::hash::BuildHasher + Default> FromConfigValue
+    for std::collections::HashMap<String, T, S>
+{
+    fn from_config_value(v: &Value) -> Result<Self> {
+        map_from_config_value(v)
+    }
+}
+
+impl<T: ToConfigValue> ToConfigValue for std::collections::BTreeMap<String, T> {
+    fn to_config_value(&self) -> Value {
+        Value::Object(self.iter().map(|(k, v)| (k.clone(), v.to_config_value())).collect())
+    }
+}
+
+impl<T: ToConfigValue, S> ToConfigValue for std::collections::HashMap<String, T, S> {
+    fn to_config_value(&self) -> Value {
+        // Sorted, so an exported default is stable across runs.
+        let sorted: std::collections::BTreeMap<_, _> = self.iter().collect();
+        Value::Object(sorted.into_iter().map(|(k, v)| (k.clone(), v.to_config_value())).collect())
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Loading helpers
 // ---------------------------------------------------------------------------

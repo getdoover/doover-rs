@@ -539,6 +539,7 @@ fn expand_config_object(input: DeriveInput) -> syn::Result<TokenStream2> {
     let keys = field_keys(&fields)?;
     let mut builders = Vec::new();
     let mut loads = Vec::new();
+    let mut dumps = Vec::new();
     for (idx, field) in fields.named.iter().enumerate() {
         // Object children are 1-based (pydoover Object._add_cls_element
         // assigns positions after insertion, so the first child gets 1).
@@ -546,6 +547,14 @@ fn expand_config_object(input: DeriveInput) -> syn::Result<TokenStream2> {
         let fident = field.ident.as_ref().unwrap();
         loads.push(quote! {
             #fident: ::doover::config::load_element_in(__v, &__els[#idx], &__els)?,
+        });
+        // Keyed by the element's own name, which is what the loader reads
+        // (and which some marker types fix regardless of the field name).
+        dumps.push(quote! {
+            __m.insert(
+                __els[#idx].name.clone(),
+                ::doover::config::ToConfigValue::to_config_value(&self.#fident),
+            );
         });
     }
 
@@ -573,6 +582,18 @@ fn expand_config_object(input: DeriveInput) -> syn::Result<TokenStream2> {
                     ::core::result::Result::Ok(Self {
                         #(#loads)*
                     })
+                }
+            }
+
+            // The inverse of the loader, so an object (or a list of them) can
+            // be a field's default.
+            #[automatically_derived]
+            impl ::doover::config::ToConfigValue for #ident {
+                fn to_config_value(&self) -> ::doover::__private::serde_json::Value {
+                    let __els = __object_elements();
+                    let mut __m = ::doover::__private::serde_json::Map::new();
+                    #(#dumps)*
+                    ::doover::__private::serde_json::Value::Object(__m)
                 }
             }
         };

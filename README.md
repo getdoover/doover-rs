@@ -257,7 +257,9 @@ Done (M2/M3 — declarative framework + runtime wiring):
 
 9. ~~**Declarative `Config`**~~ — `#[derive(Config)]` / `ConfigObject` /
    `ConfigEnum` with pydoover's exact JSON-Schema emission (key order,
-   x-positions, int-vs-float), typed `from_value` loading, and the
+   x-positions, int-vs-float), `Vec<T>` arrays and `BTreeMap`/`HashMap<String,
+   T>` maps (free-form keys, so Doover's per-key config merge can layer one
+   entry without restating the rest), typed `from_value` loading, and the
    read-merge-write `doover_config.json` export (byte-identical golden tests
    against analog-level-sensor).
 10. ~~**Declarative `Tags` + `UI`**~~ — `#[derive(Tags)]` typed `Tag<T>`

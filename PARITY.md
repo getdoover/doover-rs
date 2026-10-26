@@ -113,6 +113,15 @@ sync doesn't "fix" them back:
   `35081cd`) — pydoover was returning a protobuf repeated-field container
   where callers' `isinstance(result, list)` checks expected a list.
   `read_registers` already returns a `Vec` here.
+- **Map config fields also emit `additionalProperties`.** A `BTreeMap<String, T>`
+  / `HashMap<String, T>` field is pydoover's `config.Object(additional_elements=
+  <schema>)`: no fixed properties, every value following one schema, emitted as
+  `additionalElements`. doover-rs emits the same schema again as standard JSON
+  Schema `additionalProperties`, because that is what the config editor (RJSF)
+  reads to offer key/value entry; it ignores `additionalElements`. Objects with
+  `additionalElements: true` (every other object) are unchanged, so the golden
+  schemas still match byte for byte. A Python app declaring a map gets a schema
+  without it until pydoover does the same.
 
 ## Not ported yet
 

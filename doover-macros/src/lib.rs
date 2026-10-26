@@ -16,7 +16,9 @@
 //! - `name = "…"` — explicit key override (skips the title check).
 //! - `default = <expr>` — the field becomes optional with this default;
 //!   integer literals stay JSON integers, float literals stay floats.
-//! - `item_title = "…"` — the items element title for `Vec<T>` fields
+//! - `item_title = "…"` — the items element title for `Vec<T>` fields, and the
+//!   value element title for map fields (`BTreeMap<String, T>`,
+//!   `HashMap<String, T>`)
 //!   (pydoover: `config.Array("Volume Curve", element=Point("Volume Curve Point"))`).
 //! - `hidden`, `advanced`, `deprecated` — flags.
 //! - `required` — force `x-required: true` and emit no `default`, even on an
@@ -232,6 +234,24 @@ fn generic_inner<'a>(ty: &'a Type, wrapper: &str) -> Option<&'a Type> {
     }
 }
 
+/// If `ty` is `BTreeMap<String, V>` or `HashMap<String, V>`, return `V`.
+fn map_value(ty: &Type) -> Option<&Type> {
+    let Type::Path(tp) = ty else { return None };
+    let seg = tp.path.segments.last()?;
+    if seg.ident != "BTreeMap" && seg.ident != "HashMap" {
+        return None;
+    }
+    let syn::PathArguments::AngleBracketed(args) = &seg.arguments else { return None };
+    let mut types = args.args.iter().filter_map(|a| match a {
+        syn::GenericArgument::Type(t) => Some(t),
+        _ => None,
+    });
+    let key = types.next()?;
+    let value = types.next()?;
+    let key_is_string = matches!(key, Type::Path(k) if k.path.segments.last().is_some_and(|s| s.ident == "String"));
+    key_is_string.then_some(value)
+}
+
 /// Every field's config key and (Option-unwrapped) type, by Rust field name.
 /// `show_if_eq` names its controller by field, so it needs to resolve that
 /// field's key — which `#[config(name = "...")]` may have overridden — and its
@@ -310,6 +330,21 @@ fn field_element_block(
                 &::doover::config::sanitize_display_name(#item_title),
             );
             let mut __el = ::doover::config::ElementSchema::array(#title, #key, __item);
+        }
+    } else if let Some(value_ty) = map_value(inner_ty) {
+        let Some(item_title) = attrs.item_title.clone() else {
+            return Err(syn::Error::new(
+                field.span(),
+                "map config fields need #[config(item_title = \"...\")] — the display \
+                 title of the map's value element",
+            ));
+        };
+        quote! {
+            let __item = <#value_ty as ::doover::config::ConfigElementBuild>::element(
+                #item_title,
+                &::doover::config::sanitize_display_name(#item_title),
+            );
+            let mut __el = ::doover::config::ElementSchema::map(#title, #key, __item);
         }
     } else {
         quote! {

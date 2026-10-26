@@ -247,6 +247,23 @@ impl ElementSchema {
         )
     }
 
+    /// A map: an object with no fixed properties whose every value follows
+    /// `values` (pydoover `config.Object(additional_elements=<schema>)`).
+    /// Keys are free-form, so Doover's per-key config merge can layer one
+    /// entry over a profile without restating the rest, which an array can't.
+    pub fn map(title: &str, name: &str, values: ElementSchema) -> Self {
+        Self::new(
+            title,
+            name,
+            ElementKind::Object {
+                properties: Vec::new(),
+                additional_elements: values.to_json(),
+                collapsible: true,
+                default_collapsed: false,
+            },
+        )
+    }
+
     /// Required iff no default, unless explicitly overridden
     /// (pydoover `ConfigElement.required`).
     pub fn is_required(&self) -> bool {
@@ -428,6 +445,13 @@ impl ElementSchema {
                 let object = build_object_schema(properties);
                 m.insert("properties".into(), Value::Object(object.properties));
                 m.insert("additionalElements".into(), additional_elements.clone());
+                // A schema here (a map) is also emitted as standard JSON
+                // Schema `additionalProperties`, which is what JSON-schema
+                // form editors read to offer key/value entry. pydoover emits
+                // only `additionalElements`; see PARITY.md.
+                if additional_elements.is_object() {
+                    m.insert("additionalProperties".into(), additional_elements.clone());
+                }
                 m.insert("required".into(), Value::Array(object.required));
                 if !object.all_of.is_empty() {
                     m.insert("allOf".into(), Value::Array(object.all_of));

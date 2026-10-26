@@ -540,6 +540,8 @@ mod declarative_app {
             debug: false,
             error_wait: Duration::from_secs(1),
             config_sync_timeout: Duration::from_secs(5),
+            config_cache: None,
+            dda_connect_timeout: Some(Duration::from_secs(5)),
         };
         let handle = tokio::spawn(doover::run_with::<TestApp>(opts));
         (state, handle)
@@ -730,6 +732,119 @@ mod declarative_app {
         tokio::time::sleep(Duration::from_millis(300)).await;
         assert_eq!(state.message_updates.lock().unwrap().len(), 1, "ignored commands must not respond");
         assert_eq!(COMMANDS.lock().unwrap().iter().filter(|(n, _)| n == "unknown_thing").count(), 0);
+
+        handle.abort();
+    }
+
+    // -----------------------------------------------------------------------
+    // Config cache: boot without a deployment config from the agent
+    // -----------------------------------------------------------------------
+
+    fn cache_path(name: &str) -> std::path::PathBuf {
+        let mut path = std::env::temp_dir();
+        path.push(format!("doover-rs-config-cache-{name}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&path);
+        path.push("config.json");
+        path
+    }
+
+    /// The runner against a fake agent, with config coming from the
+    /// `deployment_config` channel (or its absence) rather than a file.
+    async fn spawn_app_from_agent(
+        healthcheck_port: u16,
+        deployment_config: Option<Value>,
+        config_cache: Option<std::path::PathBuf>,
+    ) -> (Arc<common::FakeAgentState>, tokio::task::JoinHandle<doover::Result<()>>) {
+        let (state, uri) = spawn_fake_agent().await;
+        state.seed_aggregate("tag_values", json!({}));
+        state.seed_aggregate("dv-ui-sub", json!({}));
+        if let Some(config) = deployment_config {
+            state.seed_aggregate("deployment_config", config);
+        }
+        let opts = RunOptions {
+            dda_uri: uri,
+            plt_uri: String::new(),
+            modbus_uri: String::new(),
+            app_key: "test_app".to_string(),
+            config_fp: None,
+            healthcheck_port,
+            debug: false,
+            error_wait: Duration::from_secs(1),
+            config_sync_timeout: Duration::from_millis(200),
+            config_cache,
+            dda_connect_timeout: Some(Duration::from_secs(5)),
+        };
+        let handle = tokio::spawn(doover::run_with::<TestApp>(opts));
+        (state, handle)
+    }
+
+    fn level_written(state: &common::FakeAgentState, level: f64) -> bool {
+        state
+            .aggregate_writes
+            .lock()
+            .unwrap()
+            .iter()
+            .any(|w| w.channel == "tag_values" && w.data == json!({"test_app": {"level": level}}))
+    }
+
+    #[tokio::test]
+    async fn config_from_agent_is_saved_to_cache() {
+        let cache = cache_path("save");
+        let (state, handle) = spawn_app_from_agent(
+            49303,
+            Some(json!({"applications": {"test_app": {"gain": 4.0, "APP_KEY": "test_app"}}})),
+            Some(cache.clone()),
+        )
+        .await;
+
+        wait_for("tag from the agent's config", || level_written(&state, 4.0)).await;
+        let saved: Value = serde_json::from_str(&std::fs::read_to_string(&cache).unwrap()).unwrap();
+        assert_eq!(saved, json!({"gain": 4.0, "APP_KEY": "test_app"}), "only the app's own config");
+
+        handle.abort();
+    }
+
+    #[tokio::test]
+    async fn boots_from_cache_when_agent_has_no_config() {
+        let cache = cache_path("boot");
+        std::fs::create_dir_all(cache.parent().unwrap()).unwrap();
+        std::fs::write(&cache, r#"{"gain": 5.0, "APP_KEY": "test_app"}"#).unwrap();
+        let (state, handle) = spawn_app_from_agent(49304, None, Some(cache)).await;
+
+        wait_for("tag from the cached config", || level_written(&state, 5.0)).await;
+        assert!(!handle.is_finished());
+
+        handle.abort();
+    }
+
+    #[tokio::test]
+    async fn cache_beats_a_deployment_config_without_this_app() {
+        let cache = cache_path("other-app");
+        std::fs::create_dir_all(cache.parent().unwrap()).unwrap();
+        std::fs::write(&cache, r#"{"gain": 6.0}"#).unwrap();
+        let (state, handle) = spawn_app_from_agent(
+            49305,
+            Some(json!({"applications": {"other_app": {"gain": 9.0}}})),
+            Some(cache.clone()),
+        )
+        .await;
+
+        wait_for("tag from the cached config", || level_written(&state, 6.0)).await;
+        assert_eq!(std::fs::read_to_string(&cache).unwrap(), r#"{"gain": 6.0}"#, "cache untouched");
+
+        handle.abort();
+    }
+
+    #[tokio::test]
+    async fn without_a_cache_file_behaviour_is_unchanged() {
+        // No cached copy yet: the app falls back exactly as before (here, the
+        // hub creates the missing channel and the app runs on its defaults),
+        // and nothing is cached until a config for this app arrives.
+        let cache = cache_path("absent");
+        let (state, handle) = spawn_app_from_agent(49306, None, Some(cache.clone())).await;
+
+        wait_for("tag from the default config", || level_written(&state, 2.0)).await;
+        assert!(!cache.exists());
 
         handle.abort();
     }

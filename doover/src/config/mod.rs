@@ -184,6 +184,12 @@ impl<T: FromConfigValue> FromConfigValue for Vec<T> {
     }
 }
 
+impl<T: ToConfigValue> ToConfigValue for Option<T> {
+    fn to_config_value(&self) -> Value {
+        self.as_ref().map_or(Value::Null, ToConfigValue::to_config_value)
+    }
+}
+
 impl<T: ToConfigValue> ToConfigValue for Vec<T> {
     fn to_config_value(&self) -> Value {
         Value::Array(self.iter().map(ToConfigValue::to_config_value).collect())
@@ -576,6 +582,68 @@ impl FromConfigValue for TagRef {
             app_name: field_or(v, "app_name", String::new())?,
             tag_name: field_or(v, "tag_name", String::new())?,
         })
+    }
+}
+
+// The inverse of each marker type's loader, so the types can sit in a
+// `ConfigObject` whose value is used as a default.
+
+impl ToConfigValue for ApplicationPosition {
+    fn to_config_value(&self) -> Value {
+        Value::from(self.0)
+    }
+}
+
+impl ToConfigValue for ApplicationDefaultOpen {
+    fn to_config_value(&self) -> Value {
+        self.0.map_or(Value::Null, Value::Bool)
+    }
+}
+
+impl ToConfigValue for ApplicationInterpreterHidden {
+    fn to_config_value(&self) -> Value {
+        Value::Bool(self.0)
+    }
+}
+
+impl ToConfigValue for ApplicationFullWidth {
+    fn to_config_value(&self) -> Value {
+        Value::Bool(self.0)
+    }
+}
+
+impl ToConfigValue for ApplicationCockpitVisible {
+    fn to_config_value(&self) -> Value {
+        Value::Bool(self.0)
+    }
+}
+
+impl ToConfigValue for ApplicationRef {
+    fn to_config_value(&self) -> Value {
+        Value::String(self.0.clone())
+    }
+}
+
+impl ToConfigValue for DeviceRef {
+    fn to_config_value(&self) -> Value {
+        Value::String(self.0.clone())
+    }
+}
+
+impl ToConfigValue for GroupRef {
+    fn to_config_value(&self) -> Value {
+        Value::String(self.0.clone())
+    }
+}
+
+impl ToConfigValue for TagRef {
+    fn to_config_value(&self) -> Value {
+        let mut m = serde_json::Map::new();
+        m.insert("reference_name".into(), Value::String(self.reference_name.clone()));
+        m.insert("agent_id".into(), self.agent_id.to_config_value());
+        m.insert("app_name".into(), Value::String(self.app_name.clone()));
+        m.insert("tag_name".into(), Value::String(self.tag_name.clone()));
+        Value::Object(m)
     }
 }
 

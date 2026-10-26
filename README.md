@@ -128,6 +128,13 @@ my-app export [doover_config.json] [--app-name NAME]
 Env/args (pydoover parity): `DDA_URI` (default `127.0.0.1:50051`), `APP_KEY`,
 `CONFIG_FP`, `PLT_URI`, `MODBUS_URI`, `HEALTHCHECK_PORT`, `REMOTE_DEV`.
 
+`CONFIG_CACHE` (doover-rs only) names a file that keeps a last-known-good copy
+of the app's config: each config received from the agent is saved there, and
+it is used at startup when the agent has no config for the app, so an app can
+boot offline. Without it, startup behaves as before.
+`RunOptions::dda_connect_timeout` (default 300s; `None` retries forever) sets
+how long startup waits for the agent.
+
 ## Processors (AWS Lambda)
 
 With the `processor` feature, the same crate builds **event-driven cloud

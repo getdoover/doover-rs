@@ -22,6 +22,12 @@ The vendored protos under `doover-proto/proto/` were verified byte-identical
 
 ### Ported ahead of pydoover's own client
 
+- **Config cache for offline boot** (`RunOptions::config_cache` /
+  `CONFIG_CACHE`) — not in pydoover. Each config received from the agent is
+  saved to the file, and it is used at startup when the agent has no config
+  for the app. Off unless set, so a ported app behaves exactly as pydoover's
+  does. Written for apps that other apps depend on at boot (the platform
+  interface), which must not wait on the cloud to come up.
 - **`CachePolicy` on aggregate reads** (pydoover `688fe85`) — pydoover added
   the proto enum and the `GetAggregateRequest.cache_policy` field, but its
   Python client never sets either. doover-rs exposes it as

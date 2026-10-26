@@ -17,7 +17,7 @@
 //! writing the config + UI schemas without connecting to an agent.
 
 use std::collections::HashMap;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::Duration;
 
@@ -85,6 +85,9 @@ pub struct AppContext {
     ui: Arc<UiRuntime>,
     meta: Arc<Mutex<AppMeta>>,
     events_tx: mpsc::UnboundedSender<RunnerEvent>,
+    /// Where each config received from the agent is saved, for
+    /// [`RunOptions::config_cache`].
+    config_cache: Option<PathBuf>,
 }
 
 impl AppContext {
@@ -358,16 +361,26 @@ impl AppContext {
     }
 
     /// Extract `applications.<app_key>` from a `deployment_config` aggregate
-    /// and re-inject it (pydoover `_on_deployment_config_update`).
+    /// and re-inject it (pydoover `_on_deployment_config_update`). When a
+    /// config cache is set, the app's config is also saved there.
     fn apply_deployment_config(&self, full_aggregate: &Value) {
-        let app_config = full_aggregate
-            .get("applications")
-            .and_then(|a| a.get(&self.app_key))
-            .cloned()
-            .unwrap_or_else(|| {
+        let app_config = full_aggregate.get("applications").and_then(|a| a.get(&self.app_key));
+        match app_config {
+            Some(app_config) => {
+                if let Some(path) = &self.config_cache {
+                    write_config_cache(path, app_config);
+                }
+                self.apply_app_config(app_config.clone());
+            }
+            None => {
                 tracing::warn!("application key {} not found in deployment config", self.app_key);
-                Value::Object(Map::new())
-            });
+                self.apply_app_config(Value::Object(Map::new()));
+            }
+        }
+    }
+
+    /// Inject this app's own config (the `applications.<app_key>` object).
+    fn apply_app_config(&self, app_config: Value) {
         {
             let mut meta = self.meta.lock().unwrap();
             meta.agent_id = app_config.get("AGENT_ID").cloned();
@@ -516,6 +529,15 @@ pub struct RunOptions {
     /// device agent before trying to read it anyway (pydoover
     /// `Application.config_sync_timeout`).
     pub config_sync_timeout: Duration,
+    /// Last-known-good copy of this app's config (`--config-cache` /
+    /// `CONFIG_CACHE`). Every config received from the agent is written here,
+    /// and it is used at startup when the agent has none to give, so the app
+    /// can boot offline. Same shape as a `CONFIG_FP` file. Off by default,
+    /// and with no cached copy yet, startup behaves as it does without it.
+    pub config_cache: Option<PathBuf>,
+    /// How long to keep retrying the device agent at startup before giving
+    /// up; `None` retries forever. Default 300s.
+    pub dda_connect_timeout: Option<Duration>,
 }
 
 impl Default for RunOptions {
@@ -568,6 +590,11 @@ impl RunOptions {
             .get("config-fp")
             .cloned()
             .or_else(|| std::env::var("CONFIG_FP").ok().filter(|s| !s.is_empty()));
+        let config_cache = cli
+            .get("config-cache")
+            .cloned()
+            .or_else(|| std::env::var("CONFIG_CACHE").ok().filter(|s| !s.is_empty()))
+            .map(PathBuf::from);
         let healthcheck_port = pick("healthcheck-port", "HEALTHCHECK_PORT", "49200")
             .parse()
             .unwrap_or(49200);
@@ -583,6 +610,8 @@ impl RunOptions {
             debug,
             error_wait: Duration::from_secs(10),
             config_sync_timeout: Duration::from_secs(120),
+            config_cache,
+            dda_connect_timeout: Some(Duration::from_secs(300)),
         }
     }
 }
@@ -720,7 +749,9 @@ pub async fn run_with<A: Application>(opts: RunOptions) -> Result<()> {
 
     let dda_uri = normalize_uri(&opts.dda_uri);
     tracing::info!("connecting to device agent at {dda_uri}");
-    let client = connect_with_retry(&dda_uri).await?.with_app_id(opts.app_key.clone());
+    let client = connect_with_retry(&dda_uri, opts.dda_connect_timeout)
+        .await?
+        .with_app_id(opts.app_key.clone());
     let hub = SubscriptionHub::new(client.clone());
     let backend: Arc<dyn ChannelBackend> = Arc::new(client.clone());
 
@@ -744,6 +775,7 @@ pub async fn run_with<A: Application>(opts: RunOptions) -> Result<()> {
         ui: ui_runtime.clone(),
         meta: Arc::new(Mutex::new(AppMeta::default())),
         events_tx: events_tx.clone(),
+        config_cache: opts.config_cache.clone(),
     };
 
     // Config bootstrap: file path in dev, live deployment_config channel in
@@ -772,13 +804,34 @@ pub async fn run_with<A: Application>(opts: RunOptions) -> Result<()> {
                     opts.config_sync_timeout
                 );
             }
-            match hub.fetch_channel_data(channels::DEPLOYMENT_CONFIG).await {
-                Ok(Some(agg)) => ctx.apply_deployment_config(&agg),
+            let fetched = hub.fetch_channel_data(channels::DEPLOYMENT_CONFIG).await;
+            // The hub creates a missing deployment_config as `{}`, so "the
+            // agent has no config for us" usually shows up as our key being
+            // absent rather than as no aggregate.
+            let has_app_config = matches!(
+                &fetched,
+                Ok(Some(agg)) if agg.get("applications").and_then(|a| a.get(&opts.app_key)).is_some()
+            );
+            let cached = match &opts.config_cache {
+                Some(path) if !has_app_config => read_config_cache(path),
+                _ => None,
+            };
+            match (fetched, cached) {
+                // The agent has nothing for us (yet): run on the last config
+                // it gave us. The subscription stays up, so the live config
+                // replaces this through on_config_update once it arrives.
+                (_, Some(cached)) => {
+                    tracing::warn!(
+                        "no deployment config from the DDA; starting from the cached copy"
+                    );
+                    ctx.apply_app_config(cached);
+                }
+                (Ok(Some(agg)), None) => ctx.apply_deployment_config(&agg),
                 // Fatal for an app that declares a schema: falling back to
                 // defaults makes "configured to do nothing" indistinguishable
                 // from "never got its config" — the app runs, reports healthy,
                 // and does nothing until someone notices. Restart instead.
-                other if !A::Config::schema().elements.is_empty() => {
+                (other, None) if !A::Config::schema().elements.is_empty() => {
                     let reason = match other {
                         Err(e) => format!("{e}"),
                         _ => "the DDA has no deployment config for this device".to_string(),
@@ -977,8 +1030,51 @@ async fn handle_runner_event<A: Application>(app: &mut A, ctx: &AppContext, even
     }
 }
 
-async fn connect_with_retry(uri: &str) -> Result<DeviceAgentClient> {
-    let deadline = Instant::now() + Duration::from_secs(300);
+/// Save `app_config` to the config cache: written to a temporary file and
+/// renamed over the old copy, so a power cut never leaves half a file. Skipped
+/// when the cached copy is already identical. Failures are logged, not fatal:
+/// the app still has its config in memory.
+fn write_config_cache(path: &Path, app_config: &Value) {
+    let text = match serde_json::to_string_pretty(app_config) {
+        Ok(text) => text,
+        Err(e) => {
+            tracing::error!("failed to serialise config cache: {e}");
+            return;
+        }
+    };
+    if std::fs::read_to_string(path).is_ok_and(|old| old == text) {
+        return;
+    }
+    let tmp = path.with_extension("tmp");
+    let result = path
+        .parent()
+        .filter(|dir| !dir.as_os_str().is_empty())
+        .map_or(Ok(()), std::fs::create_dir_all)
+        .and_then(|()| std::fs::write(&tmp, &text))
+        .and_then(|()| std::fs::rename(&tmp, path));
+    match result {
+        Ok(()) => tracing::info!("saved config cache to {path:?}"),
+        Err(e) => tracing::error!("failed to write config cache {path:?}: {e}"),
+    }
+}
+
+/// The cached config, if there is a readable one. An unreadable or corrupt
+/// cache is logged and treated as absent.
+fn read_config_cache(path: &Path) -> Option<Value> {
+    if !path.exists() {
+        return None;
+    }
+    match Config::from_file(path) {
+        Ok(config) => Some(config.root().clone()),
+        Err(e) => {
+            tracing::error!("ignoring unreadable config cache {path:?}: {e}");
+            None
+        }
+    }
+}
+
+async fn connect_with_retry(uri: &str, timeout: Option<Duration>) -> Result<DeviceAgentClient> {
+    let deadline = timeout.map(|t| Instant::now() + t);
     let mut attempt = 0u32;
     loop {
         match DeviceAgentClient::connect(uri.to_string()).await {
@@ -991,10 +1087,12 @@ async fn connect_with_retry(uri: &str) -> Result<DeviceAgentClient> {
             }
             Err(e) => tracing::debug!("connect failed: {e}"),
         }
-        if Instant::now() >= deadline {
-            return Err(crate::error::DooverError::Other(
-                "device agent did not become healthy within 300s".into(),
-            ));
+        if let (Some(deadline), Some(timeout)) = (deadline, timeout) {
+            if Instant::now() >= deadline {
+                return Err(crate::error::DooverError::Other(format!(
+                    "device agent did not become healthy within {timeout:?}"
+                )));
+            }
         }
         attempt += 1;
         let backoff = Duration::from_millis(200u64.saturating_mul(2u64.pow(attempt.min(5))))

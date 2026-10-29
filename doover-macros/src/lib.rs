@@ -32,13 +32,16 @@
 //!   only shown (and only loaded) when `<other_field>` equals `<expr>`
 //!   (pydoover `show_if=config.equal(other, value)`). The controller is named by
 //!   its Rust field; a conditional field cannot control another one.
+//! - `show_if_in(<other_field>, [<expr>, …])` — the same, shown when
+//!   `<other_field>` equals any of the values: a field several choices share.
 //!
 //! `Option<T>` fields are optional with `"default": null` (pydoover
 //! `default=None`); plain fields without a default are required.
 //!
 //! Enum variants take `#[config(rename = "…")]`; the default choice string is
 //! the variant name split on camel-case boundaries (`RadarInverted` →
-//! `"Radar Inverted"`).
+//! `"Radar Inverted"`). `#[config(title = "…")]` gives a variant a display
+//! name, shown in place of the choice string, which stays the stored value.
 
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
@@ -122,6 +125,8 @@ struct FieldAttrs {
     /// `show_if_eq(controller_field, value)` — the controlling field and the
     /// value it must equal.
     show_if_eq: Option<(syn::Ident, syn::Expr)>,
+    /// `show_if_in(controller_field, [values])`.
+    show_if_in: Option<(syn::Ident, Vec<syn::Expr>)>,
 }
 
 fn parse_field_attrs(attrs: &[syn::Attribute]) -> syn::Result<FieldAttrs> {
@@ -163,6 +168,17 @@ fn parse_field_attrs(attrs: &[syn::Attribute]) -> syn::Result<FieldAttrs> {
                     content.parse::<syn::Token![,]>()?;
                     let value: syn::Expr = content.parse()?;
                     out.show_if_eq = Some((controller, value));
+                }
+                "show_if_in" => {
+                    let content;
+                    syn::parenthesized!(content in meta.input);
+                    let controller: syn::Ident = content.parse()?;
+                    content.parse::<syn::Token![,]>()?;
+                    let values: syn::ExprArray = content.parse()?;
+                    if values.elems.is_empty() {
+                        return Err(meta.error("show_if_in needs at least one value"));
+                    }
+                    out.show_if_in = Some((controller, values.elems.into_iter().collect()));
                 }
                 other => {
                     return Err(meta.error(format!("unknown #[config] option `{other}`")));
@@ -395,7 +411,18 @@ fn field_element_block(
         extras.push(quote! { __el.set_max_items(#n); });
     }
 
-    if let Some((controller, value)) = &attrs.show_if_eq {
+    if attrs.show_if_eq.is_some() && attrs.show_if_in.is_some() {
+        return Err(syn::Error::new(
+            ident.span(),
+            "a config field takes one of show_if_eq or show_if_in, not both",
+        ));
+    }
+    let condition = match (&attrs.show_if_eq, &attrs.show_if_in) {
+        (Some((controller, value)), _) => Some((controller, std::slice::from_ref(value), false)),
+        (_, Some((controller, values))) => Some((controller, values.as_slice(), true)),
+        _ => None,
+    };
+    if let Some((controller, values, any_of)) = condition {
         let controller_name = controller.to_string();
         if controller_name == field_name {
             return Err(syn::Error::new(
@@ -407,7 +434,7 @@ fn field_element_block(
             return Err(syn::Error::new(
                 controller.span(),
                 format!(
-                    "#[config(show_if_eq({controller_name}, ...))] names no field of this \
+                    "#[config(show_if_*({controller_name}, ...))] names no field of this \
                      struct — a condition can only reference a sibling config field"
                 ),
             ));
@@ -415,13 +442,19 @@ fn field_element_block(
         // Coerce through the controller's own type so the compared value gets
         // the same JSON representation the controller's schema uses (an enum
         // field compares against its choice string, not the Rust variant name).
+        let values = values.iter().map(|value| {
+            quote! {{
+                let __cond: #controller_ty = ::core::convert::Into::into(#value);
+                ::doover::config::ToConfigValue::to_config_value(&__cond)
+            }}
+        });
+        let condition = if any_of {
+            quote! { ::doover::config::Condition::one_of(#controller_key, ::std::vec![#(#values),*]) }
+        } else {
+            quote! { ::doover::config::Condition::equal(#controller_key, #(#values)*) }
+        };
         extras.push(quote! {
-            __el.show_if = ::core::option::Option::Some(
-                ::doover::config::Condition::equal(#controller_key, {
-                    let __cond: #controller_ty = ::core::convert::Into::into(#value);
-                    ::doover::config::ToConfigValue::to_config_value(&__cond)
-                }),
-            );
+            __el.show_if = ::core::option::Option::Some(#condition);
         });
     }
 
@@ -659,6 +692,8 @@ fn expand_config_enum(input: DeriveInput) -> syn::Result<TokenStream2> {
 
     let mut variant_idents = Vec::new();
     let mut choice_strings = Vec::new();
+    let mut choice_titles = Vec::new();
+    let mut any_title = false;
     for variant in &data.variants {
         if !matches!(variant.fields, Fields::Unit) {
             return Err(syn::Error::new(
@@ -667,6 +702,7 @@ fn expand_config_enum(input: DeriveInput) -> syn::Result<TokenStream2> {
             ));
         }
         let mut rename = None;
+        let mut title = None;
         for attr in &variant.attrs {
             if !attr.path().is_ident("config") {
                 continue;
@@ -675,23 +711,40 @@ fn expand_config_enum(input: DeriveInput) -> syn::Result<TokenStream2> {
                 if meta.path.is_ident("rename") {
                     rename = Some(meta.value()?.parse::<LitStr>()?.value());
                     Ok(())
+                } else if meta.path.is_ident("title") {
+                    title = Some(meta.value()?.parse::<LitStr>()?.value());
+                    Ok(())
                 } else {
-                    Err(meta.error("only #[config(rename = \"...\")] is supported on variants"))
+                    Err(meta.error(
+                        "only #[config(rename = \"...\")] and #[config(title = \"...\")] are \
+                         supported on variants",
+                    ))
                 }
             })?;
         }
         variant_idents.push(&variant.ident);
+        any_title |= title.is_some();
+        choice_titles.push(match title {
+            Some(t) => quote! { ::core::option::Option::Some(::std::string::String::from(#t)) },
+            None => quote! { ::core::option::Option::None },
+        });
         choice_strings.push(rename.unwrap_or_else(|| camel_to_title(&variant.ident.to_string())));
     }
 
     let ident_str = ident.to_string();
     let expected = choice_strings.join("', '");
+    let set_titles = if any_title {
+        quote! { __el.set_choice_titles(::std::vec![#(#choice_titles),*]); }
+    } else {
+        quote! {}
+    };
 
     Ok(quote! {
         #[automatically_derived]
         impl ::doover::config::ConfigElementBuild for #ident {
             fn element(title: &str, name: &str) -> ::doover::config::ElementSchema {
-                ::doover::config::ElementSchema::enumeration(
+                #[allow(unused_mut)]
+                let mut __el = ::doover::config::ElementSchema::enumeration(
                     title,
                     name,
                     ::std::vec![
@@ -699,7 +752,9 @@ fn expand_config_enum(input: DeriveInput) -> syn::Result<TokenStream2> {
                             #choice_strings.to_string()
                         )),*
                     ],
-                )
+                );
+                #set_titles
+                __el
             }
         }
 

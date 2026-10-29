@@ -123,6 +123,21 @@ sync doesn't "fix" them back:
   schemas still match byte for byte. A Python app declaring a map gets a schema
   without it until pydoover does the same.
 
+- **Enum choice titles** — a `ConfigEnum` variant's `#[config(title = "…")]`
+  emits the choices as `oneOf` `{"const", "title"}` pairs in place of `enum`,
+  because RJSF (the Doover config form) takes option labels only from those.
+  pydoover's `config.Enum` has no display names. An enum with no titles still
+  emits a plain `enum`.
+- **A `null` default is a valid enum choice** — `Option<Enum>` emits
+  `"default": null`, and pydoover leaves `null` out of `enum`, so a form that
+  fills in defaults showed the untouched field as invalid. `null` is appended
+  to the choices (or a `{"const": null, "title": "None"}` option) only when the
+  default is `null`, so every other enum matches pydoover byte for byte.
+- **`show_if_in`** — a condition on the controller being any of several values,
+  emitted as an `{"enum": [...]}` test in the `if`. pydoover's `Comparator` has
+  only `EQUAL`; a field shared by several choices would otherwise need one copy
+  per choice.
+
 ## Not ported yet
 
 See the "Still to port" list in [`README.md`](README.md#roadmap-mirroring-the-pydoover-surface).

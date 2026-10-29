@@ -27,11 +27,13 @@
 use serde_json::{Map, Number, Value};
 
 /// A comparison operator for a conditional config element
-/// (pydoover `config.Comparator`). Equality is the only operator the schema
-/// format defines so far.
+/// (pydoover `config.Comparator`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Comparator {
     Equal,
+    /// The controller equals any one of a list of values, for a field several
+    /// choices share. pydoover has only `Equal`; see PARITY.md.
+    In,
 }
 
 /// A condition controlling whether a config element is active
@@ -55,6 +57,11 @@ impl Condition {
         Self { element: element.into(), comparator: Comparator::Equal, value }
     }
 
+    /// Show the element when `element` equals any of `values`.
+    pub fn one_of(element: impl Into<String>, values: Vec<Value>) -> Self {
+        Self { element: element.into(), comparator: Comparator::In, value: Value::Array(values) }
+    }
+
     /// The `if` branch's test on the controlling property
     /// (pydoover `_condition_schema`).
     fn to_test(&self) -> Value {
@@ -62,6 +69,11 @@ impl Condition {
             Comparator::Equal => {
                 let mut m = Map::new();
                 m.insert("const".into(), self.value.clone());
+                Value::Object(m)
+            }
+            Comparator::In => {
+                let mut m = Map::new();
+                m.insert("enum".into(), self.value.clone());
                 Value::Object(m)
             }
         }
@@ -74,6 +86,9 @@ impl Condition {
         match (self.comparator, actual) {
             (_, None) => false,
             (Comparator::Equal, Some(actual)) => *actual == self.value,
+            (Comparator::In, Some(actual)) => {
+                self.value.as_array().is_some_and(|values| values.contains(actual))
+            }
         }
     }
 }
@@ -107,8 +122,13 @@ pub enum ElementKind {
     /// pydoover `config.Enum`: `ty` is `"string"` if every choice is a
     /// string, `"number"` if every choice is a float, otherwise `None`
     /// (in which case no `type` key is emitted at all).
+    ///
+    /// `titles` are display names, one per choice (or empty for none). When
+    /// any is set the choices are emitted as `oneOf` `const`/`title` pairs,
+    /// which form editors show as labels; see PARITY.md.
     Enum {
         choices: Vec<Value>,
+        titles: Vec<Option<String>>,
         ty: Option<&'static str>,
     },
     Array {
@@ -218,7 +238,23 @@ impl ElementSchema {
         } else {
             None
         };
-        Self::new(title, name, ElementKind::Enum { choices, ty })
+        Self::new(title, name, ElementKind::Enum { choices, titles: Vec::new(), ty })
+    }
+
+    /// Give an enum element's choices display names, in choice order.
+    pub fn set_choice_titles(&mut self, new_titles: Vec<Option<String>>) {
+        match &mut self.kind {
+            ElementKind::Enum { choices, titles, .. } => {
+                assert_eq!(
+                    new_titles.len(),
+                    choices.len(),
+                    "choice titles for config element {:?} do not match its choices",
+                    self.name
+                );
+                *titles = new_titles;
+            }
+            _ => panic!("choice titles on non-enum config element {:?}", self.name),
+        }
     }
 
     pub fn array(title: &str, name: &str, items: ElementSchema) -> Self {
@@ -360,8 +396,34 @@ impl ElementSchema {
 
         // Enum.to_dict() is `{"enum": choices, **super().to_dict()}` — the
         // enum key lands first.
-        if let ElementKind::Enum { choices, .. } = &self.kind {
-            m.insert("enum".into(), Value::Array(choices.clone()));
+        if let ElementKind::Enum { choices, titles, .. } = &self.kind {
+            // A `null` default has to be a valid choice, or a form that fills
+            // in the default shows the untouched field as invalid. pydoover
+            // leaves it out; see PARITY.md.
+            let null_default = self.default.as_ref().is_some_and(Value::is_null);
+            if titles.iter().any(Option::is_some) {
+                let mut options: Vec<Value> = choices
+                    .iter()
+                    .zip(titles)
+                    .map(|(choice, title)| {
+                        let title = title.clone().unwrap_or_else(|| match choice {
+                            Value::String(s) => s.clone(),
+                            other => other.to_string(),
+                        });
+                        choice_option(choice.clone(), title)
+                    })
+                    .collect();
+                if null_default {
+                    options.push(choice_option(Value::Null, "None".into()));
+                }
+                m.insert("oneOf".into(), Value::Array(options));
+            } else {
+                let mut choices = choices.clone();
+                if null_default {
+                    choices.push(Value::Null);
+                }
+                m.insert("enum".into(), Value::Array(choices));
+            }
         }
 
         m.insert("title".into(), Value::String(self.title.clone()));
@@ -464,6 +526,14 @@ impl ElementSchema {
 
         Value::Object(m)
     }
+}
+
+/// One titled enum choice, `{"const": value, "title": title}`.
+fn choice_option(value: Value, title: String) -> Value {
+    let mut option = Map::new();
+    option.insert("const".into(), value);
+    option.insert("title".into(), Value::String(title));
+    Value::Object(option)
 }
 
 /// The `properties`, `required` and `allOf` of one object level.

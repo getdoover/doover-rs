@@ -674,9 +674,14 @@ fn wire_ui_cmds(
     );
 }
 
-/// Entry point for an application binary: handles the built-in `export`
-/// subcommand (before touching the network), otherwise connects and drives
-/// the app until SIGINT/SIGTERM.
+/// Entry point for an application binary: handles the built-in `export` and
+/// `healthcheck` subcommands (before touching the network), otherwise
+/// connects and drives the app until SIGINT/SIGTERM.
+///
+/// `healthcheck` asks the running app's healthcheck server once and fails
+/// unless it answers 200: for the image's
+/// `HEALTHCHECK CMD ["/<binary>", "healthcheck"]`, as a scratch image has no
+/// curl.
 ///
 /// `export [path] [--app-name NAME]` writes `A::Config`'s JSON schema and
 /// `A::Ui`'s schema into `path` (default `./doover_config.json`,
@@ -684,6 +689,11 @@ fn wire_ui_cmds(
 /// env var or the binary name.
 pub async fn run<A: Application>() -> Result<()> {
     let argv: Vec<String> = std::env::args().collect();
+    if argv.get(1).map(String::as_str) == Some("healthcheck") {
+        let port = crate::docker::healthcheck::port_from_env();
+        return crate::docker::healthcheck::probe(port)
+            .map_err(|e| crate::DooverError::Other(format!("unhealthy: {e}")));
+    }
     if argv.get(1).map(String::as_str) == Some("export") {
         let mut path = "./doover_config.json".to_string();
         let mut app_name: Option<String> = None;

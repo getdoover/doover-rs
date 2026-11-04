@@ -9,6 +9,7 @@ pub mod application;
 pub mod device_agent;
 pub mod grpc;
 pub mod healthcheck;
+mod legacy_struct;
 pub mod modbus;
 pub mod platform;
 pub mod subscriptions;

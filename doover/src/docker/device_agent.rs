@@ -1,6 +1,7 @@
 //! `DeviceAgentClient` — the Rust equivalent of pydoover's
 //! `DeviceAgentInterface`. A thin, async wrapper over the generated gRPC stub
-//! that speaks the lossless `data_json` encoding, maps response headers to
+//! that speaks the lossless `data_json` encoding (plus the protobuf Struct for
+//! agents built before 2026-06-10), maps response headers to
 //! typed errors, and exposes the operations a device app needs.
 //!
 //! The underlying tonic `Channel` multiplexes many concurrent requests over
@@ -19,6 +20,7 @@ use tonic::transport::{Channel, Endpoint};
 use doover_proto::device_agent as pb;
 use pb::device_agent_client::DeviceAgentClient as GenClient;
 
+use super::legacy_struct::{self, WireMode};
 use crate::error::{DooverError, Result};
 use crate::events::Event;
 
@@ -99,6 +101,7 @@ pub struct DdaStatus {
     available: AtomicBool,
     online: AtomicBool,
     been_online: AtomicBool,
+    wire: WireMode,
 }
 
 impl DdaStatus {
@@ -240,12 +243,9 @@ pub struct Message {
 }
 
 impl Message {
-    fn from_proto(m: pb::Message) -> Self {
-        let data = if m.data_json.is_empty() {
-            Value::Null
-        } else {
-            serde_json::from_str(&m.data_json).unwrap_or(Value::Null)
-        };
+    fn from_proto(m: pb::Message, status: &DdaStatus) -> Self {
+        status.wire.observe(&m.data_json, m.data.as_ref());
+        let data = legacy_struct::decode(&m.data_json, m.data.as_ref()).unwrap_or(Value::Null);
         Self {
             message_id: m.message_id,
             author_id: m.author_id,
@@ -320,6 +320,13 @@ impl DeviceAgentClient {
         &self.status
     }
 
+    /// The Struct copy of a write's payload, for an agent that may predate
+    /// `data_json` (see [`legacy_struct`]). `None` once the agent is known
+    /// to read `data_json`.
+    fn struct_for(&self, data: &Value) -> Option<prost_types::Struct> {
+        self.status.wire.send_struct().then(|| legacy_struct::value_to_struct(data))
+    }
+
     fn header(&self) -> Option<pb::RequestHeader> {
         self.app_id.clone().map(|app_id| pb::RequestHeader { app_id: Some(app_id) })
     }
@@ -383,7 +390,7 @@ impl DeviceAgentClient {
             channel_name: channel.name.to_string(),
             agent_id: channel.agent_id,
             qos: opts.qos.wire(),
-            data: None,
+            data: self.struct_for(data),
             data_json: serde_json::to_string(data)?,
             files: vec![],
             clear_attachments: Some(opts.clear_attachments),
@@ -400,7 +407,7 @@ impl DeviceAgentClient {
         };
         let resp = self.inner.clone().update_aggregate(req).await?.into_inner();
         self.check_header(resp.response_header)?;
-        Ok(resp.aggregate.as_ref().map(decode_aggregate))
+        Ok(resp.aggregate.as_ref().map(|a| decode_aggregate(&self.status, a)))
     }
 
     /// List the agent's channels. The agent answers from the cloud when it can
@@ -470,7 +477,7 @@ impl DeviceAgentClient {
         };
         let resp = self.inner.clone().get_aggregate(req).await?.into_inner();
         match self.check_header(resp.response_header) {
-            Ok(()) => Ok(resp.aggregate.map(|a| decode_aggregate(&a))),
+            Ok(()) => Ok(resp.aggregate.map(|a| decode_aggregate(&self.status, &a))),
             Err(DooverError::NotFound(_)) => Ok(None),
             Err(e) => Err(e),
         }
@@ -531,7 +538,7 @@ impl DeviceAgentClient {
             channel_name: channel.name.to_string(),
             agent_id: channel.agent_id,
             qos: opts.qos.wire(),
-            data: None,
+            data: self.struct_for(data),
             data_json: serde_json::to_string(data)?,
             files: vec![],
             timestamp,
@@ -580,7 +587,7 @@ impl DeviceAgentClient {
             channel_name: channel.name.to_string(),
             agent_id: channel.agent_id,
             qos: opts.qos.wire(),
-            data: None,
+            data: self.struct_for(data),
             data_json: serde_json::to_string(data)?,
             timestamp: opts.timestamp_ms,
         };
@@ -606,7 +613,7 @@ impl DeviceAgentClient {
         self.check_header(resp.response_header)?;
         let name = channel.name;
         resp.message
-            .map(Message::from_proto)
+            .map(|m| Message::from_proto(m, &self.status))
             .ok_or_else(|| DooverError::NotFound(format!("message {message_id} on '{name}'")))
     }
 
@@ -629,7 +636,7 @@ impl DeviceAgentClient {
         };
         let resp = self.inner.clone().get_messages(req).await?.into_inner();
         self.check_header(resp.response_header)?;
-        Ok(resp.messages.into_iter().map(Message::from_proto).collect())
+        Ok(resp.messages.into_iter().map(|m| Message::from_proto(m, &self.status)).collect())
     }
 
     /// Update an existing message's payload (pydoover `update_message`).
@@ -648,7 +655,7 @@ impl DeviceAgentClient {
             message_id: message_id.to_string(),
             agent_id: channel.agent_id,
             qos: opts.qos.wire(),
-            data: None,
+            data: self.struct_for(data),
             data_json: serde_json::to_string(data)?,
             files: vec![],
             clear_attachments: Some(opts.clear_attachments),
@@ -657,7 +664,7 @@ impl DeviceAgentClient {
         let resp = self.inner.clone().update_message(req).await?.into_inner();
         self.check_header(resp.response_header)?;
         resp.message
-            .map(Message::from_proto)
+            .map(|m| Message::from_proto(m, &self.status))
             .ok_or_else(|| DooverError::Other("update_message returned no message".into()))
     }
 
@@ -740,10 +747,15 @@ impl DeviceAgentClient {
                     )));
                 }
             }
-            let payload: Value = if resp.data_json.is_empty() {
-                Value::Object(serde_json::Map::new())
-            } else {
+            // An old agent ignores `wire_format` and sends only the Struct.
+            status.wire.observe(&resp.data_json, resp.data.as_ref());
+            let payload: Value = if !resp.data_json.is_empty() {
                 serde_json::from_str(&resp.data_json)?
+            } else {
+                resp.data
+                    .as_ref()
+                    .map(legacy_struct::struct_to_value)
+                    .unwrap_or_else(|| Value::Object(serde_json::Map::new()))
             };
             Ok(Event {
                 event_name: resp.event_name,
@@ -806,14 +818,9 @@ fn check_header(header: Option<pb::ResponseHeader>) -> Result<()> {
     }
 }
 
-fn decode_aggregate(a: &pb::Aggregate) -> ChannelAggregate {
-    let data = if !a.data_json.is_empty() {
-        serde_json::from_str(&a.data_json).unwrap_or(Value::Null)
-    } else {
-        // No lossless field: the caller is on an old agent. We do not decode
-        // the lossy Struct here (ints >2^53 are already corrupted); return null.
-        Value::Null
-    };
+fn decode_aggregate(status: &DdaStatus, a: &pb::Aggregate) -> ChannelAggregate {
+    status.wire.observe(&a.data_json, a.data.as_ref());
+    let data = legacy_struct::decode(&a.data_json, a.data.as_ref()).unwrap_or(Value::Null);
     ChannelAggregate {
         data,
         attachments: a.attachments.iter().map(Attachment::from_proto).collect(),

@@ -26,5 +26,6 @@ tracing-subscriber = "0.3"
 # `tests/cli_e2e.rs` drives the built binary against the `doover` crate's fake
 # device agent, which it includes directly (see the #[path] import there).
 doover-proto = { path = "../doover-proto" }
+prost-types = { workspace = true }
 tonic = { workspace = true }
 tokio-stream = { workspace = true }

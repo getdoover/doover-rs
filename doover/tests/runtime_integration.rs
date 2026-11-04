@@ -50,6 +50,47 @@ async fn subscribe_replay_preference_reaches_the_agent() {
     );
 }
 
+/// Until the client has seen a payload from the agent it sends both
+/// encodings; once the agent shows it reads `data_json`, the Struct stops.
+#[tokio::test]
+async fn struct_copy_stops_once_the_agent_speaks_data_json() {
+    let (state, uri) = spawn_fake_agent().await;
+    state.seed_aggregate("ch", json!({}));
+    let client = DeviceAgentClient::connect(uri).await.unwrap().with_app_id("test_app");
+
+    client.update_channel_aggregate("ch", &json!({"a": 1}), &Default::default()).await.unwrap();
+    client.fetch_channel_aggregate("ch").await.unwrap();
+    client.update_channel_aggregate("ch", &json!({"a": 2}), &Default::default()).await.unwrap();
+
+    let sent: Vec<bool> = state.aggregate_writes.lock().unwrap().iter().map(|w| w.struct_sent).collect();
+    assert_eq!(sent, [true, false]);
+}
+
+/// Against an agent with no `data_json`, reads, writes and events all go
+/// through the Struct, and whole numbers come back as integers.
+#[tokio::test]
+async fn legacy_agent_round_trips_through_the_struct() {
+    let (state, uri) = common::spawn_legacy_fake_agent().await;
+    state.seed_aggregate("ch", json!({"n": 11, "x": 0.5, "id": "175046099306866951"}));
+    let client = DeviceAgentClient::connect(uri).await.unwrap().with_app_id("test_app");
+
+    let agg = client.fetch_channel_aggregate("ch").await.unwrap().unwrap();
+    assert_eq!(agg.data, json!({"n": 11, "x": 0.5, "id": "175046099306866951"}));
+
+    client.update_channel_aggregate("ch", &json!({"n": 12}), &Default::default()).await.unwrap();
+    let w = state.aggregate_writes.lock().unwrap().last().cloned().unwrap();
+    assert!(w.struct_sent);
+    assert_eq!(w.data, json!({"n": 12.0}), "the agent reads the Struct");
+
+    let mut stream = Box::pin(client.subscribe_events("ch").await.unwrap());
+    while state.stream_count("ch") == 0 {
+        tokio::time::sleep(Duration::from_millis(10)).await;
+    }
+    state.publish_event("ch", "AggregateUpdate", json!({"aggregate": {"data": {"n": 13}}})).await;
+    let ev = timeout(WAIT, futures_util::StreamExt::next(&mut stream)).await.unwrap().unwrap().unwrap();
+    assert_eq!(ev.payload, json!({"aggregate": {"data": {"n": 13}}}));
+}
+
 #[tokio::test]
 async fn hub_seeds_missing_channel_and_dispatches_events() {
     let (state, uri) = spawn_fake_agent().await;
@@ -755,7 +796,15 @@ mod declarative_app {
         deployment_config: Option<Value>,
         config_cache: Option<std::path::PathBuf>,
     ) -> (Arc<common::FakeAgentState>, tokio::task::JoinHandle<doover::Result<()>>) {
-        let (state, uri) = spawn_fake_agent().await;
+        spawn_app_on(spawn_fake_agent().await, healthcheck_port, deployment_config, config_cache)
+    }
+
+    fn spawn_app_on(
+        (state, uri): (Arc<common::FakeAgentState>, String),
+        healthcheck_port: u16,
+        deployment_config: Option<Value>,
+        config_cache: Option<std::path::PathBuf>,
+    ) -> (Arc<common::FakeAgentState>, tokio::task::JoinHandle<doover::Result<()>>) {
         state.seed_aggregate("tag_values", json!({}));
         state.seed_aggregate("dv-ui-sub", json!({}));
         if let Some(config) = deployment_config {
@@ -785,6 +834,23 @@ mod declarative_app {
             .unwrap()
             .iter()
             .any(|w| w.channel == "tag_values" && w.data == json!({"test_app": {"level": level}}))
+    }
+
+    /// An agent built before 2026-06-10 speaks only the protobuf Struct: the
+    /// app must still read its deployment config and its writes must land.
+    #[tokio::test]
+    async fn runs_against_an_agent_without_data_json() {
+        let (state, handle) = spawn_app_on(
+            common::spawn_legacy_fake_agent().await,
+            49306,
+            Some(json!({"applications": {"test_app": {"gain": 7.0, "APP_KEY": "test_app"}}})),
+            None,
+        );
+
+        wait_for("tag from the Struct-only config", || level_written(&state, 7.0)).await;
+        assert!(!handle.is_finished());
+
+        handle.abort();
     }
 
     #[tokio::test]

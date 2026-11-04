@@ -411,6 +411,7 @@ dependencies = [
  "doover",
  "doover-proto",
  "futures-util",
+ "prost-types",
  "serde_json",
  "tokio",
  "tokio-stream",

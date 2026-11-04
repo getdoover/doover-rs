@@ -63,7 +63,7 @@ impl Default for EventSubscription {
 pub struct Event {
     pub event_name: String,
     pub channel: String,
-    /// The full decoded payload (`data_json`).
+    /// The full decoded payload (`data_json`, or the Struct from an old agent).
     pub payload: Value,
 }
 

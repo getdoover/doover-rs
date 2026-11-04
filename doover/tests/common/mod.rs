@@ -16,7 +16,7 @@
 
 use std::collections::HashMap;
 use std::net::SocketAddr;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
 use serde_json::{json, Map, Value};
@@ -51,6 +51,8 @@ pub struct RecordedAggregateWrite {
     pub agent_id: Option<u64>,
     /// `None` on the default path — the client must omit the field, not send 1.
     pub qos: Option<u32>,
+    /// Whether the client also sent the protobuf Struct copy.
+    pub struct_sent: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -91,6 +93,9 @@ pub struct FakeAgentState {
     pub oneshots: Mutex<Vec<RecordedMessage>>,
     event_txs: Mutex<HashMap<String, Vec<EventSender>>>,
     next_message_id: AtomicU64,
+    /// Behave like a device agent built before 2026-06-10: payloads are read
+    /// from and sent as the protobuf Struct only, never `data_json`.
+    pub legacy: AtomicBool,
 }
 
 /// The agent's storage key for a channel: bare for its own, `{agent_id}:{name}`
@@ -106,6 +111,30 @@ pub fn key_for(channel: &str, agent_id: Option<u64>) -> String {
 // every target calls every one (dead-code is analysed per test binary).
 #[allow(dead_code)]
 impl FakeAgentState {
+    fn is_legacy(&self) -> bool {
+        self.legacy.load(Ordering::Relaxed)
+    }
+
+    /// A payload as this agent sends it: `data_json` only, or (legacy) the
+    /// Struct only.
+    fn encode(&self, v: &Value) -> (Option<prost_types::Struct>, String) {
+        if self.is_legacy() {
+            (Some(legacy::value_to_struct(v)), String::new())
+        } else {
+            (None, v.to_string())
+        }
+    }
+
+    /// A request payload as this agent reads it. A legacy agent has no
+    /// `data_json` field, so it never sees one.
+    #[allow(clippy::result_large_err)]
+    fn decode(&self, data_json: &str, data: &Option<prost_types::Struct>) -> Result<Value, Status> {
+        if self.is_legacy() {
+            return Ok(data.as_ref().map(legacy::struct_to_value).unwrap_or_else(|| json!({})));
+        }
+        serde_json::from_str(data_json).map_err(|e| Status::invalid_argument(e.to_string()))
+    }
+
     /// Pre-seed a channel aggregate before the client connects.
     pub fn seed_aggregate(&self, channel: &str, data: Value) {
         self.aggregates.lock().unwrap().insert(channel.to_string(), data);
@@ -153,12 +182,13 @@ impl FakeAgentState {
 
     /// Push a raw event to a channel's live subscribers.
     pub async fn publish_event(&self, channel: &str, event_name: &str, payload: Value) {
+        let (data, data_json) = self.encode(&payload);
         let response = pb::ChannelEventSubscriptionResponse {
             response_header: Some(ok_header()),
             event_name: event_name.to_string(),
             channel_name: channel.to_string(),
-            data: None,
-            data_json: payload.to_string(),
+            data,
+            data_json,
         };
         let senders: Vec<_> = self
             .event_txs
@@ -267,15 +297,18 @@ impl DeviceAgent for FakeAgent {
         let aggregates = self.0.aggregates.lock().unwrap();
         let meta = self.0.aggregate_meta.lock().unwrap().get(&channel).cloned();
         let resp = match aggregates.get(&channel) {
-            Some(data) => pb::GetAggregateResponse {
-                response_header: Some(ok_header()),
-                aggregate: Some(pb::Aggregate {
-                    data: None,
-                    attachments: meta.clone().map(|(a, _)| a).unwrap_or_default(),
-                    last_updated: meta.map(|(_, ts)| ts),
-                    data_json: data.to_string(),
-                }),
-            },
+            Some(data) => {
+                let (data, data_json) = self.0.encode(data);
+                pb::GetAggregateResponse {
+                    response_header: Some(ok_header()),
+                    aggregate: Some(pb::Aggregate {
+                        data,
+                        attachments: meta.clone().map(|(a, _)| a).unwrap_or_default(),
+                        last_updated: meta.map(|(_, ts)| ts),
+                        data_json,
+                    }),
+                }
+            }
             None => pb::GetAggregateResponse {
                 response_header: Some(not_found_header()),
                 aggregate: None,
@@ -289,8 +322,7 @@ impl DeviceAgent for FakeAgent {
         request: Request<pb::UpdateAggregateRequest>,
     ) -> Result<Response<pb::UpdateAggregateResponse>, Status> {
         let req = request.into_inner();
-        let data: Value = serde_json::from_str(&req.data_json)
-            .map_err(|e| Status::invalid_argument(e.to_string()))?;
+        let data = self.0.decode(&req.data_json, &req.data)?;
         let merged = {
             let mut aggregates = self.0.aggregates.lock().unwrap();
             let entry = aggregates
@@ -311,15 +343,12 @@ impl DeviceAgent for FakeAgent {
             replace_data: req.replace_data.unwrap_or(false),
             agent_id: req.agent_id,
             qos: req.qos,
+            struct_sent: req.data.is_some(),
         });
+        let (data, data_json) = self.0.encode(&merged);
         Ok(Response::new(pb::UpdateAggregateResponse {
             response_header: Some(ok_header()),
-            aggregate: Some(pb::Aggregate {
-                data: None,
-                attachments: vec![],
-                last_updated: None,
-                data_json: merged.to_string(),
-            }),
+            aggregate: Some(pb::Aggregate { data, attachments: vec![], last_updated: None, data_json }),
         }))
     }
 
@@ -328,8 +357,7 @@ impl DeviceAgent for FakeAgent {
         request: Request<pb::CreateMessageRequest>,
     ) -> Result<Response<pb::CreateMessageResponse>, Status> {
         let req = request.into_inner();
-        let data: Value = serde_json::from_str(&req.data_json)
-            .map_err(|e| Status::invalid_argument(e.to_string()))?;
+        let data = self.0.decode(&req.data_json, &req.data)?;
         self.0.messages.lock().unwrap().push(RecordedMessage {
             channel: req.channel_name,
             data,
@@ -348,8 +376,7 @@ impl DeviceAgent for FakeAgent {
         request: Request<pb::SendOneShotMessageRequest>,
     ) -> Result<Response<pb::SendOneShotMessageResponse>, Status> {
         let req = request.into_inner();
-        let data: Value = serde_json::from_str(&req.data_json)
-            .map_err(|e| Status::invalid_argument(e.to_string()))?;
+        let data = self.0.decode(&req.data_json, &req.data)?;
         self.0.oneshots.lock().unwrap().push(RecordedMessage {
             channel: req.channel_name,
             data,
@@ -426,8 +453,7 @@ impl DeviceAgent for FakeAgent {
         request: Request<pb::UpdateMessageRequest>,
     ) -> Result<Response<pb::UpdateMessageResponse>, Status> {
         let req = request.into_inner();
-        let data: Value = serde_json::from_str(&req.data_json)
-            .map_err(|e| Status::invalid_argument(e.to_string()))?;
+        let data = self.0.decode(&req.data_json, &req.data)?;
         let message_id: u64 = req
             .message_id
             .parse()
@@ -440,15 +466,16 @@ impl DeviceAgent for FakeAgent {
             agent_id: req.agent_id,
             qos: req.qos,
         });
+        let (data, data_json) = self.0.encode(&data);
         Ok(Response::new(pb::UpdateMessageResponse {
             response_header: Some(ok_header()),
             message: Some(pb::Message {
                 message_id,
                 author_id: 0,
                 channel: Some(pb::ChannelId { agent_id: 0, name: req.channel_name }),
-                data: None,
+                data,
                 attachments: vec![],
-                data_json: data.to_string(),
+                data_json,
             }),
         }))
     }
@@ -478,7 +505,18 @@ impl DeviceAgent for FakeAgent {
 /// Start a fake agent on an ephemeral local port; returns the shared state
 /// and a `http://…` URI for `DeviceAgentClient::connect`.
 pub async fn spawn_fake_agent() -> (Arc<FakeAgentState>, String) {
-    let state = Arc::new(FakeAgentState::default());
+    spawn_with(FakeAgentState::default()).await
+}
+
+/// As [`spawn_fake_agent`], but behaving like an agent built before
+/// 2026-06-10 (see [`FakeAgentState::legacy`]).
+#[allow(dead_code)]
+pub async fn spawn_legacy_fake_agent() -> (Arc<FakeAgentState>, String) {
+    spawn_with(FakeAgentState { legacy: AtomicBool::new(true), ..Default::default() }).await
+}
+
+async fn spawn_with(state: FakeAgentState) -> (Arc<FakeAgentState>, String) {
+    let state = Arc::new(state);
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.expect("bind fake agent");
     let addr: SocketAddr = listener.local_addr().expect("local addr");
     let service = DeviceAgentServer::new(FakeAgent(state.clone()));
@@ -489,4 +527,48 @@ pub async fn spawn_fake_agent() -> (Arc<FakeAgentState>, String) {
             .await;
     });
     (state, format!("http://{addr}"))
+}
+
+/// Struct conversion as the Python agent did it (`json_format.ParseDict` /
+/// `MessageToDict`): every number is a double, integers included.
+mod legacy {
+    use prost_types::value::Kind;
+    use serde_json::{Number, Value};
+
+    pub fn value_to_struct(v: &Value) -> prost_types::Struct {
+        let fields = match v {
+            Value::Object(m) => m.iter().map(|(k, v)| (k.clone(), to_pb(v))).collect(),
+            _ => Default::default(),
+        };
+        prost_types::Struct { fields }
+    }
+
+    fn to_pb(v: &Value) -> prost_types::Value {
+        let kind = match v {
+            Value::Null => Kind::NullValue(0),
+            Value::Bool(b) => Kind::BoolValue(*b),
+            Value::Number(n) => Kind::NumberValue(n.as_f64().unwrap_or(0.0)),
+            Value::String(s) => Kind::StringValue(s.clone()),
+            Value::Array(a) => {
+                Kind::ListValue(prost_types::ListValue { values: a.iter().map(to_pb).collect() })
+            }
+            Value::Object(_) => Kind::StructValue(value_to_struct(v)),
+        };
+        prost_types::Value { kind: Some(kind) }
+    }
+
+    pub fn struct_to_value(s: &prost_types::Struct) -> Value {
+        Value::Object(s.fields.iter().map(|(k, v)| (k.clone(), from_pb(v))).collect())
+    }
+
+    fn from_pb(v: &prost_types::Value) -> Value {
+        match &v.kind {
+            None | Some(Kind::NullValue(_)) => Value::Null,
+            Some(Kind::BoolValue(b)) => Value::Bool(*b),
+            Some(Kind::NumberValue(f)) => Number::from_f64(*f).map(Value::Number).unwrap_or(Value::Null),
+            Some(Kind::StringValue(s)) => Value::String(s.clone()),
+            Some(Kind::ListValue(l)) => Value::Array(l.values.iter().map(from_pb).collect()),
+            Some(Kind::StructValue(s)) => struct_to_value(s),
+        }
+    }
 }

@@ -30,15 +30,13 @@ use crate::channel_backend::ChannelBackend;
 use crate::config::{
     write_config_schema, write_notification_schema, write_ui_schema, Config, ConfigSchema, TagRef,
 };
-use crate::notifications::{NotificationSet, PendingNotification};
 use crate::docker::device_agent::{AggregateOptions, ChannelRef, DeviceAgentClient};
 use crate::docker::healthcheck::{spawn_healthcheck_server, HealthState};
 use crate::docker::subscriptions::SubscriptionHub;
 use crate::error::Result;
 use crate::events::{Event, EventSubscription};
-use crate::models::{
-    Notification, NotificationPolicy, NotificationTopic, NOTIFICATIONS_CHANNEL,
-};
+use crate::models::{Notification, NotificationPolicy, NotificationTopic, NOTIFICATIONS_CHANNEL};
+use crate::notifications::{NotificationSet, PendingNotification};
 use crate::rpc::{CallOptions, RpcManager};
 use crate::tags::{KeyPath, RemoteTag, SetTagOptions, TagValue, TagsCollection, TagsRuntime};
 use crate::ui::runtime::resolve_config_refs;
@@ -220,7 +218,9 @@ impl AppContext {
         // silently replaces a payload it cannot deserialise, so the mistake
         // would otherwise surface as an unreadable phone notification.
         notification.validate()?;
-        self.client.create_message(NOTIFICATIONS_CHANNEL, &notification.to_json()).await
+        self.client
+            .create_message(NOTIFICATIONS_CHANNEL, &notification.to_json())
+            .await
     }
 
     /// Send a declared notification (pydoover
@@ -289,7 +289,9 @@ impl AppContext {
         data: &Value,
         opts: &AggregateOptions,
     ) -> Result<()> {
-        self.client.update_channel_aggregate(channel, data, opts).await
+        self.client
+            .update_channel_aggregate(channel, data, opts)
+            .await
     }
 
     pub async fn create_message<'a>(
@@ -323,7 +325,9 @@ impl AppContext {
             outer.insert(self.app_key.clone(), Value::Object(inner));
             Value::Object(outer)
         };
-        self.tags.set_nested_tags(nested, &SetTagOptions::default()).await
+        self.tags
+            .set_nested_tags(nested, &SetTagOptions::default())
+            .await
     }
 
     /// Read a tag (cached channel state overlaid with pending writes),
@@ -364,7 +368,9 @@ impl AppContext {
     /// and re-inject it (pydoover `_on_deployment_config_update`). When a
     /// config cache is set, the app's config is also saved there.
     fn apply_deployment_config(&self, full_aggregate: &Value) {
-        let app_config = full_aggregate.get("applications").and_then(|a| a.get(&self.app_key));
+        let app_config = full_aggregate
+            .get("applications")
+            .and_then(|a| a.get(&self.app_key));
         match app_config {
             Some(app_config) => {
                 if let Some(path) = &self.config_cache {
@@ -373,7 +379,10 @@ impl AppContext {
                 self.apply_app_config(app_config.clone());
             }
             None => {
-                tracing::warn!("application key {} not found in deployment config", self.app_key);
+                tracing::warn!(
+                    "application key {} not found in deployment config",
+                    self.app_key
+                );
                 self.apply_app_config(Value::Object(Map::new()));
             }
         }
@@ -642,7 +651,9 @@ pub fn wire_rpc(rpc: &Arc<RpcManager>, hub: &SubscriptionHub) {
                 | EventSubscription::MESSAGE_UPDATE
                 | EventSubscription::ONESHOT_MESSAGE,
             Arc::new(move |ev: &Event| {
-                let Some(manager) = weak.upgrade() else { return };
+                let Some(manager) = weak.upgrade() else {
+                    return;
+                };
                 let ev = ev.clone();
                 tokio::spawn(async move { manager.handle_event(&ev).await });
             }),
@@ -951,7 +962,9 @@ pub async fn run_with<A: Application>(opts: RunOptions) -> Result<()> {
 /// including interactions nested inside containers (pydoover
 /// `UI.get_interactions` recurses).
 fn interaction_names<A: Application>(app: &A) -> Vec<String> {
-    app.ui().map(|ui| ui.interaction_names()).unwrap_or_default()
+    app.ui()
+        .map(|ui| ui.interaction_names())
+        .unwrap_or_default()
 }
 
 /// Serialize the UI (config refs resolved against the live deployment
@@ -1007,8 +1020,10 @@ async fn handle_runner_event<A: Application>(app: &mut A, ctx: &AppContext, even
                 }
                 Err(e) => {
                     tracing::error!("error in on_ui_command for '{}': {e}", cmd.name);
-                    if let Err(e2) =
-                        ctx.ui().respond_error(&cmd, "INTERNAL_ERROR", &e.to_string()).await
+                    if let Err(e2) = ctx
+                        .ui()
+                        .respond_error(&cmd, "INTERNAL_ERROR", &e.to_string())
+                        .await
                     {
                         tracing::error!("failed to send ui command error: {e2}");
                     }

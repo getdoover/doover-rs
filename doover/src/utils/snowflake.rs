@@ -36,7 +36,13 @@ fn next_rand() -> u64 {
     (SEQUENCE.fetch_add(1, Ordering::Relaxed) & 0x0F) as u64
 }
 
-fn assemble(millis: u64, type_id: SnowflakeType, region_id: u8, instance_id: u16, rand: u64) -> u64 {
+fn assemble(
+    millis: u64,
+    type_id: SnowflakeType,
+    region_id: u8,
+    instance_id: u16,
+    rand: u64,
+) -> u64 {
     millis << 22
         | (region_id as u64 & 0x0F) << 18
         | (instance_id as u64 & 0x3FF) << 8
@@ -67,7 +73,13 @@ pub fn generate_snowflake_id_at(
     use_rand: bool,
 ) -> u64 {
     let rand = if use_rand { next_rand() } else { 0 };
-    assemble(unix_millis - DOOVER_EPOCH, type_id, region_id, instance_id, rand)
+    assemble(
+        unix_millis - DOOVER_EPOCH,
+        type_id,
+        region_id,
+        instance_id,
+        rand,
+    )
 }
 
 /// Recover the unix-millisecond timestamp embedded in a snowflake ID.

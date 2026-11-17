@@ -47,9 +47,16 @@ impl UiValue {
         match self {
             UiValue::Missing => None,
             UiValue::Lit(v) => Some(v.clone()),
-            UiValue::TagRef { name, tag_type, default, .. } => Some(Value::String(
-                tag_ref_lookup(name, tag_type.as_deref(), default.as_ref()),
-            )),
+            UiValue::TagRef {
+                name,
+                tag_type,
+                default,
+                ..
+            } => Some(Value::String(tag_ref_lookup(
+                name,
+                tag_type.as_deref(),
+                default.as_ref(),
+            ))),
             UiValue::CmdsRef(s) => Some(Value::String(s.clone())),
         }
     }
@@ -138,7 +145,10 @@ mod tests {
             live: true,
         };
         assert!(v.is_live());
-        assert_eq!(v.to_json(), Some(json!("$tag.app().level_filled_percentage:number:null")));
+        assert_eq!(
+            v.to_json(),
+            Some(json!("$tag.app().level_filled_percentage:number:null"))
+        );
     }
 
     #[test]

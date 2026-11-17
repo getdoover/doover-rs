@@ -55,13 +55,18 @@ pub fn probe(port: u16) -> std::result::Result<(), String> {
 
     let timeout = Duration::from_secs(3);
     let addr = SocketAddr::from((Ipv4Addr::LOCALHOST, port));
-    let mut stream = TcpStream::connect_timeout(&addr, timeout).map_err(|e| format!("{addr}: {e}"))?;
-    stream.set_read_timeout(Some(timeout)).map_err(|e| e.to_string())?;
+    let mut stream =
+        TcpStream::connect_timeout(&addr, timeout).map_err(|e| format!("{addr}: {e}"))?;
+    stream
+        .set_read_timeout(Some(timeout))
+        .map_err(|e| e.to_string())?;
     stream
         .write_all(b"GET / HTTP/1.0\r\nHost: 127.0.0.1\r\n\r\n")
         .map_err(|e| format!("{addr}: {e}"))?;
     let mut head = [0u8; 12];
-    stream.read_exact(&mut head).map_err(|e| format!("{addr}: {e}"))?;
+    stream
+        .read_exact(&mut head)
+        .map_err(|e| format!("{addr}: {e}"))?;
     match &head {
         h if h.starts_with(b"HTTP/1.") && &h[9..12] == b"200" => Ok(()),
         h => Err(format!("{addr} answered {:?}", String::from_utf8_lossy(h))),
@@ -92,7 +97,11 @@ pub async fn spawn_healthcheck_server(port: u16, state: HealthState) {
                 // this a request worth answering.
                 let mut buf = [0u8; 1024];
                 let _ = socket.read(&mut buf).await;
-                let response = if state.is_healthy() { RESPONSE_OK } else { RESPONSE_ERROR };
+                let response = if state.is_healthy() {
+                    RESPONSE_OK
+                } else {
+                    RESPONSE_ERROR
+                };
                 let _ = socket.write_all(response).await;
                 let _ = socket.shutdown().await;
             });
@@ -105,7 +114,11 @@ mod tests {
     use super::*;
 
     fn free_port() -> u16 {
-        std::net::TcpListener::bind("127.0.0.1:0").unwrap().local_addr().unwrap().port()
+        std::net::TcpListener::bind("127.0.0.1:0")
+            .unwrap()
+            .local_addr()
+            .unwrap()
+            .port()
     }
 
     #[tokio::test]
@@ -114,7 +127,10 @@ mod tests {
         let state = HealthState::default();
         spawn_healthcheck_server(port, state.clone()).await;
         let probe_now = move || tokio::task::spawn_blocking(move || probe(port));
-        assert!(probe_now().await.unwrap().unwrap_err().contains("503"), "starts unhealthy");
+        assert!(
+            probe_now().await.unwrap().unwrap_err().contains("503"),
+            "starts unhealthy"
+        );
         state.set_healthy(true);
         assert_eq!(probe_now().await.unwrap(), Ok(()));
     }

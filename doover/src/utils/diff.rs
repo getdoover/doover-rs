@@ -165,7 +165,10 @@ mod tests {
     fn apply_diff_basic() {
         let data = json!({"a": 1, "b": 2, "c": 3});
         let diff = json!({"c": 4});
-        assert_eq!(apply_diff(&data, &diff, true), json!({"a": 1, "b": 2, "c": 4}));
+        assert_eq!(
+            apply_diff(&data, &diff, true),
+            json!({"a": 1, "b": 2, "c": 4})
+        );
     }
 
     #[test]
@@ -189,7 +192,10 @@ mod tests {
     fn apply_diff_nested_remove() {
         let data = json!({"a": 1, "b": 2, "c": {"d": 3}});
         let diff = json!({"c": {"d": null}});
-        assert_eq!(apply_diff(&data, &diff, true), json!({"a": 1, "b": 2, "c": {}}));
+        assert_eq!(
+            apply_diff(&data, &diff, true),
+            json!({"a": 1, "b": 2, "c": {}})
+        );
 
         let data = json!({"a": 1, "b": 2, "c": {"d": 3, "e": 4}});
         let diff = json!({"b": 3, "c": {"d": null}});

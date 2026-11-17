@@ -54,21 +54,26 @@ fn shared_http() -> reqwest::Client {
 ///     run_processor::<MyProcessor>().await
 /// }
 /// ```
-pub async fn run_processor<P: Processor + Default>() -> std::result::Result<(), lambda_runtime::Error>
-{
-    lambda_runtime::run(lambda_runtime::service_fn(|event: LambdaEvent<Value>| async move {
-        let (payload, context) = event.into_parts();
-        let lambda = LambdaMeta {
-            request_id: non_empty(context.request_id.clone()),
-            function_name: non_empty(context.env_config.function_name.clone()),
-            function_version: non_empty(context.env_config.version.clone()),
-        };
-        let options =
-            ProcessorOptions { base_url: None, http_client: Some(shared_http()), lambda };
-        handle_event_with::<P>(payload, options)
-            .await
-            .map_err(|e| -> lambda_runtime::Error { Box::new(e) })
-    }))
+pub async fn run_processor<P: Processor + Default>(
+) -> std::result::Result<(), lambda_runtime::Error> {
+    lambda_runtime::run(lambda_runtime::service_fn(
+        |event: LambdaEvent<Value>| async move {
+            let (payload, context) = event.into_parts();
+            let lambda = LambdaMeta {
+                request_id: non_empty(context.request_id.clone()),
+                function_name: non_empty(context.env_config.function_name.clone()),
+                function_version: non_empty(context.env_config.version.clone()),
+            };
+            let options = ProcessorOptions {
+                base_url: None,
+                http_client: Some(shared_http()),
+                lambda,
+            };
+            handle_event_with::<P>(payload, options)
+                .await
+                .map_err(|e| -> lambda_runtime::Error { Box::new(e) })
+        },
+    ))
     .await
 }
 
@@ -92,7 +97,11 @@ pub async fn handle_event_with<P: Processor + Default>(
 
     let base_url = options
         .base_url
-        .or_else(|| std::env::var(DATA_ENDPOINT_ENV).ok().filter(|s| !s.is_empty()))
+        .or_else(|| {
+            std::env::var(DATA_ENDPOINT_ENV)
+                .ok()
+                .filter(|s| !s.is_empty())
+        })
         .unwrap_or_else(|| DEFAULT_DATA_ENDPOINT.to_string());
     let api = Arc::new(match options.http_client {
         Some(client) => DataClient::with_client(client, base_url),
@@ -153,7 +162,10 @@ mod tests {
         });
         let (data, sub) = unwrap_event(event).unwrap();
         assert_eq!(data, inner);
-        assert_eq!(sub.as_deref(), Some("arn:aws:sns:ap-southeast-2:1:topic:uuid"));
+        assert_eq!(
+            sub.as_deref(),
+            Some("arn:aws:sns:ap-southeast-2:1:topic:uuid")
+        );
     }
 
     #[test]

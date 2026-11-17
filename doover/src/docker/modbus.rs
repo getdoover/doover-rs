@@ -69,7 +69,11 @@ pub struct TcpBusSettings {
 
 impl Default for TcpBusSettings {
     fn default() -> Self {
-        Self { ip: "127.0.0.1".to_string(), port: 5000, timeout: 2.0 }
+        Self {
+            ip: "127.0.0.1".to_string(),
+            port: 5000,
+            timeout: 2.0,
+        }
     }
 }
 
@@ -205,7 +209,10 @@ impl ModbusClient {
 
     /// Cancel all running read-register subscriptions (pydoover `close`).
     pub fn close(&self) {
-        let mut tasks = self.subscriptions.lock().expect("subscription lock poisoned");
+        let mut tasks = self
+            .subscriptions
+            .lock()
+            .expect("subscription lock poisoned");
         for task in tasks.drain(..) {
             task.abort();
         }
@@ -223,7 +230,9 @@ impl ModbusClient {
 
     /// Liveness echo (pydoover `test_comms`).
     pub async fn test_comms(&self, message: impl Into<String>) -> Result<String> {
-        let req = pb::TestCommsRequest { message: message.into() };
+        let req = pb::TestCommsRequest {
+            message: message.into(),
+        };
         let resp = self
             .shared
             .call(|ch| {
@@ -263,7 +272,9 @@ impl ModbusClient {
     /// (pydoover `close_bus`).
     #[deprecated(note = "buses are pooled by the modbus sidecar and need no explicit closing")]
     pub async fn close_bus(&self, bus_id: &str) -> Result<bool> {
-        let req = pb::CloseBusRequest { bus_id: bus_id.to_string() };
+        let req = pb::CloseBusRequest {
+            bus_id: bus_id.to_string(),
+        };
         let resp = self
             .shared
             .call(|ch| {
@@ -276,7 +287,9 @@ impl ModbusClient {
 
     /// Whether a modbus bus is open (pydoover `fetch_bus_status`).
     pub async fn fetch_bus_status(&self, bus_id: &str) -> Result<bool> {
-        let req = pb::BusStatusRequest { bus_id: bus_id.to_string() };
+        let req = pb::BusStatusRequest {
+            bus_id: bus_id.to_string(),
+        };
         let resp = self
             .shared
             .call(|ch| {
@@ -331,10 +344,17 @@ impl ModbusClient {
     /// Read a single register (pydoover `read_registers` with
     /// `num_registers=1`, which returns the scalar).
     pub async fn read_register(&self, range: &RegisterRange) -> Result<i32> {
-        let range = RegisterRange { num_registers: 1, ..range.clone() };
-        self.read_registers(&range).await?.into_iter().next().ok_or_else(|| {
-            DooverError::Other("read_register: sidecar returned no values".to_string())
-        })
+        let range = RegisterRange {
+            num_registers: 1,
+            ..range.clone()
+        };
+        self.read_registers(&range)
+            .await?
+            .into_iter()
+            .next()
+            .ok_or_else(|| {
+                DooverError::Other("read_register: sidecar returned no values".to_string())
+            })
     }
 
     /// Write `values` to registers starting at `range.start_address`
@@ -446,7 +466,10 @@ impl ModbusClient {
             }
         });
         let abort = task.abort_handle();
-        self.subscriptions.lock().expect("subscription lock poisoned").push(task);
+        self.subscriptions
+            .lock()
+            .expect("subscription lock poisoned")
+            .push(task);
         abort
     }
 }
@@ -483,7 +506,12 @@ mod tests {
     fn register_range_defaults_match_pydoover() {
         let r = RegisterRange::default();
         assert_eq!(
-            (r.modbus_id, r.register_type, r.start_address, r.num_registers),
+            (
+                r.modbus_id,
+                r.register_type,
+                r.start_address,
+                r.num_registers
+            ),
             (1, 4, 0, 1)
         );
         assert!(r.bus.is_none() && r.retries.is_none());
@@ -500,7 +528,10 @@ mod tests {
             other => panic!("expected serial settings, got {other:?}"),
         }
 
-        let tcp = BusSettings::Tcp(TcpBusSettings { ip: "10.0.0.5".into(), ..Default::default() });
+        let tcp = BusSettings::Tcp(TcpBusSettings {
+            ip: "10.0.0.5".into(),
+            ..Default::default()
+        });
         match bus_settings_oneof!(open_bus_request, Some(&tcp)) {
             Some(pb::open_bus_request::BusSettings::EthernetSettings(e)) => {
                 assert_eq!(e.ip, "10.0.0.5");

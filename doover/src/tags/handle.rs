@@ -60,7 +60,8 @@ impl TagValue for i64 {
     fn from_value(v: &Value) -> Option<Self> {
         // JSON doesn't distinguish int from float; accept whole floats like
         // pydoover `_coerce_tag_value` does for "integer" tags.
-        v.as_i64().or_else(|| v.as_f64().filter(|f| f.fract() == 0.0).map(|f| f as i64))
+        v.as_i64()
+            .or_else(|| v.as_f64().filter(|f| f.fract() == 0.0).map(|f| f as i64))
     }
 }
 
@@ -118,7 +119,11 @@ pub fn ui_tag_type(tag_type: &str) -> &str {
 /// pydoover `UITagBinding.to_lookup()`. `default` of `None` is pydoover's
 /// `_MISSING` (no default declared); `Some(Value::Null)` is a declared
 /// `default=None` and serializes as `:null`.
-pub(crate) fn tag_ref_lookup(name: &str, tag_type: Option<&str>, default: Option<&Value>) -> String {
+pub(crate) fn tag_ref_lookup(
+    name: &str,
+    tag_type: Option<&str>,
+    default: Option<&Value>,
+) -> String {
     let mut result = format!("$tag.app().{name}");
     if let Some(ty) = tag_type {
         result.push(':');
@@ -240,7 +245,11 @@ impl<T: TagValue> Tag<T> {
     ///
     /// `log_on` triggers are *not* registered for remote tags — we don't own
     /// them, so we don't log their transitions.
-    pub fn attached_remote(mut self, runtime: Arc<TagsRuntime>, app_key: impl Into<Arc<str>>) -> Self {
+    pub fn attached_remote(
+        mut self,
+        runtime: Arc<TagsRuntime>,
+        app_key: impl Into<Arc<str>>,
+    ) -> Self {
         self.remote_app_key = Some(app_key.into());
         self.runtime = Some(runtime);
         self
@@ -255,7 +264,9 @@ impl<T: TagValue> Tag<T> {
     /// The app key this handle reads from: the explicit remote key when set,
     /// else the runtime's own app key.
     fn effective_app_key<'a>(&'a self, rt: &'a TagsRuntime) -> &'a str {
-        self.remote_app_key.as_deref().unwrap_or_else(|| rt.app_key())
+        self.remote_app_key
+            .as_deref()
+            .unwrap_or_else(|| rt.app_key())
     }
 
     /// The tag name — the key inside this app's `tag_values` namespace.
@@ -283,7 +294,11 @@ impl<T: TagValue> Tag<T> {
     /// to when referenced from a UI element (pydoover
     /// `UITagBinding.to_lookup()` via `_binding_from_tag`).
     pub fn ui_reference(&self) -> String {
-        tag_ref_lookup(self.name, Some(ui_tag_type(T::TAG_TYPE)), self.default.as_ref())
+        tag_ref_lookup(
+            self.name,
+            Some(ui_tag_type(T::TAG_TYPE)),
+            self.default.as_ref(),
+        )
     }
 
     /// Current value from the runtime's cached+pending state, falling back
@@ -296,7 +311,11 @@ impl<T: TagValue> Tag<T> {
             .and_then(|rt| rt.get_tag(self.effective_app_key(rt), self.name));
         match raw {
             Some(v) if !v.is_null() => T::from_value(&v),
-            _ => self.default.as_ref().filter(|v| !v.is_null()).and_then(T::from_value),
+            _ => self
+                .default
+                .as_ref()
+                .filter(|v| !v.is_null())
+                .and_then(T::from_value),
         }
     }
 
@@ -310,7 +329,14 @@ impl<T: TagValue> Tag<T> {
     /// logged data point at the end of this loop rather than waiting for the
     /// periodic log flush (pydoover `BoundTag.set(value, log=True)`).
     pub async fn set_logged(&self, value: T) -> Result<()> {
-        self.set_with(value, &SetTagOptions { log: true, ..Default::default() }).await
+        self.set_with(
+            value,
+            &SetTagOptions {
+                log: true,
+                ..Default::default()
+            },
+        )
+        .await
     }
 
     async fn set_with(&self, value: T, opts: &SetTagOptions) -> Result<()> {
@@ -324,7 +350,8 @@ impl<T: TagValue> Tag<T> {
             .runtime
             .as_ref()
             .ok_or_else(|| DooverError::Other(format!("tag '{}': tags not attached", self.name)))?;
-        rt.set_tag(rt.app_key(), self.name, value.to_value(), opts).await
+        rt.set_tag(rt.app_key(), self.name, value.to_value(), opts)
+            .await
     }
 }
 
@@ -406,7 +433,11 @@ impl<T: TagValue> RemoteTag<T> {
     /// "no upstream configured". Cross-*agent* references (a set `agent_id`)
     /// also resolve to `None`, mirroring pydoover's not-yet-implemented
     /// cross-agent path.
-    pub fn resolve(runtime: Arc<TagsRuntime>, tag_ref: &TagRef, default: Option<Value>) -> Option<Self> {
+    pub fn resolve(
+        runtime: Arc<TagsRuntime>,
+        tag_ref: &TagRef,
+        default: Option<Value>,
+    ) -> Option<Self> {
         if tag_ref.agent_id.is_some() {
             tracing::warn!(
                 "remote tag '{}': cross-agent references are not supported yet; ignoring",
@@ -433,7 +464,11 @@ impl<T: TagValue> RemoteTag<T> {
     pub fn get(&self) -> Option<T> {
         match self.runtime.get_tag(&self.app_key, &self.tag_name) {
             Some(v) if !v.is_null() => T::from_value(&v),
-            _ => self.default.as_ref().filter(|v| !v.is_null()).and_then(T::from_value),
+            _ => self
+                .default
+                .as_ref()
+                .filter(|v| !v.is_null())
+                .and_then(T::from_value),
         }
     }
 
@@ -445,11 +480,15 @@ impl<T: TagValue> RemoteTag<T> {
         let cb: TagCallback = Arc::new(move |_path: &KeyPath, value: Option<&Value>| {
             let decoded = match value {
                 Some(v) if !v.is_null() => T::from_value(v),
-                _ => default.as_ref().filter(|v| !v.is_null()).and_then(T::from_value),
+                _ => default
+                    .as_ref()
+                    .filter(|v| !v.is_null())
+                    .and_then(T::from_value),
             };
             callback(decoded);
         });
-        self.runtime.subscribe_to_tag(&self.app_key, &self.tag_name, cb);
+        self.runtime
+            .subscribe_to_tag(&self.app_key, &self.tag_name, cb);
     }
 
     /// Mirror the upstream tag into *this* app's namespace under `local_name`
@@ -466,7 +505,9 @@ impl<T: TagValue> RemoteTag<T> {
                 let rt = rt.clone();
                 let key = key.clone();
                 tokio::spawn(async move {
-                    let _ = rt.set_tag(&key, local_name, v, &SetTagOptions::default()).await;
+                    let _ = rt
+                        .set_tag(&key, local_name, v, &SetTagOptions::default())
+                        .await;
                 });
             }
         });
@@ -474,7 +515,9 @@ impl<T: TagValue> RemoteTag<T> {
         let current = self.get();
         if let Some(v) = self.runtime.get_tag(&self.app_key, &self.tag_name) {
             if !v.is_null() {
-                self.runtime.set_tag(&own_key, local_name, v, &SetTagOptions::default()).await?;
+                self.runtime
+                    .set_tag(&own_key, local_name, v, &SetTagOptions::default())
+                    .await?;
             }
         }
         Ok(current)
@@ -482,8 +525,10 @@ impl<T: TagValue> RemoteTag<T> {
 
     /// Subscribe with the raw JSON value (used by [`republish_locally`]).
     fn subscribe_raw(&self, callback: impl Fn(Option<&Value>) + Send + Sync + 'static) {
-        let cb: TagCallback = Arc::new(move |_path: &KeyPath, value: Option<&Value>| callback(value));
-        self.runtime.subscribe_to_tag(&self.app_key, &self.tag_name, cb);
+        let cb: TagCallback =
+            Arc::new(move |_path: &KeyPath, value: Option<&Value>| callback(value));
+        self.runtime
+            .subscribe_to_tag(&self.app_key, &self.tag_name, cb);
     }
 }
 
@@ -542,9 +587,15 @@ mod tests {
             "$tag.app().x:number:null"
         );
         // no default → no trailing segment
-        assert_eq!(tag_ref_lookup("x", Some("number"), None), "$tag.app().x:number");
+        assert_eq!(
+            tag_ref_lookup("x", Some("number"), None),
+            "$tag.app().x:number"
+        );
         // no type but a default → ":string" injected first
-        assert_eq!(tag_ref_lookup("x", None, Some(&json!(5))), "$tag.app().x:string:5");
+        assert_eq!(
+            tag_ref_lookup("x", None, Some(&json!(5))),
+            "$tag.app().x:string:5"
+        );
         // compact JSON default (Python separators=(',', ':'))
         assert_eq!(
             tag_ref_lookup("x", Some("object"), Some(&json!({"a": 1, "b": [1, 2]}))),

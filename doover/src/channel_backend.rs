@@ -58,7 +58,9 @@ impl Qos {
         match value {
             0 => Ok(Qos::AtMostOnce),
             1 => Ok(Qos::Standard),
-            other => Err(DooverError::InvalidPayload(format!("unknown qos level {other}"))),
+            other => Err(DooverError::InvalidPayload(format!(
+                "unknown qos level {other}"
+            ))),
         }
     }
 }

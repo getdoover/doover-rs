@@ -62,7 +62,10 @@ pub struct SubscriptionHub {
 
 impl SubscriptionHub {
     pub fn new(client: DeviceAgentClient) -> Self {
-        Self { client, state: Arc::new(Mutex::new(HubState::default())) }
+        Self {
+            client,
+            state: Arc::new(Mutex::new(HubState::default())),
+        }
     }
 
     /// Register a callback for events on a channel, filtered by `events`.
@@ -85,8 +88,9 @@ impl SubscriptionHub {
             let hub = self.clone();
             let name = channel.name.to_string();
             let agent_id = channel.agent_id;
-            ch.task =
-                Some(tokio::spawn(async move { hub.run_channel_stream(name, agent_id).await }));
+            ch.task = Some(tokio::spawn(async move {
+                hub.run_channel_stream(name, agent_id).await
+            }));
         }
     }
 
@@ -125,8 +129,14 @@ impl SubscriptionHub {
     /// Wait until every named channel is synced, or `timeout` elapses
     /// (pydoover `wait_for_channels_sync`). Returns whether all synced.
     pub async fn wait_for_channels_sync(&self, channels: &[&str], timeout: Duration) -> bool {
-        self.wait_for_refs_sync(&channels.iter().map(|c| ChannelRef::own(c)).collect::<Vec<_>>(),
-            timeout).await
+        self.wait_for_refs_sync(
+            &channels
+                .iter()
+                .map(|c| ChannelRef::own(c))
+                .collect::<Vec<_>>(),
+            timeout,
+        )
+        .await
     }
 
     /// As [`wait_for_channels_sync`](Self::wait_for_channels_sync), for channels
@@ -155,7 +165,10 @@ impl SubscriptionHub {
     }
 
     async fn run_channel_stream(self, channel: String, agent_id: Option<u64>) {
-        let target = ChannelRef { name: &channel, agent_id };
+        let target = ChannelRef {
+            name: &channel,
+            agent_id,
+        };
         let key = target.cache_key();
         // Seed the aggregate cache, creating the channel if it doesn't exist.
         let seeded: Option<Value> = match self.client.fetch_channel_data(target).await {

@@ -184,7 +184,10 @@ impl ProcessorContext {
         self.tags.set_tag_with(
             key,
             value,
-            &SetProcessorTagOptions { log: true, ..Default::default() },
+            &SetProcessorTagOptions {
+                log: true,
+                ..Default::default()
+            },
         )
     }
 
@@ -232,7 +235,9 @@ impl ProcessorContext {
         } else {
             AggregateOptions::default()
         };
-        self.api.update_channel_aggregate_http("ui_state", &data, &opts, None).await?;
+        self.api
+            .update_channel_aggregate_http("ui_state", &data, &opts, None)
+            .await?;
         Ok(())
     }
 
@@ -269,10 +274,8 @@ impl ProcessorContext {
         if opts.offline_at_ms.is_some() {
             let updated = {
                 let mut conn = self.connection.lock().unwrap();
-                let has_config =
-                    conn.config.as_object().is_some_and(|m| !m.is_empty());
-                let stored =
-                    conn.config.get("offline_after").and_then(Value::as_u64);
+                let has_config = conn.config.as_object().is_some_and(|m| !m.is_empty());
+                let stored = conn.config.get("offline_after").and_then(Value::as_u64);
                 if has_config && stored != Some(offline_after_secs) {
                     conn.config["offline_after"] = json!(offline_after_secs);
                     Some(conn.config.clone())
@@ -281,7 +284,9 @@ impl ProcessorContext {
                 }
             };
             if let Some(config) = updated {
-                self.api.update_connection_config(&config, Some(self.agent_id)).await?;
+                self.api
+                    .update_connection_config(&config, Some(self.agent_id))
+                    .await?;
             }
         }
 
@@ -302,7 +307,10 @@ impl ProcessorContext {
 }
 
 pub(crate) fn now_ms() -> u64 {
-    SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_millis() as u64).unwrap_or(0)
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0)
 }
 
 /// An event-driven Doover cloud processor (pydoover

@@ -108,8 +108,14 @@ impl Range {
     /// pydoover `Range.to_dict()`: `min, max, colour, show_on_graph[, label]`.
     pub fn to_json(&self) -> Value {
         let mut m = Map::new();
-        m.insert("min".into(), self.min.clone().map_or(Value::Null, Value::Number));
-        m.insert("max".into(), self.max.clone().map_or(Value::Null, Value::Number));
+        m.insert(
+            "min".into(),
+            self.min.clone().map_or(Value::Null, Value::Number),
+        );
+        m.insert(
+            "max".into(),
+            self.max.clone().map_or(Value::Null, Value::Number),
+        );
         m.insert("colour".into(), Value::String(self.colour.clone()));
         m.insert("show_on_graph".into(), Value::Bool(self.show_on_graph));
         if let Some(label) = &self.label {
@@ -130,8 +136,16 @@ pub struct Threshold {
 }
 
 impl Threshold {
-    pub fn new(label: impl Into<String>, value: impl IntoNumber, colour: impl Into<String>) -> Self {
-        Self { label: label.into(), value: value.into_number(), colour: colour.into() }
+    pub fn new(
+        label: impl Into<String>,
+        value: impl IntoNumber,
+        colour: impl Into<String>,
+    ) -> Self {
+        Self {
+            label: label.into(),
+            value: value.into_number(),
+            colour: colour.into(),
+        }
     }
 
     /// pydoover `Threshold.to_dict()`: `label, value, colour`.
@@ -280,7 +294,10 @@ impl Series {
     pub fn to_json(&self) -> Value {
         let mut m = Map::new();
         m.insert("name".into(), Value::String(self.name.clone()));
-        m.insert("displayString".into(), Value::String(self.display_name.clone()));
+        m.insert(
+            "displayString".into(),
+            Value::String(self.display_name.clone()),
+        );
         m.insert("dataType".into(), Value::String(self.data_type.clone()));
         // pydoover gates on `value is not None`.
         if !matches!(&self.value, UiValue::Missing | UiValue::Lit(Value::Null)) {
@@ -316,7 +333,10 @@ impl Series {
             m.insert("range".into(), Value::Object(range));
         }
         if let Some(ranges) = &self.ranges {
-            m.insert("ranges".into(), Value::Array(ranges.iter().map(Range::to_json).collect()));
+            m.insert(
+                "ranges".into(),
+                Value::Array(ranges.iter().map(Range::to_json).collect()),
+            );
         }
         if let Some(thresholds) = &self.thresholds {
             m.insert(
@@ -343,14 +363,20 @@ pub struct SelectOption {
 impl SelectOption {
     pub fn new(display_name: impl Into<String>) -> Self {
         let display_name = display_name.into();
-        Self { name: sanitize_display_name(&display_name), display_name }
+        Self {
+            name: sanitize_display_name(&display_name),
+            display_name,
+        }
     }
 
     /// pydoover `Option.to_dict()`: `name, displayString, type`.
     pub fn to_json(&self) -> Value {
         let mut m = Map::new();
         m.insert("name".into(), Value::String(self.name.clone()));
-        m.insert("displayString".into(), Value::String(self.display_name.clone()));
+        m.insert(
+            "displayString".into(),
+            Value::String(self.display_name.clone()),
+        );
         m.insert("type".into(), Value::String("uiElement".into()));
         Value::Object(m)
     }
@@ -540,7 +566,9 @@ mod tests {
         assert!(!out.contains("label"), "{out}");
         // empty label is falsy in Python too
         let r2 = Range::new("", 0, 1, Colour::RED);
-        assert!(!serde_json::to_string(&r2.to_json()).unwrap().contains("label"));
+        assert!(!serde_json::to_string(&r2.to_json())
+            .unwrap()
+            .contains("label"));
     }
 
     #[test]
@@ -559,7 +587,10 @@ mod tests {
 
     #[test]
     fn confirm_dialog_key_order() {
-        let d = ConfirmDialog::new().icon("warning").title("Confirm").subtitle("sub");
+        let d = ConfirmDialog::new()
+            .icon("warning")
+            .title("Confirm")
+            .subtitle("sub");
         assert_eq!(
             serde_json::to_string(&d.to_json()).unwrap(),
             r#"{"title":"Confirm","subtitle":"sub","icon":"warning"}"#
@@ -574,13 +605,20 @@ mod tests {
             serde_json::to_string(&flag.to_json()).unwrap(),
             r#"{"title":"Sure?","audit":true}"#
         );
-        let configured = ConfirmDialog::new()
-            .audit(AuditConfig::new().required(true).label("Why?").placeholder("e.g. leak"));
+        let configured = ConfirmDialog::new().audit(
+            AuditConfig::new()
+                .required(true)
+                .label("Why?")
+                .placeholder("e.g. leak"),
+        );
         assert_eq!(
             serde_json::to_string(&configured.to_json()).unwrap(),
             r#"{"audit":{"required":true,"label":"Why?","placeholder":"e.g. leak"}}"#
         );
         // Unset fields are omitted, and an all-unset config is an empty object.
-        assert_eq!(serde_json::to_string(&AuditConfig::new().to_json()).unwrap(), "{}");
+        assert_eq!(
+            serde_json::to_string(&AuditConfig::new().to_json()).unwrap(),
+            "{}"
+        );
     }
 }

@@ -23,7 +23,9 @@ pub struct BearerAuth {
 
 impl BearerAuth {
     pub fn new(token: Option<String>) -> Self {
-        Self { token: Mutex::new(token) }
+        Self {
+            token: Mutex::new(token),
+        }
     }
 
     pub fn set_token(&self, token: impl Into<String>) {

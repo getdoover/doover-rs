@@ -63,7 +63,10 @@ pub enum LogTrigger {
 /// Sort + validate thresholds (pydoover `_Crossing.__init__`).
 fn crossing_thresholds(kind: &str, thresholds: impl IntoIterator<Item = f64>) -> Vec<f64> {
     let mut thresholds: Vec<f64> = thresholds.into_iter().collect();
-    assert!(!thresholds.is_empty(), "{kind} requires at least one threshold.");
+    assert!(
+        !thresholds.is_empty(),
+        "{kind} requires at least one threshold."
+    );
     thresholds.sort_by(|a, b| a.partial_cmp(b).expect("thresholds must not be NaN"));
     thresholds
 }
@@ -195,15 +198,18 @@ impl LogTrigger {
     /// `NotSet`. Mirrors the corresponding pydoover `evaluate` exactly.
     pub fn evaluate(&self, prev: Option<&Value>, new: &Value, state: &mut TriggerState) -> bool {
         match self {
-            LogTrigger::Cross { thresholds, deadband } => {
-                Self::evaluate_crossing(thresholds, *deadband, CrossDirection::Both, new, state)
-            }
-            LogTrigger::Rise { thresholds, deadband } => {
-                Self::evaluate_crossing(thresholds, *deadband, CrossDirection::Rise, new, state)
-            }
-            LogTrigger::Fall { thresholds, deadband } => {
-                Self::evaluate_crossing(thresholds, *deadband, CrossDirection::Fall, new, state)
-            }
+            LogTrigger::Cross {
+                thresholds,
+                deadband,
+            } => Self::evaluate_crossing(thresholds, *deadband, CrossDirection::Both, new, state),
+            LogTrigger::Rise {
+                thresholds,
+                deadband,
+            } => Self::evaluate_crossing(thresholds, *deadband, CrossDirection::Rise, new, state),
+            LogTrigger::Fall {
+                thresholds,
+                deadband,
+            } => Self::evaluate_crossing(thresholds, *deadband, CrossDirection::Fall, new, state),
             LogTrigger::DeltaAmount(amount) => {
                 Self::evaluate_delta(new, state, |diff, _last| diff >= *amount)
             }
@@ -241,11 +247,15 @@ impl LogTrigger {
         state: &mut TriggerState,
     ) -> bool {
         // Non-numeric values (null, bools, strings, containers) never fire.
-        let Some(new) = new.as_f64() else { return false };
+        let Some(new) = new.as_f64() else {
+            return false;
+        };
 
         // sides[i]: whether the value is "above" thresholds[i]; every
         // threshold starts "below" (pydoover `sides.get(t, "below")`).
-        let sides = state.sides.get_or_insert_with(|| vec![false; thresholds.len()]);
+        let sides = state
+            .sides
+            .get_or_insert_with(|| vec![false; thresholds.len()]);
         let half_band = deadband / 2.0;
         let mut fired = false;
         for (side, t) in sides.iter_mut().zip(thresholds) {
@@ -273,7 +283,9 @@ impl LogTrigger {
         state: &mut TriggerState,
         fires: impl FnOnce(f64, f64) -> bool,
     ) -> bool {
-        let Some(new) = new.as_f64() else { return false };
+        let Some(new) = new.as_f64() else {
+            return false;
+        };
         match state.last_logged {
             None => {
                 state.last_logged = Some(new);
@@ -325,7 +337,11 @@ pub struct TriggerSet {
 impl TriggerSet {
     pub fn new(triggers: Vec<LogTrigger>, default: Option<Value>) -> Self {
         let states = vec![TriggerState::default(); triggers.len()];
-        Self { triggers, states, default }
+        Self {
+            triggers,
+            states,
+            default,
+        }
     }
 
     /// Evaluate one update against every trigger — all of them run so each
@@ -358,11 +374,19 @@ pub(crate) fn validate_log_on(tag_type: &str, triggers: &[LogTrigger]) {
          supported types are: number, integer, float, boolean, string."
     );
     for trigger in triggers {
-        let ok = if numeric { trigger.is_numeric_trigger() } else { !trigger.is_numeric_trigger() };
+        let ok = if numeric {
+            trigger.is_numeric_trigger()
+        } else {
+            !trigger.is_numeric_trigger()
+        };
         assert!(
             ok,
             "{tag_type} log_on accepts {} descriptors, got {}.",
-            if numeric { "Cross, Rise, Fall, Delta" } else { "AnyChange, Enter, Exit" },
+            if numeric {
+                "Cross, Rise, Fall, Delta"
+            } else {
+                "AnyChange, Enter, Exit"
+            },
             trigger.kind_name(),
         );
     }
@@ -391,7 +415,10 @@ mod tests {
     fn cross_up_then_down_both_log() {
         // pydoover test_crossing_up_then_down_both_log (Cross(100))
         let mut set = TriggerSet::new(vec![LogTrigger::cross(100.0)], None);
-        assert_eq!(replay(&mut set, &[json!(80), json!(120), json!(70)]), [false, true, true]);
+        assert_eq!(
+            replay(&mut set, &[json!(80), json!(120), json!(70)]),
+            [false, true, true]
+        );
     }
 
     #[test]
@@ -412,12 +439,18 @@ mod tests {
     #[test]
     fn deadband_suppresses_oscillation() {
         // pydoover: Cross(50, 100, deadband=4) → fires up at >=52, down at <=48.
-        let mut set =
-            TriggerSet::new(vec![LogTrigger::cross([50.0, 100.0]).deadband(4.0)], None);
+        let mut set = TriggerSet::new(vec![LogTrigger::cross([50.0, 100.0]).deadband(4.0)], None);
         assert_eq!(
             replay(
                 &mut set,
-                &[json!(40), json!(51), json!(49), json!(53), json!(49), json!(47)]
+                &[
+                    json!(40),
+                    json!(51),
+                    json!(49),
+                    json!(53),
+                    json!(49),
+                    json!(47)
+                ]
             ),
             [false, false, false, true, false, true]
         );
@@ -425,8 +458,7 @@ mod tests {
 
     #[test]
     fn multiple_thresholds_fire_independently() {
-        let mut set =
-            TriggerSet::new(vec![LogTrigger::cross([50.0, 100.0]).deadband(4.0)], None);
+        let mut set = TriggerSet::new(vec![LogTrigger::cross([50.0, 100.0]).deadband(4.0)], None);
         assert_eq!(
             replay(&mut set, &[json!(60), json!(110), json!(95), json!(40)]),
             [true, true, true, true]
@@ -474,11 +506,17 @@ mod tests {
     #[test]
     fn any_change_fires_each_transition_and_ignores_default_matches() {
         let mut set = TriggerSet::new(vec![LogTrigger::any_change()], None);
-        assert_eq!(replay(&mut set, &[json!(true), json!(false), json!(true)]), [true, true, true]);
+        assert_eq!(
+            replay(&mut set, &[json!(true), json!(false), json!(true)]),
+            [true, true, true]
+        );
 
         // declared default participates as prev on the first set
         let mut set = TriggerSet::new(vec![LogTrigger::any_change()], Some(json!(false)));
-        assert_eq!(replay(&mut set, &[json!(false), json!(true)]), [false, true]);
+        assert_eq!(
+            replay(&mut set, &[json!(false), json!(true)]),
+            [false, true]
+        );
     }
 
     #[test]
@@ -488,7 +526,10 @@ mod tests {
             None,
         );
         assert_eq!(
-            replay(&mut set, &[json!("ok"), json!("warn"), json!("error"), json!("warn")]),
+            replay(
+                &mut set,
+                &[json!("ok"), json!("warn"), json!("error"), json!("warn")]
+            ),
             [false, true, true, false]
         );
     }

@@ -57,7 +57,10 @@ impl MockBackend {
 
     /// Pre-seed a channel aggregate.
     pub fn seed_aggregate(&self, channel: &str, data: Value) {
-        self.aggregates.lock().unwrap().insert(channel.to_string(), data);
+        self.aggregates
+            .lock()
+            .unwrap()
+            .insert(channel.to_string(), data);
     }
 
     /// Snapshot of the recorded aggregate writes.
@@ -103,27 +106,31 @@ impl ChannelBackend for MockBackend {
     ) -> Result<()> {
         {
             let mut aggregates = self.aggregates.lock().unwrap();
-            let entry =
-                aggregates.entry(channel.to_string()).or_insert_with(|| Value::Object(Map::new()));
+            let entry = aggregates
+                .entry(channel.to_string())
+                .or_insert_with(|| Value::Object(Map::new()));
             if opts.replace_data {
                 *entry = data.clone();
             } else {
                 merge(entry, data);
             }
         }
-        self.aggregate_writes.lock().unwrap().push(RecordedAggregateWrite {
-            channel: channel.to_string(),
-            data: data.clone(),
-            opts: opts.clone(),
-        });
+        self.aggregate_writes
+            .lock()
+            .unwrap()
+            .push(RecordedAggregateWrite {
+                channel: channel.to_string(),
+                data: data.clone(),
+                opts: opts.clone(),
+            });
         Ok(())
     }
 
     async fn create_message(&self, channel: &str, data: &Value) -> Result<u64> {
-        self.messages
-            .lock()
-            .unwrap()
-            .push(RecordedMessage { channel: channel.to_string(), data: data.clone() });
+        self.messages.lock().unwrap().push(RecordedMessage {
+            channel: channel.to_string(),
+            data: data.clone(),
+        });
         Ok(self.next_message_id.fetch_add(1, Ordering::Relaxed) + 1)
     }
 
@@ -134,12 +141,15 @@ impl ChannelBackend for MockBackend {
         data: &Value,
         opts: &UpdateMessageOptions,
     ) -> Result<()> {
-        self.message_updates.lock().unwrap().push(RecordedMessageUpdate {
-            channel: channel.to_string(),
-            message_id,
-            data: data.clone(),
-            opts: opts.clone(),
-        });
+        self.message_updates
+            .lock()
+            .unwrap()
+            .push(RecordedMessageUpdate {
+                channel: channel.to_string(),
+                message_id,
+                data: data.clone(),
+                opts: opts.clone(),
+            });
         Ok(())
     }
 

@@ -20,8 +20,8 @@ use std::time::Duration;
 use tonic::transport::{Channel, Endpoint};
 use tonic::{Code, Status};
 
-use doover_proto::health::health_check_response::ServingStatus;
 use doover_proto::health::health_client::HealthClient;
+use doover_proto::health::health_check_response::ServingStatus;
 use doover_proto::health::HealthCheckRequest;
 
 use crate::error::{DooverError, Result};
@@ -110,9 +110,7 @@ impl SharedChannel {
     /// tonic channels connect on demand, so this never blocks.
     pub fn channel(&self) -> Channel {
         let mut guard = self.channel.lock().expect("channel lock poisoned");
-        guard
-            .get_or_insert_with(|| self.endpoint.connect_lazy())
-            .clone()
+        guard.get_or_insert_with(|| self.endpoint.connect_lazy()).clone()
     }
 
     /// A channel of its own for long-lived streams, mirroring pydoover's
@@ -210,9 +208,7 @@ impl SharedChannel {
         let mut client = HealthClient::new(self.fresh_channel());
         let names = std::iter::once(&self.service_name).chain(self.health_fallback.as_ref());
         for name in names {
-            let req = HealthCheckRequest {
-                service: name.clone(),
-            };
+            let req = HealthCheckRequest { service: name.clone() };
             match tokio::time::timeout(self.timeout, client.check(req)).await {
                 Ok(Ok(resp)) => return resp.into_inner().status() == ServingStatus::Serving,
                 Ok(Err(status)) if status.code() == tonic::Code::NotFound => {

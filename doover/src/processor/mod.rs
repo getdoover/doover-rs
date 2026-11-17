@@ -47,9 +47,9 @@ pub use application::{
 };
 pub use config::{InvocationPublishTarget, ProcConfig};
 pub use events::{
-    AggregateUpdateEvent, Alarm, AlarmState, AlarmTriggerEvent, ChannelId, DeploymentEvent,
-    EventMessage, EventPayload, IngestionEndpointEvent, ManualInvokeEvent, MessageCreateEvent,
-    ScheduleEvent,
+    Alarm, AlarmState, AlarmTriggerEvent, AggregateUpdateEvent, ChannelId, DeploymentEvent,
+    EventMessage, EventPayload,
+    IngestionEndpointEvent, ManualInvokeEvent, MessageCreateEvent, ScheduleEvent,
 };
 pub use handler::{handle_event_local, handle_event_with, run_processor, ProcessorOptions};
 pub use runner::LambdaMeta;

@@ -35,7 +35,8 @@ use super::application::{now_ms, Handled, Processor, ProcessorContext, SkipReaso
 use super::config::ProcConfig;
 use super::events::{
     id_string, AggregateUpdateEvent, AlarmTriggerEvent, DeploymentEvent, EventPayload,
-    IngestionEndpointEvent, ManualInvokeEvent, MessageCreateEvent, ScheduleEvent,
+    IngestionEndpointEvent,
+    ManualInvokeEvent, MessageCreateEvent, ScheduleEvent,
 };
 use super::tags::ProcessorTags;
 
@@ -70,10 +71,7 @@ enum DispatchEnd {
 
 impl From<DooverError> for DispatchEnd {
     fn from(e: DooverError) -> Self {
-        Self::Failed {
-            error_type: e.type_name().to_string(),
-            message: e.to_string(),
-        }
+        Self::Failed { error_type: e.type_name().to_string(), message: e.to_string() }
     }
 }
 
@@ -108,16 +106,9 @@ pub(crate) async fn run_invocation<P: Processor>(
     let (status, skip_reason, error): (&str, Option<SkipReason>, Option<Value>) = match &outcome {
         Ok(()) => ("success", None, None),
         Err(DispatchEnd::Skipped(reason)) => ("skipped", Some(*reason), None),
-        Err(DispatchEnd::Failed {
-            error_type,
-            message,
-        }) => {
+        Err(DispatchEnd::Failed { error_type, message }) => {
             tracing::error!("unhandled error in invocation: {message}");
-            (
-                "error",
-                None,
-                Some(json!({"type": error_type, "message": message})),
-            )
+            ("error", None, Some(json!({"type": error_type, "message": message})))
         }
     };
 
@@ -163,10 +154,7 @@ async fn publish_invocation_summary(api: &DataClient, state: &InvocationState, b
     };
     for target in &state.proc_config.inv_targets {
         let channel = target.channel.replace("$app_id", app_id);
-        if let Err(e) = api
-            .create_message_http(&channel, body, None, target.agent_id)
-            .await
-        {
+        if let Err(e) = api.create_message_http(&channel, body, None, target.agent_id).await {
             tracing::error!(
                 "failed to post invocation summary to {:?}/{channel}: {e}",
                 target.agent_id
@@ -188,9 +176,7 @@ async fn dispatch_invocation<P: Processor>(
     state.ingestion_id = id_string(d.get("ingestion_id"));
     // org ID should be set in both schedules and subscriptions; the upgrade
     // payload may correct it later.
-    let event_organisation_id = d
-        .get("organisation_id")
-        .and_then(crate::models::value_as_id);
+    let event_organisation_id = d.get("organisation_id").and_then(crate::models::value_as_id);
 
     // The initial token: temporary (subscription) or long-lived (schedule);
     // either way it can only access the info endpoint.
@@ -313,10 +299,7 @@ fn decode_payload<P: Processor>(
 }
 
 fn decode_err(e: DooverError) -> DispatchEnd {
-    DispatchEnd::Failed {
-        error_type: e.type_name().to_string(),
-        message: e.to_string(),
-    }
+    DispatchEnd::Failed { error_type: e.type_name().to_string(), message: e.to_string() }
 }
 
 /// pydoover `Application._setup`: install the initial JWT, resolve the
@@ -339,13 +322,9 @@ async fn setup_context(
     let info: SubscriptionInfo = if let Some(upgrade) = upgrade {
         SubscriptionInfo::from_value(upgrade).map_err(DispatchEnd::from)?
     } else if let Some(subscription_id) = &state.subscription_id {
-        api.fetch_subscription_info(subscription_id)
-            .await
-            .map_err(DispatchEnd::from)?
+        api.fetch_subscription_info(subscription_id).await.map_err(DispatchEnd::from)?
     } else if let Some(schedule_id) = &state.schedule_id {
-        api.fetch_schedule_info(schedule_id)
-            .await
-            .map_err(DispatchEnd::from)?
+        api.fetch_schedule_info(schedule_id).await.map_err(DispatchEnd::from)?
     } else {
         // Ingestion events are invoked directly with the upgrade payload
         // pre-loaded; reaching here without one is an error.
@@ -396,10 +375,7 @@ async fn setup_context(
         .get("APP_DISPLAY_NAME")
         .and_then(Value::as_str)
         .map(str::to_string);
-    let app_id = deployment_config
-        .get("APP_ID")
-        .and_then(Value::as_str)
-        .map(str::to_string);
+    let app_id = deployment_config.get("APP_ID").and_then(Value::as_str).map(str::to_string);
     let proc_config = ProcConfig::from_value(deployment_config.get("dv_proc_config"));
 
     state.app_id = app_id.clone();
@@ -426,16 +402,11 @@ fn is_tag_values_self_loop(payload: &EventPayload, app_key: &str) -> bool {
     match payload {
         EventPayload::AggregateUpdate(e) => {
             e.channel.name == TAG_CHANNEL_NAME
-                && e.request_data
-                    .as_object()
-                    .is_some_and(|m| m.contains_key(app_key))
+                && e.request_data.as_object().is_some_and(|m| m.contains_key(app_key))
         }
         EventPayload::MessageCreate(e) => {
             e.channel.name == TAG_CHANNEL_NAME
-                && e.message
-                    .data
-                    .as_object()
-                    .is_some_and(|m| m.contains_key(app_key))
+                && e.message.data.as_object().is_some_and(|m| m.contains_key(app_key))
         }
         _ => false,
     }

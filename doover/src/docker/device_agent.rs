@@ -57,19 +57,13 @@ pub struct ChannelRef<'a> {
 impl<'a> ChannelRef<'a> {
     /// A channel on this device's own agent — the same thing a bare `&str` means.
     pub fn own(name: &'a str) -> Self {
-        Self {
-            name,
-            agent_id: None,
-        }
+        Self { name, agent_id: None }
     }
 
     /// A channel owned by another agent. Needs a token grant on that agent or
     /// channel, or the agent answers 403.
     pub fn on_agent(name: &'a str, agent_id: u64) -> Self {
-        Self {
-            name,
-            agent_id: Some(agent_id),
-        }
+        Self { name, agent_id: Some(agent_id) }
     }
 
     /// The cache key for this channel, namespaced by owning agent (pydoover
@@ -184,9 +178,7 @@ pub struct SubscribeOptions {
 
 impl Default for SubscribeOptions {
     fn default() -> Self {
-        Self {
-            replay_missed_messages: true,
-        }
+        Self { replay_missed_messages: true }
     }
 }
 
@@ -313,11 +305,7 @@ impl DeviceAgentClient {
         let inner = GenClient::new(channel)
             .max_decoding_message_size(DEFAULT_MAX_MESSAGE_SIZE)
             .max_encoding_message_size(DEFAULT_MAX_MESSAGE_SIZE);
-        Self {
-            inner,
-            app_id: None,
-            status: Arc::new(DdaStatus::default()),
-        }
+        Self { inner, app_id: None, status: Arc::new(DdaStatus::default()) }
     }
 
     /// Set the `app_id` stamped into every request header (the app key).
@@ -336,16 +324,11 @@ impl DeviceAgentClient {
     /// `data_json` (see [`legacy_struct`]). `None` once the agent is known
     /// to read `data_json`.
     fn struct_for(&self, data: &Value) -> Option<prost_types::Struct> {
-        self.status
-            .wire
-            .send_struct()
-            .then(|| legacy_struct::value_to_struct(data))
+        self.status.wire.send_struct().then(|| legacy_struct::value_to_struct(data))
     }
 
     fn header(&self) -> Option<pb::RequestHeader> {
-        self.app_id.clone().map(|app_id| pb::RequestHeader {
-            app_id: Some(app_id),
-        })
+        self.app_id.clone().map(|app_id| pb::RequestHeader { app_id: Some(app_id) })
     }
 
     /// Update the DDA status flags then map the header to a typed error
@@ -362,10 +345,7 @@ impl DeviceAgentClient {
         let resp = self
             .inner
             .clone()
-            .test_comms(pb::TestCommsRequest {
-                header: self.header(),
-                message: message.into(),
-            })
+            .test_comms(pb::TestCommsRequest { header: self.header(), message: message.into() })
             .await?
             .into_inner();
         Ok(resp.response)
@@ -381,8 +361,7 @@ impl DeviceAgentClient {
         opts: &AggregateOptions,
     ) -> Result<()> {
         // most callers discard the echo — skip the encode.
-        self.update_aggregate_inner(channel.into(), data, opts, false)
-            .await?;
+        self.update_aggregate_inner(channel.into(), data, opts, false).await?;
         Ok(())
     }
 
@@ -395,8 +374,7 @@ impl DeviceAgentClient {
         data: &Value,
         opts: &AggregateOptions,
     ) -> Result<Option<ChannelAggregate>> {
-        self.update_aggregate_inner(channel.into(), data, opts, true)
-            .await
+        self.update_aggregate_inner(channel.into(), data, opts, true).await
     }
 
     async fn update_aggregate_inner(
@@ -429,10 +407,7 @@ impl DeviceAgentClient {
         };
         let resp = self.inner.clone().update_aggregate(req).await?.into_inner();
         self.check_header(resp.response_header)?;
-        Ok(resp
-            .aggregate
-            .as_ref()
-            .map(|a| decode_aggregate(&self.status, a)))
+        Ok(resp.aggregate.as_ref().map(|a| decode_aggregate(&self.status, a)))
     }
 
     /// List the agent's channels. The agent answers from the cloud when it can
@@ -442,11 +417,7 @@ impl DeviceAgentClient {
     /// `include_aggregate` populates each channel's data; leave it off to list
     /// names without pulling every aggregate body over.
     pub async fn list_channels(&self, include_aggregate: bool) -> Result<ChannelList> {
-        self.list_channels_with(&ListChannelsOptions {
-            include_aggregate,
-            agent_id: None,
-        })
-        .await
+        self.list_channels_with(&ListChannelsOptions { include_aggregate, agent_id: None }).await
     }
 
     /// As [`list_channels`](Self::list_channels), with control over which agent's
@@ -518,10 +489,7 @@ impl DeviceAgentClient {
         &self,
         channel: impl Into<ChannelRef<'a>>,
     ) -> Result<Option<Value>> {
-        Ok(self
-            .fetch_channel_aggregate(channel.into())
-            .await?
-            .map(|a| a.data))
+        Ok(self.fetch_channel_aggregate(channel.into()).await?.map(|a| a.data))
     }
 
     /// Append a message to a channel log stamped now; returns the minted
@@ -532,8 +500,7 @@ impl DeviceAgentClient {
         channel: impl Into<ChannelRef<'a>>,
         data: &Value,
     ) -> Result<u64> {
-        self.create_message_with(channel, data, &MessageWriteOptions::default())
-            .await
+        self.create_message_with(channel, data, &MessageWriteOptions::default()).await
     }
 
     /// Append a message stamped with an explicit unix-millisecond timestamp
@@ -544,10 +511,7 @@ impl DeviceAgentClient {
         data: &Value,
         timestamp_ms: u64,
     ) -> Result<u64> {
-        let opts = MessageWriteOptions {
-            timestamp_ms: Some(timestamp_ms),
-            ..Default::default()
-        };
+        let opts = MessageWriteOptions { timestamp_ms: Some(timestamp_ms), ..Default::default() };
         self.create_message_with(channel, data, &opts).await
     }
 
@@ -590,8 +554,7 @@ impl DeviceAgentClient {
         channel: impl Into<ChannelRef<'a>>,
         data: &Value,
     ) -> Result<()> {
-        self.send_one_shot_message_with(channel, data, &MessageWriteOptions::default())
-            .await
+        self.send_one_shot_message_with(channel, data, &MessageWriteOptions::default()).await
     }
 
     /// As [`send_one_shot_message`](Self::send_one_shot_message), but stamped
@@ -602,10 +565,7 @@ impl DeviceAgentClient {
         data: &Value,
         timestamp_ms: u64,
     ) -> Result<()> {
-        let opts = MessageWriteOptions {
-            timestamp_ms: Some(timestamp_ms),
-            ..Default::default()
-        };
+        let opts = MessageWriteOptions { timestamp_ms: Some(timestamp_ms), ..Default::default() };
         self.send_one_shot_message_with(channel, data, &opts).await
     }
 
@@ -631,12 +591,7 @@ impl DeviceAgentClient {
             data_json: serde_json::to_string(data)?,
             timestamp: opts.timestamp_ms,
         };
-        let resp = self
-            .inner
-            .clone()
-            .send_one_shot_message(req)
-            .await?
-            .into_inner();
+        let resp = self.inner.clone().send_one_shot_message(req).await?.into_inner();
         self.check_header(resp.response_header)?;
         Ok(())
     }
@@ -681,11 +636,7 @@ impl DeviceAgentClient {
         };
         let resp = self.inner.clone().get_messages(req).await?.into_inner();
         self.check_header(resp.response_header)?;
-        Ok(resp
-            .messages
-            .into_iter()
-            .map(|m| Message::from_proto(m, &self.status))
-            .collect())
+        Ok(resp.messages.into_iter().map(|m| Message::from_proto(m, &self.status)).collect())
     }
 
     /// Update an existing message's payload (pydoover `update_message`).
@@ -727,8 +678,7 @@ impl DeviceAgentClient {
         };
         let resp = self.inner.clone().fetch_attachment(req).await?.into_inner();
         self.check_header(resp.response_header)?;
-        resp.file
-            .ok_or_else(|| DooverError::NotFound("attachment file".into()))
+        resp.file.ok_or_else(|| DooverError::NotFound("attachment file".into()))
     }
 
     /// Fetch WebRTC TURN credentials (pydoover `fetch_turn_token`).
@@ -737,12 +687,7 @@ impl DeviceAgentClient {
             header: self.header(),
             camera_name: camera_name.to_string(),
         };
-        let resp = self
-            .inner
-            .clone()
-            .get_turn_credential(req)
-            .await?
-            .into_inner();
+        let resp = self.inner.clone().get_turn_credential(req).await?.into_inner();
         self.check_header(resp.response_header)?;
         let c = resp
             .turn_credential
@@ -764,8 +709,7 @@ impl DeviceAgentClient {
         &self,
         channel: impl Into<ChannelRef<'a>>,
     ) -> Result<impl Stream<Item = Result<Event>>> {
-        self.subscribe_events_with(channel, &SubscribeOptions::default())
-            .await
+        self.subscribe_events_with(channel, &SubscribeOptions::default()).await
     }
 
     /// As [`subscribe_events`](Self::subscribe_events), with control over what
@@ -784,12 +728,7 @@ impl DeviceAgentClient {
             replay_missed_messages: Some(opts.replay_missed_messages),
             agent_id: channel.agent_id,
         };
-        let stream = self
-            .inner
-            .clone()
-            .channel_event_subscription(req)
-            .await?
-            .into_inner();
+        let stream = self.inner.clone().channel_event_subscription(req).await?.into_inner();
         // Events carry the bare channel name, as pydoover's do — the owning
         // agent is what the subscriber asked for, not something the payload
         // restates.
@@ -893,16 +832,10 @@ fn decode_aggregate(status: &DdaStatus, a: &pb::Aggregate) -> ChannelAggregate {
 /// `^[a-zA-Z0-9_-]+$`; values are only object/array/string/number/bool/null.
 pub fn validate_payload(data: &Value) -> Result<()> {
     let Value::Object(map) = data else {
-        return Err(DooverError::InvalidPayload(
-            "payload root must be an object".into(),
-        ));
+        return Err(DooverError::InvalidPayload("payload root must be an object".into()));
     };
     for (k, v) in map {
-        if k.is_empty()
-            || !k
-                .bytes()
-                .all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
-        {
+        if k.is_empty() || !k.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-') {
             return Err(DooverError::InvalidPayload(format!("invalid key: {k:?}")));
         }
         validate_value(v)?;
@@ -917,13 +850,9 @@ fn validate_value(v: &Value) -> Result<()> {
         Value::Object(map) => {
             for (k, v) in map {
                 if k.is_empty()
-                    || !k
-                        .bytes()
-                        .all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
+                    || !k.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
                 {
-                    return Err(DooverError::InvalidPayload(format!(
-                        "invalid nested key: {k:?}"
-                    )));
+                    return Err(DooverError::InvalidPayload(format!("invalid nested key: {k:?}")));
                 }
                 validate_value(v)?;
             }

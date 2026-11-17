@@ -51,10 +51,7 @@ impl RpcError {
     }
 
     pub fn new(code: impl Into<String>, message: impl Into<String>) -> Self {
-        Self {
-            code: code.into(),
-            message: message.into(),
-        }
+        Self { code: code.into(), message: message.into() }
     }
 }
 
@@ -73,10 +70,7 @@ impl From<RpcError> for DooverError {
 }
 
 fn now_unix_ms() -> i64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_millis() as i64)
-        .unwrap_or(0)
+    SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_millis() as i64).unwrap_or(0)
 }
 
 /// The absolute expiry (unix ms) of an RPC command, or `None` if it never
@@ -273,12 +267,7 @@ impl RpcContext {
 
     /// Audit info for whoever cancelled the command, if the issuer said so.
     pub fn cancelled_by(&self) -> Option<Value> {
-        self.cancelled
-            .lock()
-            .unwrap()
-            .as_ref()?
-            .get("cancelled_by")
-            .cloned()
+        self.cancelled.lock().unwrap().as_ref()?.get("cancelled_by").cloned()
     }
 
     fn mark_cancelled(&self, status: &Value) {
@@ -352,9 +341,7 @@ impl RpcContext {
     /// `RPCContext.acknowledge`, ms timestamp included.
     pub async fn acknowledge(&self) -> Result<()> {
         let Some(id) = self.message_id else {
-            return Err(DooverError::Other(
-                "cannot acknowledge a one-shot rpc request".into(),
-            ));
+            return Err(DooverError::Other("cannot acknowledge a one-shot rpc request".into()));
         };
         if !self.may_write() {
             return Ok(());
@@ -366,12 +353,7 @@ impl RpcContext {
             }
         });
         self.backend
-            .update_message(
-                &self.channel,
-                id,
-                &payload,
-                &UpdateMessageOptions::default(),
-            )
+            .update_message(&self.channel, id, &payload, &UpdateMessageOptions::default())
             .await
     }
 
@@ -379,9 +361,7 @@ impl RpcContext {
     /// `RPCContext.defer` (`until`/`at` ms timestamps).
     pub async fn defer(&self, seconds: f64) -> Result<()> {
         let Some(id) = self.message_id else {
-            return Err(DooverError::Other(
-                "cannot defer a one-shot rpc request".into(),
-            ));
+            return Err(DooverError::Other("cannot defer a one-shot rpc request".into()));
         };
         if !self.may_write() {
             return Ok(());
@@ -397,12 +377,7 @@ impl RpcContext {
             }
         });
         self.backend
-            .update_message(
-                &self.channel,
-                id,
-                &payload,
-                &UpdateMessageOptions::default(),
-            )
+            .update_message(&self.channel, id, &payload, &UpdateMessageOptions::default())
             .await
     }
 }
@@ -454,10 +429,7 @@ impl Default for CallOptions {
 impl CallOptions {
     /// Options targeting `channel` (e.g. `ui_cmds`), everything else default.
     pub fn on(channel: impl Into<String>) -> Self {
-        Self {
-            channel: channel.into(),
-            ..Default::default()
-        }
+        Self { channel: channel.into(), ..Default::default() }
     }
 
     pub fn app_key(mut self, app_key: impl Into<String>) -> Self {
@@ -518,10 +490,7 @@ impl CallOptions {
             data.insert("old_value".into(), old_value.clone());
         }
         if let Some(expires_after) = self.expires_after {
-            data.insert(
-                "expires_after".into(),
-                json!(expires_after.as_millis() as i64),
-            );
+            data.insert("expires_after".into(), json!(expires_after.as_millis() as i64));
         }
         if let Some(retry_of) = &self.retry_of {
             data.insert("retry_of".into(), json!(retry_of));
@@ -532,11 +501,10 @@ impl CallOptions {
 
 /// A registered handler: takes the context and the `request` payload,
 /// returns the `response` payload (or a typed error sent back to the caller).
-pub type RpcHandler = Arc<
-    dyn Fn(RpcContext, Value) -> BoxFuture<'static, std::result::Result<Value, RpcError>>
+pub type RpcHandler =
+    Arc<dyn Fn(RpcContext, Value) -> BoxFuture<'static, std::result::Result<Value, RpcError>>
         + Send
-        + Sync,
->;
+        + Sync>;
 
 type PendingSender = oneshot::Sender<std::result::Result<Value, RpcError>>;
 type SubscribeFn = Arc<dyn Fn(&str) + Send + Sync>;
@@ -568,11 +536,7 @@ pub struct RpcManager {
 
 impl RpcManager {
     pub fn new(backend: Arc<dyn ChannelBackend>, app_key: Option<String>) -> Self {
-        Self {
-            backend,
-            app_key,
-            state: Mutex::new(RpcState::default()),
-        }
+        Self { backend, app_key, state: Mutex::new(RpcState::default()) }
     }
 
     /// Install the channel-subscription hook (the docker runtime passes a
@@ -603,12 +567,7 @@ impl RpcManager {
         if !self.backend.has_persistent_connection() {
             return;
         }
-        let newly = self
-            .state
-            .lock()
-            .unwrap()
-            .subscribed
-            .insert(channel.to_string());
+        let newly = self.state.lock().unwrap().subscribed.insert(channel.to_string());
         if newly {
             self.notify_subscriber(channel);
             tracing::info!("RPC subscribed to channel: {channel}");
@@ -706,9 +665,7 @@ impl RpcManager {
             Ok(Ok(Ok(response))) => Ok(response),
             Ok(Ok(Err(e))) => Err(DooverError::Other(e.to_string())),
             // sender dropped without a result — treat as a timeout-class error
-            Ok(Err(_)) => Err(DooverError::Other(format!(
-                "RPC call '{method}' was abandoned"
-            ))),
+            Ok(Err(_)) => Err(DooverError::Other(format!("RPC call '{method}' was abandoned"))),
             Err(_) => Err(DooverError::Other(format!(
                 "TIMEOUT: RPC call '{method}' timed out after {}s",
                 timeout.as_secs_f64()
@@ -757,16 +714,12 @@ impl RpcManager {
     }
 
     async fn handle_request(&self, event: &Event) {
-        let Some(data) = event.message_data() else {
-            return;
-        };
+        let Some(data) = event.message_data() else { return };
         if data.get("type").and_then(Value::as_str) != Some("rpc") {
             tracing::debug!("skipping non-rpc event on '{}'", event.channel);
             return;
         }
-        let Some(method) = data.get("method").and_then(Value::as_str) else {
-            return;
-        };
+        let Some(method) = data.get("method").and_then(Value::as_str) else { return };
 
         // Requests stamped for a different app are not ours.
         if let Some(target) = data.get("app_key").and_then(Value::as_str) {
@@ -808,17 +761,11 @@ impl RpcManager {
             return;
         }
 
-        let Some(handler) = self.get_handler(&event.channel, method) else {
-            return;
-        };
+        let Some(handler) = self.get_handler(&event.channel, method) else { return };
 
         // One-shots are fire-and-forget: there is no persisted message to
         // update with a response (pydoover `can_respond`).
-        let message_id = if event.is_one_shot() {
-            None
-        } else {
-            request_message_id
-        };
+        let message_id = if event.is_one_shot() { None } else { request_message_id };
         let ctx = RpcContext {
             method: method.to_string(),
             channel: event.channel.clone(),
@@ -864,9 +811,8 @@ impl RpcManager {
             Err(rpc_err) => {
                 tracing::error!("error in RPC handler '{method}': {rpc_err}");
                 if let Some(id) = should_respond {
-                    if let Err(e) = self
-                        .send_error(&event.channel, id, &rpc_err.code, &rpc_err.message)
-                        .await
+                    if let Err(e) =
+                        self.send_error(&event.channel, id, &rpc_err.code, &rpc_err.message).await
                     {
                         tracing::error!("failed to send RPC error: {e}");
                     }
@@ -876,16 +822,12 @@ impl RpcManager {
     }
 
     fn handle_response(&self, event: &Event) {
-        let Some(data) = event.message_data() else {
-            return;
-        };
+        let Some(data) = event.message_data() else { return };
         let Some(status) = data.get("status") else {
             tracing::debug!("failed to get status from RPC message; ignoring");
             return;
         };
-        let Some(message_id) = event.message_id() else {
-            return;
-        };
+        let Some(message_id) = event.message_id() else { return };
 
         let cancelled = status_is_cancelled(status);
 
@@ -893,13 +835,7 @@ impl RpcManager {
         // Updates arrive for both directions, keyed by message id, and the two
         // id spaces are disjoint, so the lookups can't collide.
         if cancelled {
-            let ctx = self
-                .state
-                .lock()
-                .unwrap()
-                .inflight
-                .get(&message_id)
-                .cloned();
+            let ctx = self.state.lock().unwrap().inflight.get(&message_id).cloned();
             if let Some(ctx) = ctx {
                 tracing::info!(
                     "RPC command '{}' (message {message_id}) was cancelled by the issuer; \
@@ -911,10 +847,7 @@ impl RpcManager {
             }
         }
 
-        let code = status
-            .get("code")
-            .and_then(Value::as_str)
-            .unwrap_or_default();
+        let code = status.get("code").and_then(Value::as_str).unwrap_or_default();
         // Intermediate statuses keep the future pending (pydoover).
         if matches!(code, "sent" | "acknowledged" | "deferred" | "pending") {
             return;
@@ -940,10 +873,7 @@ impl RpcManager {
                 let err = status.get("message");
                 let (code, message) = match err {
                     Some(Value::Object(m)) => (
-                        m.get("code")
-                            .and_then(Value::as_str)
-                            .unwrap_or("UNKNOWN")
-                            .to_string(),
+                        m.get("code").and_then(Value::as_str).unwrap_or("UNKNOWN").to_string(),
                         m.get("message").map(value_to_message).unwrap_or_default(),
                     ),
                     Some(other) => ("UNKNOWN".to_string(), value_to_message(other)),
@@ -1045,12 +975,7 @@ mod tests {
             .expires_after(Duration::from_secs(90))
             .retry_of("123456789");
         let payload = opts.request_payload("pump", Some(json!({"on": true})));
-        let keys: Vec<_> = payload
-            .as_object()
-            .unwrap()
-            .keys()
-            .map(String::as_str)
-            .collect();
+        let keys: Vec<_> = payload.as_object().unwrap().keys().map(String::as_str).collect();
         assert_eq!(
             keys,
             [
@@ -1078,9 +1003,7 @@ mod tests {
         // an unset `old_value` drops the key.
         let bare = CallOptions::default().request_payload("m", None);
         assert!(bare.get("old_value").is_none());
-        let explicit = CallOptions::default()
-            .old_value(Value::Null)
-            .request_payload("m", None);
+        let explicit = CallOptions::default().old_value(Value::Null).request_payload("m", None);
         assert_eq!(explicit["old_value"], Value::Null);
     }
 
@@ -1095,14 +1018,8 @@ mod tests {
             0,
             false,
         );
-        assert!(command_is_expired(
-            ten_min_ago,
-            &json!({"expires_after": 60_000})
-        ));
-        assert!(!command_is_expired(
-            ten_min_ago,
-            &json!({"expires_after": 3_600_000})
-        ));
+        assert!(command_is_expired(ten_min_ago, &json!({"expires_after": 60_000})));
+        assert!(!command_is_expired(ten_min_ago, &json!({"expires_after": 3_600_000})));
         // No `expires_after` at all: never expires (pydoover returns None).
         assert!(!command_is_expired(ten_min_ago, &json!({})));
         assert_eq!(command_expires_at(ten_min_ago, &json!({})), None);

@@ -97,10 +97,7 @@ impl NotificationDecl {
             "severity".into(),
             Value::String(self.severity.wire().to_string()),
         );
-        m.insert(
-            "policy".into(),
-            Value::String(self.policy.wire().to_string()),
-        );
+        m.insert("policy".into(), Value::String(self.policy.wire().to_string()));
         if let Some(description) = self.description {
             m.insert("description".into(), Value::String(description.to_string()));
         }
@@ -272,9 +269,7 @@ mod tests {
             severity: NotificationSeverity::Warn,
             ..NotificationDecl::new("low_battery", "The battery is low")
         };
-        let n = PendingNotification::from(decl.clone())
-            .build("app_1")
-            .unwrap();
+        let n = PendingNotification::from(decl.clone()).build("app_1").unwrap();
         assert_eq!(n.message, "The battery is low");
         assert_eq!(n.title.as_deref(), Some("Battery"));
         assert_eq!(n.severity, Some(NotificationSeverity::Warn));

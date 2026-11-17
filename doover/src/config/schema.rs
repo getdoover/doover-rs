@@ -54,20 +54,12 @@ impl Condition {
     /// Show the element when `element` equals `value` (pydoover
     /// `config.equal()`).
     pub fn equal(element: impl Into<String>, value: Value) -> Self {
-        Self {
-            element: element.into(),
-            comparator: Comparator::Equal,
-            value,
-        }
+        Self { element: element.into(), comparator: Comparator::Equal, value }
     }
 
     /// Show the element when `element` equals any of `values`.
     pub fn one_of(element: impl Into<String>, values: Vec<Value>) -> Self {
-        Self {
-            element: element.into(),
-            comparator: Comparator::In,
-            value: Value::Array(values),
-        }
+        Self { element: element.into(), comparator: Comparator::In, value: Value::Array(values) }
     }
 
     /// The `if` branch's test on the controlling property
@@ -94,10 +86,9 @@ impl Condition {
         match (self.comparator, actual) {
             (_, None) => false,
             (Comparator::Equal, Some(actual)) => *actual == self.value,
-            (Comparator::In, Some(actual)) => self
-                .value
-                .as_array()
-                .is_some_and(|values| values.contains(actual)),
+            (Comparator::In, Some(actual)) => {
+                self.value.as_array().is_some_and(|values| values.contains(actual))
+            }
         }
     }
 }
@@ -242,31 +233,18 @@ impl ElementSchema {
     pub fn enumeration(title: &str, name: &str, choices: Vec<Value>) -> Self {
         let ty = if choices.iter().all(|c| c.is_string()) {
             Some("string")
-        } else if choices
-            .iter()
-            .all(|c| matches!(c, Value::Number(n) if n.is_f64()))
-        {
+        } else if choices.iter().all(|c| matches!(c, Value::Number(n) if n.is_f64())) {
             Some("number")
         } else {
             None
         };
-        Self::new(
-            title,
-            name,
-            ElementKind::Enum {
-                choices,
-                titles: Vec::new(),
-                ty,
-            },
-        )
+        Self::new(title, name, ElementKind::Enum { choices, titles: Vec::new(), ty })
     }
 
     /// Give an enum element's choices display names, in choice order.
     pub fn set_choice_titles(&mut self, new_titles: Vec<Option<String>>) {
         match &mut self.kind {
-            ElementKind::Enum {
-                choices, titles, ..
-            } => {
+            ElementKind::Enum { choices, titles, .. } => {
                 assert_eq!(
                     new_titles.len(),
                     choices.len(),
@@ -336,9 +314,7 @@ impl ElementSchema {
     /// declared default from `siblings`; with neither (pydoover's `NotSet`) the
     /// condition does not hold, so the element stays inactive.
     pub fn condition_holds(&self, data: &Value, siblings: &[ElementSchema]) -> bool {
-        let Some(condition) = &self.show_if else {
-            return true;
-        };
+        let Some(condition) = &self.show_if else { return true };
         let from_data = data.get(&condition.element);
         let actual = match from_data {
             Some(v) => Some(v),
@@ -353,20 +329,14 @@ impl ElementSchema {
     fn numeric_bounds_mut(&mut self) -> &mut NumericBounds {
         match &mut self.kind {
             ElementKind::Integer(b) | ElementKind::Number(b) => b,
-            _ => panic!(
-                "numeric constraint on non-numeric config element {:?}",
-                self.name
-            ),
+            _ => panic!("numeric constraint on non-numeric config element {:?}", self.name),
         }
     }
 
     fn string_bounds_mut(&mut self) -> &mut StringBounds {
         match &mut self.kind {
             ElementKind::String(b) => b,
-            _ => panic!(
-                "string constraint on non-string config element {:?}",
-                self.name
-            ),
+            _ => panic!("string constraint on non-string config element {:?}", self.name),
         }
     }
 
@@ -426,10 +396,7 @@ impl ElementSchema {
 
         // Enum.to_dict() is `{"enum": choices, **super().to_dict()}` — the
         // enum key lands first.
-        if let ElementKind::Enum {
-            choices, titles, ..
-        } = &self.kind
-        {
+        if let ElementKind::Enum { choices, titles, .. } = &self.kind {
             // A `null` default has to be a valid choice, or a form that fills
             // in the default shows the untouched field as invalid. pydoover
             // leaves it out; see PARITY.md.
@@ -524,12 +491,7 @@ impl ElementSchema {
                     m.insert("pattern".into(), Value::String(p.clone()));
                 }
             }
-            ElementKind::Array {
-                items,
-                min_items,
-                max_items,
-                unique_items,
-            } => {
+            ElementKind::Array { items, min_items, max_items, unique_items } => {
                 m.insert("items".into(), items.to_json());
                 if let Some(n) = min_items {
                     m.insert("minItems".into(), Value::from(*n));
@@ -541,12 +503,7 @@ impl ElementSchema {
                     m.insert("uniqueItems".into(), Value::Bool(*u));
                 }
             }
-            ElementKind::Object {
-                properties,
-                additional_elements,
-                collapsible,
-                default_collapsed,
-            } => {
+            ElementKind::Object { properties, additional_elements, collapsible, default_collapsed } => {
                 let object = build_object_schema(properties);
                 m.insert("properties".into(), Value::Object(object.properties));
                 m.insert("additionalElements".into(), additional_elements.clone());
@@ -646,10 +603,8 @@ fn build_object_schema(elements: &[ElementSchema]) -> ObjectSchema {
     let all_of = groups
         .into_iter()
         .map(|(controller_name, condition, members)| {
-            let then_properties: Map<String, Value> = members
-                .iter()
-                .map(|el| (el.name.clone(), el.to_json()))
-                .collect();
+            let then_properties: Map<String, Value> =
+                members.iter().map(|el| (el.name.clone(), el.to_json())).collect();
             let mut then = Map::new();
             then.insert("properties".into(), Value::Object(then_properties));
             let then_required: Vec<Value> = members
@@ -674,10 +629,10 @@ fn build_object_schema(elements: &[ElementSchema]) -> ObjectSchema {
                 .find(|el| el.name == controller_name)
                 .expect("controller resolved above");
             if !condition.matches(controller.default.as_ref()) {
-                if_schema.insert(
-                    "required".into(),
-                    Value::Array(vec![Value::String(controller_name.to_string())]),
-                );
+                if_schema
+                    .insert("required".into(), Value::Array(vec![Value::String(
+                        controller_name.to_string(),
+                    )]));
             }
 
             let mut branch = Map::new();
@@ -687,11 +642,7 @@ fn build_object_schema(elements: &[ElementSchema]) -> ObjectSchema {
         })
         .collect();
 
-    ObjectSchema {
-        properties,
-        required,
-        all_of,
-    }
+    ObjectSchema { properties, required, all_of }
 }
 
 /// The whole application config schema — pydoover `config.Schema`.
@@ -773,9 +724,7 @@ mod tests {
         assert_eq!(v["type"], json!(["number", "null"]));
         assert_eq!(v["x-required"], json!(false));
         // int/float distinction survives serialization
-        assert!(serde_json::to_string(&v)
-            .unwrap()
-            .contains("\"default\":4.0"));
+        assert!(serde_json::to_string(&v).unwrap().contains("\"default\":4.0"));
     }
 
     #[test]
@@ -787,10 +736,7 @@ mod tests {
         );
         el.default = Some(json!("Submersible"));
         let out = serde_json::to_string(&el.to_json()).unwrap();
-        assert!(
-            out.starts_with(r#"{"enum":["Submersible","Radar"],"title":"#),
-            "{out}"
-        );
+        assert!(out.starts_with(r#"{"enum":["Submersible","Radar"],"title":"#), "{out}");
         assert!(out.contains(r#""type":["string","null"]"#));
     }
 
@@ -811,10 +757,7 @@ mod tests {
         schema.push(opt);
 
         let v = schema.to_json();
-        assert_eq!(
-            v["$schema"],
-            json!("https://json-schema.org/draft/2020-12/schema")
-        );
+        assert_eq!(v["$schema"], json!("https://json-schema.org/draft/2020-12/schema"));
         assert_eq!(v["$id"], json!(""));
         assert_eq!(v["title"], json!("$default"));
         assert_eq!(v["required"], json!(["ai_pin"]));

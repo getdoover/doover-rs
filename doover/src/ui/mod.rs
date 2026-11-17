@@ -146,7 +146,9 @@ impl Default for UiApplicationInfo {
             // `full_width` takes the same ":boolean:false" suffix as `hidden`,
             // and points at a config key that exists from the start, so it has
             // never had `hidden`'s doubled-suffix history.
-            full_width: Value::String("$config.app().interpreter_full_width:boolean:false".into()),
+            full_width: Value::String(
+                "$config.app().interpreter_full_width:boolean:false".into(),
+            ),
             position: Value::String("$config.app().dv_app_position:number:100".into()),
             default_open: Value::String("$config.app().dv_app_default_open:boolean".into()),
             icon: Value::Null,

@@ -54,10 +54,7 @@ pub(crate) fn decode(data_json: &str, data: Option<&prost_types::Struct>) -> Opt
 
 pub(crate) fn value_to_struct(v: &Value) -> prost_types::Struct {
     let fields = match v {
-        Value::Object(map) => map
-            .iter()
-            .map(|(k, v)| (k.clone(), value_to_pb(v)))
-            .collect(),
+        Value::Object(map) => map.iter().map(|(k, v)| (k.clone(), value_to_pb(v))).collect(),
         _ => Default::default(),
     };
     prost_types::Struct { fields }
@@ -69,21 +66,16 @@ fn value_to_pb(v: &Value) -> prost_types::Value {
         Value::Bool(b) => Kind::BoolValue(*b),
         Value::Number(n) => Kind::NumberValue(n.as_f64().unwrap_or(0.0)),
         Value::String(s) => Kind::StringValue(s.clone()),
-        Value::Array(a) => Kind::ListValue(prost_types::ListValue {
-            values: a.iter().map(value_to_pb).collect(),
-        }),
+        Value::Array(a) => {
+            Kind::ListValue(prost_types::ListValue { values: a.iter().map(value_to_pb).collect() })
+        }
         Value::Object(_) => Kind::StructValue(value_to_struct(v)),
     };
     prost_types::Value { kind: Some(kind) }
 }
 
 pub(crate) fn struct_to_value(s: &prost_types::Struct) -> Value {
-    Value::Object(
-        s.fields
-            .iter()
-            .map(|(k, v)| (k.clone(), pb_to_value(v)))
-            .collect::<Map<_, _>>(),
-    )
+    Value::Object(s.fields.iter().map(|(k, v)| (k.clone(), pb_to_value(v))).collect::<Map<_, _>>())
 }
 
 fn pb_to_value(v: &prost_types::Value) -> Value {
@@ -105,9 +97,7 @@ fn number(f: f64) -> Value {
     if f.fract() == 0.0 && f.abs() <= SAFE {
         return Value::Number(Number::from(f as i64));
     }
-    Number::from_f64(f)
-        .map(Value::Number)
-        .unwrap_or(Value::Null)
+    Number::from_f64(f).map(Value::Number).unwrap_or(Value::Null)
 }
 
 #[cfg(test)]

@@ -28,10 +28,8 @@ use super::UiElement;
 /// Serialize children exactly like pydoover `Container.to_dict`:
 /// `{name: child.to_dict()}` in insertion order.
 fn children_json(children: &[Box<dyn UiElement>]) -> Value {
-    let map: Map<String, Value> = children
-        .iter()
-        .map(|c| (c.name().to_string(), c.to_json()))
-        .collect();
+    let map: Map<String, Value> =
+        children.iter().map(|c| (c.name().to_string(), c.to_json())).collect();
     Value::Object(map)
 }
 
@@ -52,7 +50,10 @@ macro_rules! impl_container_builders {
             }
 
             /// Append children at runtime (pydoover `Container.add_children`).
-            pub fn add_children(&mut self, children: impl IntoIterator<Item = Box<dyn UiElement>>) {
+            pub fn add_children(
+                &mut self,
+                children: impl IntoIterator<Item = Box<dyn UiElement>>,
+            ) {
                 self.children.extend(children);
             }
 
@@ -79,10 +80,7 @@ pub struct Container {
 
 impl Container {
     pub fn new(display_name: &str) -> Self {
-        Self {
-            common: ElementCommon::new(display_name, Some(true)),
-            children: Vec::new(),
-        }
+        Self { common: ElementCommon::new(display_name, Some(true)), children: Vec::new() }
     }
 
     fn common(&self) -> &ElementCommon {
@@ -244,11 +242,7 @@ impl RemoteComponent {
     pub fn new(display_name: &str, component_url: &str) -> Self {
         let mut common = ElementCommon::new(display_name, Some(true));
         common.component_url = Some(component_url.to_string());
-        Self {
-            common,
-            children: Vec::new(),
-            extras: Map::new(),
-        }
+        Self { common, children: Vec::new(), extras: Map::new() }
     }
 
     /// An extra key/value forwarded to the component (pydoover `**kwargs`).
@@ -323,10 +317,7 @@ mod tests {
         let out = t.to_json();
         assert_eq!(out["type"], json!("uiTabs"));
         assert_eq!(out["defaultPage"], json!(1));
-        assert!(TabContainer::new("Tabs")
-            .to_json()
-            .get("defaultPage")
-            .is_none());
+        assert!(TabContainer::new("Tabs").to_json().get("defaultPage").is_none());
     }
 
     #[test]
@@ -336,12 +327,7 @@ mod tests {
         assert_eq!(out["componentUrl"], json!("https://example.com/c.js"));
         assert_eq!(out["foo"], json!("bar"));
         // componentUrl sits in the base slot, before children
-        let keys: Vec<_> = out
-            .as_object()
-            .unwrap()
-            .keys()
-            .map(String::as_str)
-            .collect();
+        let keys: Vec<_> = out.as_object().unwrap().keys().map(String::as_str).collect();
         let url_idx = keys.iter().position(|k| *k == "componentUrl").unwrap();
         let children_idx = keys.iter().position(|k| *k == "children").unwrap();
         let foo_idx = keys.iter().position(|k| *k == "foo").unwrap();
@@ -351,9 +337,7 @@ mod tests {
     #[test]
     fn remove_child_recurses() {
         let mut outer = Container::new("Outer").child(
-            Container::new("Inner")
-                .child(Button::new("Deep"))
-                .child(Button::new("Keep")),
+            Container::new("Inner").child(Button::new("Deep")).child(Button::new("Keep")),
         );
         outer.remove_child("deep");
         let out = outer.to_json();

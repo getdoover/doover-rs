@@ -206,10 +206,7 @@ impl IoDevice {
     /// This device's channels of one IO type (`"DI"`, `"DO"`, `"AI"`, `"AO"`) —
     /// pydoover `IoDevice.channels_of`.
     pub fn channels_of(&self, io_type: &str) -> Vec<&IoChannel> {
-        self.channels
-            .iter()
-            .filter(|c| c.io_type == io_type)
-            .collect()
+        self.channels.iter().filter(|c| c.io_type == io_type).collect()
     }
 
     fn from_proto(d: pb::IoDeviceDetail) -> Self {
@@ -256,9 +253,7 @@ impl IoDetails {
     }
 
     fn from_proto(devices: Vec<pb::IoDeviceDetail>) -> Self {
-        Self {
-            devices: devices.into_iter().map(IoDevice::from_proto).collect(),
-        }
+        Self { devices: devices.into_iter().map(IoDevice::from_proto).collect() }
     }
 
     /// Synthesize an `IoDetails` from a [`fetch_io_table`](PlatformClient::fetch_io_table)
@@ -272,9 +267,7 @@ impl IoDetails {
         let mut channels = Vec::new();
         if let Some(table) = io_table.as_object() {
             for (io_type, entries) in table {
-                let Some(entries) = entries.as_array() else {
-                    continue;
-                };
+                let Some(entries) = entries.as_array() else { continue };
                 for entry in entries {
                     // pydoover's `int(ch)` accepts an int or a numeric string.
                     let Some(number) = entry
@@ -442,9 +435,7 @@ impl PlatformClient {
 
     /// Liveness echo (pydoover `test_comms`).
     pub async fn test_comms(&self, message: impl Into<String>) -> Result<String> {
-        let req = pb::TestCommsRequest {
-            message: message.into(),
-        };
+        let req = pb::TestCommsRequest { message: message.into() };
         let resp = self
             .shared
             .call(|ch| {
@@ -463,12 +454,7 @@ impl PlatformClient {
     /// Read one digital-input pin: true = high (pydoover `fetch_di` with a
     /// single pin).
     pub async fn fetch_di(&self, pin: i32) -> Result<bool> {
-        Ok(self
-            .fetch_dis(&[pin])
-            .await?
-            .into_iter()
-            .next()
-            .unwrap_or(false))
+        Ok(self.fetch_dis(&[pin]).await?.into_iter().next().unwrap_or(false))
     }
 
     /// Read several digital-input pins in one transaction (pydoover
@@ -548,12 +534,7 @@ impl PlatformClient {
     /// Read one analog-input pin (mA) (pydoover `fetch_ai` with a single
     /// pin). Errors if the sidecar reports failure.
     pub async fn fetch_ai(&self, pin: i32) -> Result<f32> {
-        Ok(self
-            .fetch_ais(&[pin])
-            .await?
-            .into_iter()
-            .next()
-            .unwrap_or(0.0))
+        Ok(self.fetch_ais(&[pin]).await?.into_iter().next().unwrap_or(0.0))
     }
 
     /// Read several analog-input pins in one transaction (pydoover
@@ -573,20 +554,13 @@ impl PlatformClient {
 
     /// Read one digital-output pin (pydoover `fetch_do` with a single pin).
     pub async fn fetch_do(&self, pin: i32) -> Result<bool> {
-        Ok(self
-            .fetch_dos(&[pin])
-            .await?
-            .into_iter()
-            .next()
-            .unwrap_or(false))
+        Ok(self.fetch_dos(&[pin]).await?.into_iter().next().unwrap_or(false))
     }
 
     /// Read several digital-output pins in one transaction (pydoover
     /// `fetch_do` with several pins).
     pub async fn fetch_dos(&self, pins: &[i32]) -> Result<Vec<bool>> {
-        let req = pb::GetDoRequest {
-            r#do: pins.to_vec(),
-        };
+        let req = pb::GetDoRequest { r#do: pins.to_vec() };
         let resp = self
             .shared
             .call(|ch| {
@@ -601,12 +575,7 @@ impl PlatformClient {
     /// Read the load current (amps) drawn through one digital output
     /// (pydoover `fetch_do_current` with a single pin).
     pub async fn fetch_do_current(&self, pin: i32) -> Result<f32> {
-        Ok(self
-            .fetch_do_currents(&[pin])
-            .await?
-            .into_iter()
-            .next()
-            .unwrap_or(0.0))
+        Ok(self.fetch_do_currents(&[pin]).await?.into_iter().next().unwrap_or(0.0))
     }
 
     /// Read the load current (amps) drawn through several digital outputs
@@ -620,9 +589,7 @@ impl PlatformClient {
     /// Platforms without per-output current sensing answer with a failure
     /// header, which surfaces here as an error rather than an empty vec.
     pub async fn fetch_do_currents(&self, pins: &[i32]) -> Result<Vec<f32>> {
-        let req = pb::GetDoCurrentRequest {
-            r#do: pins.to_vec(),
-        };
+        let req = pb::GetDoCurrentRequest { r#do: pins.to_vec() };
         let resp = self
             .shared
             .call(|ch| {
@@ -637,12 +604,7 @@ impl PlatformClient {
     /// Set one digital-output pin; returns the value that was set
     /// (pydoover `set_do` with a single pin/value).
     pub async fn set_do(&self, pin: i32, value: bool) -> Result<bool> {
-        Ok(self
-            .set_dos(&[pin], &[value])
-            .await?
-            .into_iter()
-            .next()
-            .unwrap_or(false))
+        Ok(self.set_dos(&[pin], &[value]).await?.into_iter().next().unwrap_or(false))
     }
 
     /// Set several digital-output pins in one transaction. A single value
@@ -650,10 +612,7 @@ impl PlatformClient {
     /// (pydoover `set_do` / `_cast_pin_values`).
     pub async fn set_dos(&self, pins: &[i32], values: &[bool]) -> Result<Vec<bool>> {
         let values = broadcast_values(pins, values, "digital output")?;
-        let req = pb::SetDoRequest {
-            r#do: pins.to_vec(),
-            value: values,
-        };
+        let req = pb::SetDoRequest { r#do: pins.to_vec(), value: values };
         let resp = self
             .shared
             .call(|ch| {
@@ -668,9 +627,7 @@ impl PlatformClient {
     /// Schedule one digital-output pin to change in `in_secs` seconds
     /// (pydoover `schedule_do` with a single pin/value).
     pub async fn schedule_do(&self, pin: i32, value: bool, in_secs: u32) -> Result<()> {
-        self.schedule_dos(&[pin], &[value], in_secs)
-            .await
-            .map(|_| ())
+        self.schedule_dos(&[pin], &[value], in_secs).await.map(|_| ())
     }
 
     /// Schedule several digital-output pins to change in `in_secs` seconds;
@@ -701,12 +658,7 @@ impl PlatformClient {
 
     /// Read one analog-output pin (pydoover `fetch_ao` with a single pin).
     pub async fn fetch_ao(&self, pin: i32) -> Result<f32> {
-        Ok(self
-            .fetch_aos(&[pin])
-            .await?
-            .into_iter()
-            .next()
-            .unwrap_or(0.0))
+        Ok(self.fetch_aos(&[pin]).await?.into_iter().next().unwrap_or(0.0))
     }
 
     /// Read several analog-output pins in one transaction (pydoover
@@ -727,12 +679,7 @@ impl PlatformClient {
     /// Set one analog-output pin; returns the value that was set (pydoover
     /// `set_ao` with a single pin/value).
     pub async fn set_ao(&self, pin: i32, value: f32) -> Result<f32> {
-        Ok(self
-            .set_aos(&[pin], &[value])
-            .await?
-            .into_iter()
-            .next()
-            .unwrap_or(0.0))
+        Ok(self.set_aos(&[pin], &[value]).await?.into_iter().next().unwrap_or(0.0))
     }
 
     /// Set several analog-output pins in one transaction. A single value
@@ -740,10 +687,7 @@ impl PlatformClient {
     /// (pydoover `set_ao` / `_cast_ao_pin_values`).
     pub async fn set_aos(&self, pins: &[i32], values: &[f32]) -> Result<Vec<f32>> {
         let values = broadcast_values(pins, values, "analogue output")?;
-        let req = pb::SetAoRequest {
-            ao: pins.to_vec(),
-            value: values,
-        };
+        let req = pb::SetAoRequest { ao: pins.to_vec(), value: values };
         let resp = self
             .shared
             .call(|ch| {
@@ -758,9 +702,7 @@ impl PlatformClient {
     /// Schedule one analog-output pin to change in `in_secs` seconds
     /// (pydoover `schedule_ao` with a single pin/value).
     pub async fn schedule_ao(&self, pin: i32, value: f32, in_secs: u32) -> Result<()> {
-        self.schedule_aos(&[pin], &[value], in_secs)
-            .await
-            .map(|_| ())
+        self.schedule_aos(&[pin], &[value], in_secs).await.map(|_| ())
     }
 
     /// Schedule several analog-output pins to change in `in_secs` seconds;
@@ -799,9 +741,7 @@ impl PlatformClient {
         let resp = self
             .shared
             .call(|ch| async move {
-                GenClient::new(ch)
-                    .get_input_voltage(pb::GetInputVoltageRequest {})
-                    .await
+                GenClient::new(ch).get_input_voltage(pb::GetInputVoltageRequest {}).await
             })
             .await?;
         Self::check(resp.response_header)?;
@@ -814,9 +754,7 @@ impl PlatformClient {
         let resp = self
             .shared
             .call(|ch| async move {
-                GenClient::new(ch)
-                    .get_system_power(pb::GetSystemPowerRequest {})
-                    .await
+                GenClient::new(ch).get_system_power(pb::GetSystemPowerRequest {}).await
             })
             .await?;
         Self::check(resp.response_header)?;
@@ -830,9 +768,7 @@ impl PlatformClient {
         let resp = self
             .shared
             .call(|ch| async move {
-                GenClient::new(ch)
-                    .get_temperature(pb::GetTemperatureRequest {})
-                    .await
+                GenClient::new(ch).get_temperature(pb::GetTemperatureRequest {}).await
             })
             .await?;
         Self::check(resp.response_header)?;
@@ -850,9 +786,7 @@ impl PlatformClient {
         let resp = self
             .shared
             .call(|ch| async move {
-                GenClient::new(ch)
-                    .get_location(pb::GetLocationRequest {})
-                    .await
+                GenClient::new(ch).get_location(pb::GetLocationRequest {}).await
             })
             .await?;
         Self::check(resp.response_header)?;
@@ -877,9 +811,7 @@ impl PlatformClient {
         let resp = self
             .shared
             .call(|ch| async move {
-                GenClient::new(ch)
-                    .get_io_table(pb::GetIoTableRequest {})
-                    .await
+                GenClient::new(ch).get_io_table(pb::GetIoTableRequest {}).await
             })
             .await?;
         Self::check(resp.response_header)?;
@@ -905,9 +837,7 @@ impl PlatformClient {
         let resp = self
             .shared
             .call(|ch| async move {
-                GenClient::new(ch)
-                    .get_io_details(pb::GetIoDetailsRequest {})
-                    .await
+                GenClient::new(ch).get_io_details(pb::GetIoDetailsRequest {}).await
             })
             .await;
         let resp = match resp {
@@ -915,11 +845,7 @@ impl PlatformClient {
             // An older sidecar doesn't have the method at all. Everything else
             // — including a failure header on a sidecar that does — propagates.
             Err(DooverError::Status(status)) if status.code() == tonic::Code::Unimplemented => {
-                return Ok(self
-                    .fetch_io_table()
-                    .await?
-                    .as_ref()
-                    .map(IoDetails::from_io_table));
+                return Ok(self.fetch_io_table().await?.as_ref().map(IoDetails::from_io_table));
             }
             Err(e) => return Err(e),
         };
@@ -933,9 +859,7 @@ impl PlatformClient {
         let resp = self
             .shared
             .call(|ch| async move {
-                GenClient::new(ch)
-                    .sync_rtc_time(pb::SyncRtcTimeRequest {})
-                    .await
+                GenClient::new(ch).sync_rtc_time(pb::SyncRtcTimeRequest {}).await
             })
             .await?;
         Self::check(resp.response_header)
@@ -999,9 +923,7 @@ impl PlatformClient {
         let resp = self
             .shared
             .call(|ch| async move {
-                GenClient::new(ch)
-                    .get_wake_on_voltage(pb::GetWakeOnVoltageRequest {})
-                    .await
+                GenClient::new(ch).get_wake_on_voltage(pb::GetWakeOnVoltageRequest {}).await
             })
             .await?;
         Self::check(resp.response_header)?;
@@ -1028,9 +950,7 @@ impl PlatformClient {
         let resp = self
             .shared
             .call(|ch| async move {
-                GenClient::new(ch)
-                    .get_wake_reason(pb::GetWakeReasonRequest {})
-                    .await
+                GenClient::new(ch).get_wake_reason(pb::GetWakeReasonRequest {}).await
             })
             .await?;
         Self::check(resp.response_header)?;
@@ -1040,9 +960,7 @@ impl PlatformClient {
     /// Schedule the device to start up in `time_secs` seconds; returns the
     /// scheduled delay (pydoover `schedule_startup`).
     pub async fn schedule_startup(&self, time_secs: u32) -> Result<Option<f32>> {
-        let req = pb::ScheduleStartupRequest {
-            time_secs: Some(time_secs as f32),
-        };
+        let req = pb::ScheduleStartupRequest { time_secs: Some(time_secs as f32) };
         let resp = self
             .shared
             .call(|ch| async move { GenClient::new(ch).schedule_startup(req).await })
@@ -1054,9 +972,7 @@ impl PlatformClient {
     /// Schedule the device to shut down in `time_secs` seconds; returns the
     /// scheduled delay (pydoover `schedule_shutdown`).
     pub async fn schedule_shutdown(&self, time_secs: u32) -> Result<Option<f32>> {
-        let req = pb::ScheduleShutdownRequest {
-            time_secs: Some(time_secs as f32),
-        };
+        let req = pb::ScheduleShutdownRequest { time_secs: Some(time_secs as f32) };
         let resp = self
             .shared
             .call(|ch| async move { GenClient::new(ch).schedule_shutdown(req).await })
@@ -1102,9 +1018,7 @@ impl PlatformClient {
     /// logging. Returns the interval that was set (pydoover
     /// `set_sleep_log_interval`).
     pub async fn set_sleep_log_interval(&self, interval_secs: i32) -> Result<Option<i32>> {
-        let req = pb::SetSleepLogIntervalRequest {
-            interval_secs: Some(interval_secs),
-        };
+        let req = pb::SetSleepLogIntervalRequest { interval_secs: Some(interval_secs) };
         let resp = self
             .shared
             .call(|ch| async move { GenClient::new(ch).set_sleep_log_interval(req).await })
@@ -1120,19 +1034,13 @@ impl PlatformClient {
     /// All platform events from `events_from` (event id or epoch
     /// milliseconds; 0 = all available) (pydoover `fetch_events`).
     pub async fn fetch_events(&self, events_from: i64) -> Result<Vec<PlatformEvent>> {
-        let req = pb::GetEventsRequest {
-            events_from: Some(events_from),
-        };
+        let req = pb::GetEventsRequest { events_from: Some(events_from) };
         let resp = self
             .shared
             .call(|ch| async move { GenClient::new(ch).get_events(req).await })
             .await?;
         Self::check(resp.response_header)?;
-        Ok(resp
-            .events
-            .into_iter()
-            .map(PlatformEvent::from_proto)
-            .collect())
+        Ok(resp.events.into_iter().map(PlatformEvent::from_proto).collect())
     }
 
     /// Digital-input events for a pin: whether the event log is synced, and
@@ -1159,11 +1067,7 @@ impl PlatformClient {
             .call(|ch| async move { GenClient::new(ch).get_di_events(req).await })
             .await?;
         Self::check(resp.response_header)?;
-        let events = resp
-            .events
-            .into_iter()
-            .map(PlatformEvent::from_proto)
-            .collect();
+        let events = resp.events.into_iter().map(PlatformEvent::from_proto).collect();
         Ok((resp.events_synced.unwrap_or(false), events))
     }
 
@@ -1221,10 +1125,7 @@ impl PlatformClient {
         di: i32,
         edge: Edge,
     ) -> Result<impl Stream<Item = Result<DiPulse>>> {
-        let req = pb::PulseCounterRequest {
-            di,
-            edge: edge.as_str().to_string(),
-        };
+        let req = pb::PulseCounterRequest { di, edge: edge.as_str().to_string() };
         // Stream keepalive settings, without which a half-open connection
         // surfaces nothing to the reader and the reconnect loop in
         // `start_di_pulse_listener` can never fire (pydoover
@@ -1234,11 +1135,7 @@ impl PlatformClient {
         Ok(stream.map(|item| {
             let resp = item?;
             Self::check(resp.response_header)?;
-            Ok(DiPulse {
-                di: resp.di,
-                value: resp.value,
-                dt_secs: resp.dt_secs,
-            })
+            Ok(DiPulse { di: resp.di, value: resp.value, dt_secs: resp.dt_secs })
         }))
     }
 
@@ -1304,10 +1201,7 @@ impl PlatformClient {
         });
         let abort = task.abort_handle();
         // Track for close() (pydoover `pulse_counter_listeners`).
-        self.listeners
-            .lock()
-            .expect("listener lock poisoned")
-            .push(task);
+        self.listeners.lock().expect("listener lock poisoned").push(task);
         abort
     }
 
@@ -1469,18 +1363,13 @@ impl PulseCounter {
                 tracing::debug!("received pulse on di={pin} with dt={}s", update.dt_secs);
                 st.count += 1;
                 st.pulse_timestamps.push(now);
-                PulseCounterUpdate {
-                    count: st.count,
-                    timestamp: None,
-                    ..*update
-                }
+                PulseCounterUpdate { count: st.count, timestamp: None, ..*update }
             };
             if let Some(cb) = &user_callback {
                 cb(&update);
             }
         });
-        self.client
-            .start_di_pulse_listener(pin, edge, start_count, on_pulse);
+        self.client.start_di_pulse_listener(pin, edge, start_count, on_pulse);
     }
 
     /// Fetch and process stored offline events for the pin (pydoover
@@ -1495,10 +1384,8 @@ impl PulseCounter {
             }
             st.receiving_events = true;
         }
-        let (_synced, events) = self
-            .client
-            .fetch_di_events(self.pin, self.edge, true, 0)
-            .await?;
+        let (_synced, events) =
+            self.client.fetch_di_events(self.pin, self.edge, true, 0).await?;
         self.receive_events(&events);
         Ok(())
     }
@@ -1589,11 +1476,7 @@ impl PulseCounter {
             return Vec::new();
         };
         let cutoff = newest - st.rate_window_secs;
-        st.pulse_timestamps
-            .iter()
-            .copied()
-            .filter(|&t| t > cutoff)
-            .collect()
+        st.pulse_timestamps.iter().copied().filter(|&t| t > cutoff).collect()
     }
 
     /// Pulses per minute over the rate window (pydoover
@@ -1726,15 +1609,7 @@ pub struct IoImage {
 
 fn statuses(map: HashMap<i32, pb::ChannelStatus>) -> HashMap<i32, ChannelStatus> {
     map.into_iter()
-        .map(|(ch, s)| {
-            (
-                ch,
-                ChannelStatus {
-                    quality: ChannelQuality::from_i32(s.quality),
-                    detail: s.detail,
-                },
-            )
-        })
+        .map(|(ch, s)| (ch, ChannelStatus { quality: ChannelQuality::from_i32(s.quality), detail: s.detail }))
         .collect()
 }
 
@@ -1796,9 +1671,7 @@ impl IoImage {
     /// channel the image doesn't have). Check [`ai_quality`](Self::ai_quality),
     /// or use [`good_ai`](Self::good_ai).
     pub fn ai(&self, ch: i32) -> Option<f64> {
-        usize::try_from(ch)
-            .ok()
-            .and_then(|i| self.ai.get(i).copied())
+        usize::try_from(ch).ok().and_then(|i| self.ai.get(i).copied())
     }
 
     /// An analog input's value only when its quality is `Good`.
@@ -1807,9 +1680,7 @@ impl IoImage {
     }
 
     pub fn di(&self, ch: i32) -> Option<bool> {
-        usize::try_from(ch)
-            .ok()
-            .and_then(|i| self.di.get(i).copied())
+        usize::try_from(ch).ok().and_then(|i| self.di.get(i).copied())
     }
 
     /// A digital input's level only when its quality is `Good`.
@@ -1818,15 +1689,11 @@ impl IoImage {
     }
 
     pub fn r#do(&self, ch: i32) -> Option<bool> {
-        usize::try_from(ch)
-            .ok()
-            .and_then(|i| self.r#do.get(i).copied())
+        usize::try_from(ch).ok().and_then(|i| self.r#do.get(i).copied())
     }
 
     pub fn ao(&self, ch: i32) -> Option<f64> {
-        usize::try_from(ch)
-            .ok()
-            .and_then(|i| self.ao.get(i).copied())
+        usize::try_from(ch).ok().and_then(|i| self.ao.get(i).copied())
     }
 }
 
@@ -1911,7 +1778,8 @@ async fn run_image_watch<C, Fut, S>(
     mut connect: C,
     tx: watch::Sender<Option<LatestImage>>,
     retry: Duration,
-) where
+)
+where
     C: FnMut() -> Fut,
     Fut: std::future::Future<Output = Result<S>>,
     S: Stream<Item = Result<IoImage>> + Unpin,
@@ -1957,11 +1825,7 @@ impl PlatformClient {
 
     /// Write any number of DOs and AOs in one call (`setImage`). The result
     /// lists the channels whose write failed; the others were written.
-    pub async fn set_image(
-        &self,
-        dos: &[(i32, bool)],
-        aos: &[(i32, f64)],
-    ) -> Result<ImageWriteResult> {
+    pub async fn set_image(&self, dos: &[(i32, bool)], aos: &[(i32, f64)]) -> Result<ImageWriteResult> {
         let req = pb::SetImageRequest {
             r#do: dos.iter().map(|(ch, _)| *ch).collect(),
             do_value: dos.iter().map(|(_, v)| *v).collect(),
@@ -1976,10 +1840,7 @@ impl PlatformClient {
             })
             .await?;
         Self::check(resp.response_header)?;
-        Ok(ImageWriteResult {
-            failed_do: resp.failed_do,
-            failed_ao: resp.failed_ao,
-        })
+        Ok(ImageWriteResult { failed_do: resp.failed_do, failed_ao: resp.failed_ao })
     }
 
     /// The image whenever it changes (`subscribeImage`), at most `max_rate_hz`
@@ -2014,10 +1875,7 @@ impl PlatformClient {
             IMAGE_WATCH_RETRY,
         ));
         let abort = task.abort_handle();
-        self.listeners
-            .lock()
-            .expect("listener lock poisoned")
-            .push(task);
+        self.listeners.lock().expect("listener lock poisoned").push(task);
         ImageWatch { rx, task: abort }
     }
 }
@@ -2044,10 +1902,7 @@ mod tests {
 
     #[test]
     fn broadcast_single_value_to_all_pins() {
-        assert_eq!(
-            broadcast_values(&[1, 4, 2], &[true], "do").unwrap(),
-            vec![true; 3]
-        );
+        assert_eq!(broadcast_values(&[1, 4, 2], &[true], "do").unwrap(), vec![true; 3]);
         assert_eq!(
             broadcast_values(&[1, 2], &[false, true], "do").unwrap(),
             vec![false, true]
@@ -2078,9 +1933,10 @@ mod tests {
     fn receive_events_counts_and_dedups() {
         let seen: Arc<Mutex<Vec<PulseCounterUpdate>>> = Arc::new(Mutex::new(Vec::new()));
         let sink = Arc::clone(&seen);
-        let counter = test_counter(Some(Arc::new(move |u: &PulseCounterUpdate| {
-            sink.lock().unwrap().push(*u);
-        })));
+        let counter =
+            test_counter(Some(Arc::new(move |u: &PulseCounterUpdate| {
+                sink.lock().unwrap().push(*u);
+            })));
 
         counter.receive_events(&[
             di_event("DI_R", 10_000),
@@ -2139,20 +1995,8 @@ mod image_tests {
 
     fn response() -> pb::GetImageResponse {
         let mut ai_status = HashMap::new();
-        ai_status.insert(
-            1,
-            pb::ChannelStatus {
-                quality: pb::ChannelQuality::UnderRange as i32,
-                detail: Some("1.2 mA".into()),
-            },
-        );
-        ai_status.insert(
-            2,
-            pb::ChannelStatus {
-                quality: 99,
-                detail: None,
-            },
-        );
+        ai_status.insert(1, pb::ChannelStatus { quality: pb::ChannelQuality::UnderRange as i32, detail: Some("1.2 mA".into()) });
+        ai_status.insert(2, pb::ChannelStatus { quality: 99, detail: None });
         pb::GetImageResponse {
             response_header: None,
             di: vec![true, false],
@@ -2209,20 +2053,13 @@ mod image_tests {
     #[test]
     fn write_result() {
         assert!(ImageWriteResult::default().all_written());
-        assert!(!ImageWriteResult {
-            failed_do: vec![3],
-            failed_ao: vec![]
-        }
-        .all_written());
+        assert!(!ImageWriteResult { failed_do: vec![3], failed_ao: vec![] }.all_written());
     }
 
     const RETRY: Duration = Duration::from_millis(10);
 
     fn image(sequence: u64) -> Result<IoImage> {
-        Ok(IoImage {
-            sequence,
-            ..Default::default()
-        })
+        Ok(IoImage { sequence, ..Default::default() })
     }
 
     #[tokio::test]
@@ -2236,11 +2073,7 @@ mod image_tests {
                 async move {
                     // First stream: two images then an error; second: one image, then ends.
                     let items = if n == 0 {
-                        vec![
-                            image(1),
-                            image(2),
-                            Err(DooverError::Other("dropped".into())),
-                        ]
+                        vec![image(1), image(2), Err(DooverError::Other("dropped".into()))]
                     } else {
                         vec![image(3)]
                     };
@@ -2259,17 +2092,11 @@ mod image_tests {
         }
         // Latest wins: a watch may skip images a slow reader missed, but
         // never goes backwards, and the image after the reconnect arrives.
-        assert!(
-            seen.windows(2).all(|w| w[0] < w[1]),
-            "out of order: {seen:?}"
-        );
+        assert!(seen.windows(2).all(|w| w[0] < w[1]), "out of order: {seen:?}");
         assert!(connects.load(Ordering::SeqCst) >= 2);
         // Dropping the receiver lets the loop finish at its next retry.
         drop(rx);
-        tokio::time::timeout(Duration::from_secs(5), task)
-            .await
-            .unwrap()
-            .unwrap();
+        tokio::time::timeout(Duration::from_secs(5), task).await.unwrap().unwrap();
     }
 
     #[tokio::test]

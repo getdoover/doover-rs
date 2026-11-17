@@ -44,9 +44,7 @@ impl Config {
     pub fn from_file(path: impl AsRef<Path>) -> Result<Self> {
         let text = std::fs::read_to_string(path.as_ref())
             .map_err(|e| DooverError::Other(format!("reading config {:?}: {e}", path.as_ref())))?;
-        Ok(Self {
-            root: serde_json::from_str(&text)?,
-        })
+        Ok(Self { root: serde_json::from_str(&text)? })
     }
 
     pub fn root(&self) -> &Value {
@@ -60,15 +58,11 @@ impl Config {
 
     /// Typed value at a top-level key.
     pub fn get_as<T: DeserializeOwned>(&self, key: &str) -> Option<T> {
-        self.root
-            .get(key)
-            .and_then(|v| serde_json::from_value(v.clone()).ok())
+        self.root.get(key).and_then(|v| serde_json::from_value(v.clone()).ok())
     }
 
     pub fn get_str(&self, key: &str) -> Option<String> {
-        self.root
-            .get(key)
-            .and_then(|v| v.as_str().map(str::to_string))
+        self.root.get(key).and_then(|v| v.as_str().map(str::to_string))
     }
 
     pub fn get_f64(&self, key: &str) -> Option<f64> {
@@ -192,8 +186,7 @@ impl<T: FromConfigValue> FromConfigValue for Vec<T> {
 
 impl<T: ToConfigValue> ToConfigValue for Option<T> {
     fn to_config_value(&self) -> Value {
-        self.as_ref()
-            .map_or(Value::Null, ToConfigValue::to_config_value)
+        self.as_ref().map_or(Value::Null, ToConfigValue::to_config_value)
     }
 }
 
@@ -234,11 +227,7 @@ impl<T: FromConfigValue, S: std::hash::BuildHasher + Default> FromConfigValue
 
 impl<T: ToConfigValue> ToConfigValue for std::collections::BTreeMap<String, T> {
     fn to_config_value(&self) -> Value {
-        Value::Object(
-            self.iter()
-                .map(|(k, v)| (k.clone(), v.to_config_value()))
-                .collect(),
-        )
+        Value::Object(self.iter().map(|(k, v)| (k.clone(), v.to_config_value())).collect())
     }
 }
 
@@ -246,12 +235,7 @@ impl<T: ToConfigValue, S> ToConfigValue for std::collections::HashMap<String, T,
     fn to_config_value(&self) -> Value {
         // Sorted, so an exported default is stable across runs.
         let sorted: std::collections::BTreeMap<_, _> = self.iter().collect();
-        Value::Object(
-            sorted
-                .into_iter()
-                .map(|(k, v)| (k.clone(), v.to_config_value()))
-                .collect(),
-        )
+        Value::Object(sorted.into_iter().map(|(k, v)| (k.clone(), v.to_config_value())).collect())
     }
 }
 
@@ -480,8 +464,9 @@ impl ConfigElementBuild for ApplicationCockpitVisible {
     fn element(_title: &str, _name: &str) -> ElementSchema {
         let mut el = ElementSchema::boolean("Cockpit Visible", "cockpit_visible");
         el.advanced = Some(true);
-        el.description =
-            Some("Whether the application's custom widgets are visible in a Cockpit tab.".into());
+        el.description = Some(
+            "Whether the application's custom widgets are visible in a Cockpit tab.".into(),
+        );
         el.default = Some(Value::Bool(false));
         el
     }
@@ -591,8 +576,7 @@ impl TagRef {
 
     /// The `(app_key, tag_name)` this reference resolves to, if configured.
     pub fn target(&self) -> Option<(&str, &str)> {
-        self.is_configured()
-            .then_some((self.app_name.as_str(), self.tag_name.as_str()))
+        self.is_configured().then_some((self.app_name.as_str(), self.tag_name.as_str()))
     }
 }
 
@@ -620,15 +604,10 @@ impl ConfigElementBuild for TagRef {
         app_name.position = Some(3);
 
         let mut tag_name = ElementSchema::string("Tag Name", "tag_name");
-        tag_name.description =
-            Some("Name of the upstream tag within the chosen application.".into());
+        tag_name.description = Some("Name of the upstream tag within the chosen application.".into());
         tag_name.position = Some(4);
 
-        let mut el = ElementSchema::object(
-            title,
-            name,
-            vec![reference_name, agent_id, app_name, tag_name],
-        );
+        let mut el = ElementSchema::object(title, name, vec![reference_name, agent_id, app_name, tag_name]);
         el.format = Some("doover-tag-reference".into());
         el.description = Some("Reference to a tag in another application.".into());
         el
@@ -703,10 +682,7 @@ impl ToConfigValue for GroupRef {
 impl ToConfigValue for TagRef {
     fn to_config_value(&self) -> Value {
         let mut m = serde_json::Map::new();
-        m.insert(
-            "reference_name".into(),
-            Value::String(self.reference_name.clone()),
-        );
+        m.insert("reference_name".into(), Value::String(self.reference_name.clone()));
         m.insert("agent_id".into(), self.agent_id.to_config_value());
         m.insert("app_name".into(), Value::String(self.app_name.clone()));
         m.insert("tag_name".into(), Value::String(self.tag_name.clone()));
@@ -724,15 +700,9 @@ mod tests {
 
     #[test]
     fn sanitize_matches_pydoover() {
-        assert_eq!(
-            sanitize_display_name("Sensor Minimum mA"),
-            "sensor_minimum_ma"
-        );
+        assert_eq!(sanitize_display_name("Sensor Minimum mA"), "sensor_minimum_ma");
         assert_eq!(sanitize_display_name("AI Pin"), "ai_pin");
-        assert_eq!(
-            sanitize_display_name("Volume Curve Point"),
-            "volume_curve_point"
-        );
+        assert_eq!(sanitize_display_name("Volume Curve Point"), "volume_curve_point");
         assert_eq!(sanitize_display_name("weird-Name (v2)!"), "weirdname_v2");
     }
 
@@ -777,10 +747,7 @@ mod tests {
         }))
         .unwrap();
         assert!(parsed.is_configured());
-        assert_eq!(
-            parsed.target(),
-            Some(("platform_interface_1", "ai_reading"))
-        );
+        assert_eq!(parsed.target(), Some(("platform_interface_1", "ai_reading")));
         assert_eq!(parsed.agent_id, None);
 
         // A half-filled reference is treated as unconfigured.
@@ -803,22 +770,13 @@ mod tests {
         // absent -> default
         assert_eq!(load_element::<f64>(&json!({}), &el).unwrap(), 1.0);
         // null -> default
-        assert_eq!(
-            load_element::<f64>(&json!({"polling_frequency": null}), &el).unwrap(),
-            1.0
-        );
+        assert_eq!(load_element::<f64>(&json!({"polling_frequency": null}), &el).unwrap(), 1.0);
         // present -> value (integers accepted for f64)
-        assert_eq!(
-            load_element::<f64>(&json!({"polling_frequency": 2}), &el).unwrap(),
-            2.0
-        );
+        assert_eq!(load_element::<f64>(&json!({"polling_frequency": 2}), &el).unwrap(), 2.0);
 
         let req = ElementSchema::integer("AI Pin", "ai_pin");
         let err = load_element::<i64>(&json!({}), &req).unwrap_err();
-        assert!(
-            err.to_string().contains("required config element 'ai_pin'"),
-            "{err}"
-        );
+        assert!(err.to_string().contains("required config element 'ai_pin'"), "{err}");
     }
 
     #[test]

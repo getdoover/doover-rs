@@ -100,6 +100,66 @@ pub fn generate_diff(old: &Value, new: &Value, do_delete: bool) -> Value {
     Value::Object(diff)
 }
 
+/// Whether `generate_diff(&apply_diff(base, pending, false), new, false)` would
+/// come out empty, without building the merged tree: only the paths in `new`
+/// are looked at. `base` is a cache and `pending` the writes buffered on top of
+/// it; `new` is the object being set. Setting a tag asks this on every call, so
+/// cloning the whole cache for it costs far more than the answer.
+pub fn merged_diff_is_empty(base: &Value, pending: &Value, new: &Value) -> bool {
+    let Value::Object(new_map) = new else {
+        // generate_diff hands back `new` itself, which is no empty object.
+        return false;
+    };
+    // apply_diff onto non-object data, or with a non-object diff, gives the
+    // diff itself: the merged view is `pending` overlaid on `base` only when
+    // `pending` is an object.
+    let Value::Object(pending_map) = pending else {
+        return generate_diff(pending, new, false).as_object().is_some_and(|m| m.is_empty());
+    };
+    merged_maps_unchanged(base.as_object(), Some(pending_map), new_map)
+}
+
+/// The merged view at one level is `base` overlaid with `pending`.
+fn merged_maps_unchanged(
+    base: Option<&Map<String, Value>>,
+    pending: Option<&Map<String, Value>>,
+    new: &Map<String, Value>,
+) -> bool {
+    for (k, v) in new {
+        let p = pending.and_then(|m| m.get(k));
+        let b = base.and_then(|m| m.get(k));
+        if let Value::Object(new_sub) = v {
+            if new_sub.is_empty() {
+                continue; // an empty sub-diff is dropped
+            }
+            // Where the merged value at `k` is an object, and from what.
+            let (sub_base, sub_pending) = match p {
+                Some(Value::Object(pm)) => (b.and_then(Value::as_object), Some(pm)),
+                Some(_) => return false, // merged value is not an object
+                None => match b {
+                    Some(Value::Object(bm)) => (Some(bm), None),
+                    // Missing: generate_diff compares against an empty object.
+                    None => (None, None),
+                    Some(_) => return false, // not an object
+                },
+            };
+            if !merged_maps_unchanged(sub_base, sub_pending, new_sub) {
+                return false;
+            }
+        } else {
+            let current = match p {
+                Some(Value::Object(_)) => return false, // an object is never equal to a leaf
+                Some(pv) => Some(pv),
+                None => b,
+            };
+            if current.is_none_or(|cv| !python_json_eq(cv, v)) {
+                return false;
+            }
+        }
+    }
+    true
+}
+
 /// JSON value equality with Python semantics: numbers compare by value across
 /// int/float representations, and bools compare equal to 0/1 (`True == 1`).
 fn python_json_eq(a: &Value, b: &Value) -> bool {
@@ -158,6 +218,57 @@ fn numbers_eq(a: PyNum, b: PyNum) -> bool {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn merged_diff_is_empty_agrees_with_merging_and_diffing() {
+        let bases = [
+            json!({}),
+            json!({"app": {"a": 1, "b": "x", "n": null, "o": {"p": 1.0}}, "other": {"z": [1, 2]}}),
+            json!({"app": 5}),
+            json!(null),
+        ];
+        let pendings = [
+            json!({}),
+            json!({"app": {"a": 2}}),
+            json!({"app": {"a": null, "o": {"q": true}}}),
+            json!({"app": "flat"}),
+            json!({"app": {"o": 3}}),
+            json!(null),
+        ];
+        let news = [
+            json!({}),
+            json!({"app": {"a": 1}}),
+            json!({"app": {"a": 1.0}}),
+            json!({"app": {"a": 2}}),
+            json!({"app": {"a": null}}),
+            json!({"app": {"n": null}}),
+            json!({"app": {"b": "x", "a": true}}),
+            json!({"app": {"o": {"p": 1}}}),
+            json!({"app": {"o": {"q": 1}}}),
+            json!({"app": {"o": {}}}),
+            json!({"app": {"missing": 0}}),
+            json!({"app": {}}),
+            json!({"other": {"z": [1.0, 2]}}),
+            json!({"other": {"z": [1, 3]}}),
+            json!({"app": {"o": 3}}),
+            json!({"new_app": {"t": 1}}),
+        ];
+        for base in &bases {
+            for pending in &pendings {
+                for new in &news {
+                    let reference = generate_diff(&apply_diff(base, pending, false), new, false)
+                        .as_object()
+                        .is_some_and(|m| m.is_empty());
+                    assert_eq!(
+                        merged_diff_is_empty(base, pending, new),
+                        reference,
+                        "base {base} pending {pending} new {new}"
+                    );
+                }
+            }
+        }
+    }
+
 
     // -- apply_diff: ported from pydoover/tests/test_diffs.py::TestApplyDiff --
 

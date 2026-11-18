@@ -16,7 +16,7 @@ use crate::docker::device_agent::{AggregateOptions, DeviceAgentClient};
 use crate::docker::subscriptions::SubscriptionHub;
 use crate::error::Result;
 use crate::events::{Event, EventSubscription};
-use crate::utils::{apply_diff, apply_diff_in_place, generate_diff};
+use crate::utils::{apply_diff, apply_diff_in_place, generate_diff, merged_diff_is_empty};
 
 use super::{
     strip_paths, KeyPath, LogTrigger, TriggerSet, LIVE_TAG_CHANNEL_NAME, TAG_CHANNEL_NAME,
@@ -362,9 +362,9 @@ impl TagsRuntime {
         let flush_payload: Option<(Value, f32)> = {
             let mut st = self.state.lock().unwrap();
             if opts.only_if_changed {
-                let current = apply_diff(&st.tag_values, &st.pending_aggregate, false);
-                let diff = generate_diff(&current, &tags, false);
-                if is_empty_object(&diff) {
+                // Only the paths being set are compared: merging the whole
+                // cache to diff it cost a full copy on every set.
+                if merged_diff_is_empty(&st.tag_values, &st.pending_aggregate, &tags) {
                     tracing::debug!("set_tags: value did not change existing values");
                     return Ok(());
                 }

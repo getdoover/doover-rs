@@ -73,6 +73,10 @@ enum RunnerEvent {
     UiCommand(UiCommand),
 }
 
+/// How often the main loop checks whether the app's UI changed and needs
+/// re-publishing. A UI change reaches `ui_state` at most this much later.
+const UI_CHECK_INTERVAL: Duration = Duration::from_secs(1);
+
 /// Runtime handles handed to every app callback.
 #[derive(Clone)]
 pub struct AppContext {
@@ -903,6 +907,7 @@ pub async fn run_with<A: Application>(opts: RunOptions) -> Result<()> {
     let mut ticker = tokio::time::interval(period);
     ticker.set_missed_tick_behavior(MissedTickBehavior::Delay);
 
+    let mut ui_checked = Instant::now();
     let mut stop = shutdown_signal();
     loop {
         tokio::select! {
@@ -932,9 +937,15 @@ pub async fn run_with<A: Application>(opts: RunOptions) -> Result<()> {
                     tokio::time::sleep(opts.error_wait).await;
                     return Err(e);
                 }
-                // Re-publish ui_state when the app mutated its UI this loop
-                // (compare-and-publish; a no-op when nothing changed).
-                publish_ui(&mut app, &ctx).await;
+                // Re-publish ui_state when the app has mutated its UI
+                // (compare-and-publish; a no-op when nothing changed). Checked
+                // at most every UI_CHECK_INTERVAL: the check rebuilds and
+                // serializes the whole schema, which a fast loop should not
+                // pay on every pass.
+                if ui_checked.elapsed() >= UI_CHECK_INTERVAL {
+                    publish_ui(&mut app, &ctx).await;
+                    ui_checked = Instant::now();
+                }
                 health.set_healthy(true);
                 if started.elapsed() > period.mul_f64(1.2) {
                     tracing::warn!(

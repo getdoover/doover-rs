@@ -39,8 +39,6 @@ pub struct SharedChannel {
     /// [`stream_channel`](SharedChannel::stream_channel).
     stream_endpoint: Endpoint,
     service_name: String,
-    /// Health name tried when the server doesn't know `service_name`.
-    health_fallback: Option<String>,
     timeout: Duration,
     channel: Mutex<Option<Channel>>,
 }
@@ -77,7 +75,7 @@ impl SharedChannel {
     /// channel health is handled by the retry-on-fresh-channel path).
     ///
     /// `service_name` is the health-check service name, e.g.
-    /// `doover.PlatformInterface`.
+    /// `platform_iface.platformIface`.
     pub fn new(uri: impl Into<String>, service_name: impl Into<String>) -> Result<Self> {
         let uri = uri.into();
         let endpoint = Endpoint::from_shared(uri.clone())
@@ -94,7 +92,6 @@ impl SharedChannel {
             endpoint,
             stream_endpoint,
             service_name: service_name.into(),
-            health_fallback: None,
             timeout: DEFAULT_TIMEOUT,
             channel: Mutex::new(None),
         })
@@ -192,39 +189,24 @@ impl SharedChannel {
         }
     }
 
-    /// A second health-check name, tried when the server answers `NOT_FOUND`
-    /// for `service_name` (a server that registers its health under another
-    /// name, such as the proto's own service name).
-    pub fn with_health_fallback(mut self, name: impl Into<String>) -> Self {
-        self.health_fallback = Some(name.into());
-        self
-    }
-
     /// One-shot `grpc.health.v1` probe (pydoover `health_check`): `true` iff
     /// the service reports `SERVING`. Any transport error is `false`.
     pub async fn health_check(&self) -> bool {
         // Fresh channel, as in pydoover — a broken shared channel must not
         // make a healthy server look unhealthy.
         let mut client = HealthClient::new(self.fresh_channel());
-        let names = std::iter::once(&self.service_name).chain(self.health_fallback.as_ref());
-        for name in names {
-            let req = HealthCheckRequest { service: name.clone() };
-            match tokio::time::timeout(self.timeout, client.check(req)).await {
-                Ok(Ok(resp)) => return resp.into_inner().status() == ServingStatus::Serving,
-                Ok(Err(status)) if status.code() == tonic::Code::NotFound => {
-                    tracing::debug!("health check: {name} not registered");
-                }
-                Ok(Err(status)) => {
-                    tracing::debug!("health check for {name} failed: {status}");
-                    return false;
-                }
-                Err(_) => {
-                    tracing::debug!("health check for {name} timed out");
-                    return false;
-                }
+        let req = HealthCheckRequest { service: self.service_name.clone() };
+        match tokio::time::timeout(self.timeout, client.check(req)).await {
+            Ok(Ok(resp)) => resp.into_inner().status() == ServingStatus::Serving,
+            Ok(Err(status)) => {
+                tracing::debug!("health check for {} failed: {status}", self.service_name);
+                false
+            }
+            Err(_) => {
+                tracing::debug!("health check for {} timed out", self.service_name);
+                false
             }
         }
-        false
     }
 
     /// Poll [`health_check`](Self::health_check) until it succeeds

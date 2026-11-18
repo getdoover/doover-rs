@@ -27,11 +27,9 @@ use pb::platform_iface_client::PlatformIfaceClient as GenClient;
 use crate::docker::grpc::{check_response_header, SharedChannel};
 use crate::error::{DooverError, Result};
 
-/// Health-check service name (pydoover `PlatformInterface.service_name`).
-const SERVICE_NAME: &str = "doover.PlatformInterface";
-/// The name the Rust platform interface registers its health under: the
-/// proto's own service name.
-const PROTO_SERVICE_NAME: &str = "platform_iface.platformIface";
+/// Health-check service name: the proto's own service name, which is what
+/// the platform interface registers its gRPC health under.
+const SERVICE_NAME: &str = "platform_iface.platformIface";
 
 /// A digital-input edge selector (`"rising"`, `"falling"` or `"both"` in
 /// pydoover's string-typed APIs).
@@ -397,9 +395,7 @@ impl PlatformClient {
     /// sidecar actually serving.
     pub async fn connect(uri: impl Into<String>) -> Result<Self> {
         Ok(Self {
-            shared: Arc::new(
-                SharedChannel::new(uri, SERVICE_NAME)?.with_health_fallback(PROTO_SERVICE_NAME),
-            ),
+            shared: Arc::new(SharedChannel::new(uri, SERVICE_NAME)?),
             listeners: Arc::new(Mutex::new(Vec::new())),
         })
     }

@@ -34,7 +34,6 @@ use crate::notifications::{NotificationSet, PendingNotification};
 use crate::docker::device_agent::{AggregateOptions, ChannelRef, DeviceAgentClient};
 use crate::docker::healthcheck::{spawn_healthcheck_server, HealthState};
 use crate::docker::subscriptions::SubscriptionHub;
-use crate::docker::tag_commit::TagCommitter;
 use crate::error::Result;
 use crate::events::{Event, EventSubscription};
 use crate::models::{
@@ -904,10 +903,7 @@ pub async fn run_with<A: Application>(opts: RunOptions) -> Result<()> {
     let mut ticker = tokio::time::interval(period);
     ticker.set_missed_tick_behavior(MissedTickBehavior::Delay);
 
-    // Tags are committed beside the loop (see `tag_commit`), so a slow
-    // device agent does not hold the loop back.
-    let committer = TagCommitter::spawn(ctx.tags.clone());
-
+    let mut commit_failing = false;
     let mut stop = shutdown_signal();
     loop {
         tokio::select! {
@@ -916,9 +912,6 @@ pub async fn run_with<A: Application>(opts: RunOptions) -> Result<()> {
                 if let Err(e) = app.on_shutdown(&ctx).await {
                     tracing::error!("error in on_shutdown: {e}");
                 }
-                if let Err(e) = committer.finish().await {
-                    tracing::error!("error committing tags at shutdown: {e}");
-                }
                 return Ok(());
             }
             Some(event) = events_rx.recv() => {
@@ -926,18 +919,30 @@ pub async fn run_with<A: Application>(opts: RunOptions) -> Result<()> {
             }
             _ = ticker.tick() => {
                 let started = Instant::now();
-                // pydoover runs main_loop + commit_tags in one try block: an
-                // unhandled error from either marks the app unhealthy, waits,
-                // and exits so the container restarts it. The commit runs
-                // beside the next loop; its error surfaces at the end of a
-                // later one.
-                let result = match app.main_loop(&ctx).await {
-                    Ok(()) => {
-                        committer.request();
-                        committer.take_error()
+                // An error from main_loop marks the app unhealthy, waits, and
+                // exits so the container restarts it (pydoover). A failed tag
+                // commit does not: restarting the app does not bring the
+                // device agent back, and the changes are kept and sent with
+                // the next loop's commit. The app reports unhealthy until a
+                // commit gets through.
+                let result = app.main_loop(&ctx).await;
+                if result.is_ok() {
+                    match ctx.tags.commit_tags().await {
+                        Ok(()) if commit_failing => {
+                            tracing::info!("tag commits are getting through again");
+                            commit_failing = false;
+                        }
+                        Ok(()) => {}
+                        Err(e) => {
+                            if !commit_failing {
+                                tracing::error!(
+                                    "tag commit failed; keeping the changes and retrying each loop: {e}"
+                                );
+                            }
+                            commit_failing = true;
+                        }
                     }
-                    Err(e) => Err(e),
-                };
+                }
                 if let Err(e) = result {
                     tracing::error!("error in loop function: {e}");
                     tracing::warn!("waiting {:?} before restarting app", opts.error_wait);
@@ -948,7 +953,7 @@ pub async fn run_with<A: Application>(opts: RunOptions) -> Result<()> {
                 // Re-publish ui_state when the app mutated its UI this loop
                 // (compare-and-publish; a no-op when nothing changed).
                 publish_ui(&mut app, &ctx).await;
-                health.set_healthy(true);
+                health.set_healthy(!commit_failing);
                 if started.elapsed() > period.mul_f64(1.2) {
                     tracing::warn!(
                         "main_loop took {:?}, exceeding target period {:?}",

@@ -439,22 +439,26 @@ impl TagsRuntime {
                 return Ok(());
             }
             st.dirty = false;
-            let data = std::mem::replace(&mut st.pending_aggregate, empty_object());
-            // Into the cache before the send, not after: reads (which see the
-            // cache plus what is still buffered) must not go back to the old
-            // values while the send is in flight, which they would now that
-            // the loop can run during a commit. A failed send restarts the app.
-            apply_diff_in_place(&mut st.tag_values, &data, true);
-            data
+            std::mem::replace(&mut st.pending_aggregate, empty_object())
         };
         let max_age = self.max_age_secs();
-        self.client
+        let sent = self
+            .client
             .update_channel_aggregate(
                 TAG_CHANNEL_NAME,
                 &data,
                 &AggregateOptions { max_age_secs: max_age, ..Default::default() },
             )
-            .await?;
+            .await;
+        let mut st = self.state.lock().unwrap();
+        if let Err(e) = sent {
+            // Keep the batch for the next commit, under anything set since.
+            let newer = std::mem::replace(&mut st.pending_aggregate, data);
+            apply_diff_in_place(&mut st.pending_aggregate, &newer, false);
+            st.dirty = true;
+            return Err(e);
+        }
+        apply_diff_in_place(&mut st.tag_values, &data, true);
         Ok(())
     }
 
@@ -501,7 +505,12 @@ impl TagsRuntime {
             }
             std::mem::replace(&mut st.pending_immediate_log, empty_object())
         };
-        self.client.create_message(TAG_CHANNEL_NAME, &data).await?;
+        if let Err(e) = self.client.create_message(TAG_CHANNEL_NAME, &data).await {
+            let mut st = self.state.lock().unwrap();
+            let newer = std::mem::replace(&mut st.pending_immediate_log, data);
+            apply_diff_in_place(&mut st.pending_immediate_log, &newer, false);
+            return Err(e);
+        }
         Ok(())
     }
 
@@ -512,10 +521,18 @@ impl TagsRuntime {
             if is_empty_object(&st.pending_log) {
                 return Ok(());
             }
-            st.last_log_flush = Some(Instant::now());
-            std::mem::replace(&mut st.pending_log, empty_object())
+            let previous = st.last_log_flush.replace(Instant::now());
+            (std::mem::replace(&mut st.pending_log, empty_object()), previous)
         };
-        self.client.create_message(TAG_CHANNEL_NAME, &data).await?;
+        let (data, previous) = data;
+        if let Err(e) = self.client.create_message(TAG_CHANNEL_NAME, &data).await {
+            // Still due: retried at the next commit.
+            let mut st = self.state.lock().unwrap();
+            st.last_log_flush = previous;
+            let newer = std::mem::replace(&mut st.pending_log, data);
+            apply_diff_in_place(&mut st.pending_log, &newer, false);
+            return Err(e);
+        }
         Ok(())
     }
 

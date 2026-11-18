@@ -96,8 +96,8 @@ pub struct FakeAgentState {
     /// Behave like a device agent built before 2026-06-10: payloads are read
     /// from and sent as the protobuf Struct only, never `data_json`.
     pub legacy: AtomicBool,
-    /// Make every aggregate update take this long, like a busy device agent.
-    pub aggregate_delay_ms: AtomicU64,
+    /// Fail every aggregate update, like an agent that is down.
+    pub fail_aggregates: AtomicBool,
 }
 
 /// The agent's storage key for a channel: bare for its own, `{agent_id}:{name}`
@@ -323,9 +323,8 @@ impl DeviceAgent for FakeAgent {
         &self,
         request: Request<pb::UpdateAggregateRequest>,
     ) -> Result<Response<pb::UpdateAggregateResponse>, Status> {
-        let delay = self.0.aggregate_delay_ms.load(Ordering::Relaxed);
-        if delay > 0 {
-            tokio::time::sleep(std::time::Duration::from_millis(delay)).await;
+        if self.0.fail_aggregates.load(Ordering::Relaxed) {
+            return Err(Status::unavailable("agent down"));
         }
         let req = request.into_inner();
         let data = self.0.decode(&req.data_json, &req.data)?;

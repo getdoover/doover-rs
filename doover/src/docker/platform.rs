@@ -1599,7 +1599,9 @@ pub struct IoImage {
     pub di_count: HashMap<i32, u64>,
     pub di_rate_hz: HashMap<i32, f64>,
     pub devices: Vec<ImageDevice>,
-    /// Increases when any value or channel status changes, and only then.
+    /// Increases with every image a device delivers (on a Doovit 2, every
+    /// board frame, 50 a second, identical or not), every write, and every
+    /// change of channel status.
     pub sequence: u64,
 }
 
@@ -1839,8 +1841,8 @@ impl PlatformClient {
         Ok(ImageWriteResult { failed_do: resp.failed_do, failed_ao: resp.failed_ao })
     }
 
-    /// The image whenever it changes (`subscribeImage`), at most `max_rate_hz`
-    /// times a second (`None`: every change), on a stream channel of its own
+    /// Every new image (`subscribeImage`; every board frame on a Doovit 2),
+    /// at most `max_rate_hz` times a second (`None`: all), on a stream channel of its own
     /// with keepalives. The stream ends when the platform closes it or the
     /// connection drops; [`watch_image`](Self::watch_image) reconnects.
     pub async fn subscribe_image(

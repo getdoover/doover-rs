@@ -13,6 +13,7 @@ mod legacy_struct;
 pub mod modbus;
 pub mod platform;
 pub mod subscriptions;
+mod tag_commit;
 
 pub use application::{
     channels, run, run_with, wire_rpc, write_export, AppContext, Application, RunOptions,

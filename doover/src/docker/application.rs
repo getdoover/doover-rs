@@ -34,6 +34,7 @@ use crate::notifications::{NotificationSet, PendingNotification};
 use crate::docker::device_agent::{AggregateOptions, ChannelRef, DeviceAgentClient};
 use crate::docker::healthcheck::{spawn_healthcheck_server, HealthState};
 use crate::docker::subscriptions::SubscriptionHub;
+use crate::docker::tag_commit::TagCommitter;
 use crate::error::Result;
 use crate::events::{Event, EventSubscription};
 use crate::models::{
@@ -903,6 +904,10 @@ pub async fn run_with<A: Application>(opts: RunOptions) -> Result<()> {
     let mut ticker = tokio::time::interval(period);
     ticker.set_missed_tick_behavior(MissedTickBehavior::Delay);
 
+    // Tags are committed beside the loop (see `tag_commit`), so a slow
+    // device agent does not hold the loop back.
+    let committer = TagCommitter::spawn(ctx.tags.clone());
+
     let mut stop = shutdown_signal();
     loop {
         tokio::select! {
@@ -910,6 +915,9 @@ pub async fn run_with<A: Application>(opts: RunOptions) -> Result<()> {
                 tracing::info!("stop signal received; exiting main loop");
                 if let Err(e) = app.on_shutdown(&ctx).await {
                     tracing::error!("error in on_shutdown: {e}");
+                }
+                if let Err(e) = committer.finish().await {
+                    tracing::error!("error committing tags at shutdown: {e}");
                 }
                 return Ok(());
             }
@@ -920,9 +928,14 @@ pub async fn run_with<A: Application>(opts: RunOptions) -> Result<()> {
                 let started = Instant::now();
                 // pydoover runs main_loop + commit_tags in one try block: an
                 // unhandled error from either marks the app unhealthy, waits,
-                // and exits so the container restarts it.
+                // and exits so the container restarts it. The commit runs
+                // beside the next loop; its error surfaces at the end of a
+                // later one.
                 let result = match app.main_loop(&ctx).await {
-                    Ok(()) => ctx.tags.commit_tags().await,
+                    Ok(()) => {
+                        committer.request();
+                        committer.take_error()
+                    }
                     Err(e) => Err(e),
                 };
                 if let Err(e) = result {

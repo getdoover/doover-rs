@@ -439,7 +439,13 @@ impl TagsRuntime {
                 return Ok(());
             }
             st.dirty = false;
-            std::mem::replace(&mut st.pending_aggregate, empty_object())
+            let data = std::mem::replace(&mut st.pending_aggregate, empty_object());
+            // Into the cache before the send, not after: reads (which see the
+            // cache plus what is still buffered) must not go back to the old
+            // values while the send is in flight, which they would now that
+            // the loop can run during a commit. A failed send restarts the app.
+            apply_diff_in_place(&mut st.tag_values, &data, true);
+            data
         };
         let max_age = self.max_age_secs();
         self.client
@@ -449,8 +455,6 @@ impl TagsRuntime {
                 &AggregateOptions { max_age_secs: max_age, ..Default::default() },
             )
             .await?;
-        let mut st = self.state.lock().unwrap();
-        apply_diff_in_place(&mut st.tag_values, &data, true);
         Ok(())
     }
 

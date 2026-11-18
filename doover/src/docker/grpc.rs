@@ -75,7 +75,7 @@ impl SharedChannel {
     /// channel health is handled by the retry-on-fresh-channel path).
     ///
     /// `service_name` is the health-check service name, e.g.
-    /// `doover.PlatformInterface`.
+    /// `platform_iface.platformIface`.
     pub fn new(uri: impl Into<String>, service_name: impl Into<String>) -> Result<Self> {
         let uri = uri.into();
         let endpoint = Endpoint::from_shared(uri.clone())

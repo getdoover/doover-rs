@@ -61,5 +61,9 @@ name = "level_sensor"
 path = "examples/level_sensor.rs"
 
 [[example]]
+name = "image_scan"
+path = "examples/image_scan.rs"
+
+[[example]]
 name = "load_smasher"
 path = "examples/load_smasher.rs"

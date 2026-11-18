@@ -11,12 +11,14 @@
 //! Unary calls share one persistent channel with per-call deadlines and a
 //! rebuild-and-retry-once path for `UNAVAILABLE` (see [`crate::docker::grpc`]).
 
+use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use futures_util::{Stream, StreamExt};
 use serde_json::Value;
+use tokio::sync::watch;
 use tokio::task::JoinHandle;
 
 use doover_proto::platform_iface as pb;
@@ -25,8 +27,9 @@ use pb::platform_iface_client::PlatformIfaceClient as GenClient;
 use crate::docker::grpc::{check_response_header, SharedChannel};
 use crate::error::{DooverError, Result};
 
-/// Health-check service name (pydoover `PlatformInterface.service_name`).
-const SERVICE_NAME: &str = "doover.PlatformInterface";
+/// Health-check service name: the proto's own service name, which is what
+/// the platform interface registers its gRPC health under.
+const SERVICE_NAME: &str = "platform_iface.platformIface";
 
 /// A digital-input edge selector (`"rising"`, `"falling"` or `"both"` in
 /// pydoover's string-typed APIs).
@@ -1500,6 +1503,381 @@ impl PulseCounter {
     }
 }
 
+// ------------------------------------------------------------------
+// Process image
+// ------------------------------------------------------------------
+//
+// The whole I/O image in one message: every channel of every device (the
+// master, then each slave) in the flat numbering `getIoTable` describes,
+// each with its quality. This is the PLC-style way to read I/O: a scan takes
+// one consistent image at its start instead of a call per channel, and
+// writes its outputs back in one call. `watch_image` keeps the latest image
+// from the platform's `subscribeImage` stream, so reading it at the top of a
+// scan costs no call and never waits.
+
+/// Why a channel's value isn't plainly good (the platform's
+/// `ChannelQuality`). A value this build doesn't know is `Other` and counts as
+/// not good, as the proto asks.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ChannelQuality {
+    Good,
+    /// The device's data is older than its staleness limit.
+    Stale,
+    /// The device hasn't answered yet, or has dropped off.
+    Offline,
+    /// The device answered but gave no value for this channel.
+    NoValue,
+    /// The hardware reports a fault on this channel.
+    Fault,
+    /// An analog input below its valid range (e.g. a 4-20 mA wire break).
+    UnderRange,
+    /// An analog input above its valid range.
+    OverRange,
+    /// An input or output tripped on overcurrent.
+    Overcurrent,
+    Other(i32),
+}
+
+impl ChannelQuality {
+    fn from_i32(v: i32) -> Self {
+        match pb::ChannelQuality::try_from(v) {
+            Ok(pb::ChannelQuality::Good) => Self::Good,
+            Ok(pb::ChannelQuality::Stale) => Self::Stale,
+            Ok(pb::ChannelQuality::Offline) => Self::Offline,
+            Ok(pb::ChannelQuality::NoValue) => Self::NoValue,
+            Ok(pb::ChannelQuality::Fault) => Self::Fault,
+            Ok(pb::ChannelQuality::UnderRange) => Self::UnderRange,
+            Ok(pb::ChannelQuality::OverRange) => Self::OverRange,
+            Ok(pb::ChannelQuality::Overcurrent) => Self::Overcurrent,
+            Err(_) => Self::Other(v),
+        }
+    }
+
+    pub fn is_good(self) -> bool {
+        self == Self::Good
+    }
+}
+
+/// A channel whose quality isn't `Good`, and why.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ChannelStatus {
+    pub quality: ChannelQuality,
+    pub detail: Option<String>,
+}
+
+/// One device's part of the image: the master (`index` -1), then each slave.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ImageDevice {
+    pub index: i32,
+    pub name: String,
+    /// True while the device's data is fresh enough to serve.
+    pub online: bool,
+    /// Age of the device's latest successful poll when the image was built;
+    /// `None` before the first poll.
+    pub age_ms: Option<u64>,
+    pub last_error: Option<String>,
+    /// Wall-clock time of that poll (Unix ms). `age_ms` is the reliable
+    /// measure on a device whose clock hasn't synced.
+    pub timestamp_ms: Option<u64>,
+}
+
+/// The process image (`getImage` / `subscribeImage`). Vectors are indexed by
+/// flat channel number and never shift: a channel without a good value still
+/// has an entry (false / 0 when there's no value at all) and is listed in the
+/// matching status map, which holds only channels that aren't `Good`.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct IoImage {
+    pub di: Vec<bool>,
+    pub r#do: Vec<bool>,
+    pub ai: Vec<f64>,
+    pub ao: Vec<f64>,
+    pub di_status: HashMap<i32, ChannelStatus>,
+    pub do_status: HashMap<i32, ChannelStatus>,
+    pub ai_status: HashMap<i32, ChannelStatus>,
+    pub ao_status: HashMap<i32, ChannelStatus>,
+    /// Pulse totals and rates, for the DIs that have them.
+    pub di_count: HashMap<i32, u64>,
+    pub di_rate_hz: HashMap<i32, f64>,
+    pub devices: Vec<ImageDevice>,
+    /// Increases with every image a device delivers (on a Doovit 2, every
+    /// board frame, 50 a second, identical or not), every write, and every
+    /// change of channel status.
+    pub sequence: u64,
+}
+
+fn statuses(map: HashMap<i32, pb::ChannelStatus>) -> HashMap<i32, ChannelStatus> {
+    map.into_iter()
+        .map(|(ch, s)| (ch, ChannelStatus { quality: ChannelQuality::from_i32(s.quality), detail: s.detail }))
+        .collect()
+}
+
+/// A channel's quality: the status map's, `Good` when it isn't listed, and
+/// `NoValue` for a channel the image doesn't have.
+fn quality_of(len: usize, status: &HashMap<i32, ChannelStatus>, ch: i32) -> ChannelQuality {
+    if ch < 0 || ch as usize >= len {
+        return ChannelQuality::NoValue;
+    }
+    status.get(&ch).map_or(ChannelQuality::Good, |s| s.quality)
+}
+
+impl IoImage {
+    fn from_pb(resp: pb::GetImageResponse) -> Self {
+        Self {
+            di: resp.di,
+            r#do: resp.r#do,
+            ai: resp.ai,
+            ao: resp.ao,
+            di_status: statuses(resp.di_status),
+            do_status: statuses(resp.do_status),
+            ai_status: statuses(resp.ai_status),
+            ao_status: statuses(resp.ao_status),
+            di_count: resp.di_count,
+            di_rate_hz: resp.di_rate_hz,
+            devices: resp
+                .devices
+                .into_iter()
+                .map(|d| ImageDevice {
+                    index: d.index,
+                    name: d.name,
+                    online: d.online,
+                    age_ms: d.age_ms,
+                    last_error: d.last_error,
+                    timestamp_ms: d.timestamp_ms,
+                })
+                .collect(),
+            sequence: resp.sequence,
+        }
+    }
+
+    pub fn ai_quality(&self, ch: i32) -> ChannelQuality {
+        quality_of(self.ai.len(), &self.ai_status, ch)
+    }
+
+    pub fn di_quality(&self, ch: i32) -> ChannelQuality {
+        quality_of(self.di.len(), &self.di_status, ch)
+    }
+
+    pub fn do_quality(&self, ch: i32) -> ChannelQuality {
+        quality_of(self.r#do.len(), &self.do_status, ch)
+    }
+
+    pub fn ao_quality(&self, ch: i32) -> ChannelQuality {
+        quality_of(self.ao.len(), &self.ao_status, ch)
+    }
+
+    /// An analog input's value, whatever its quality (`None` only for a
+    /// channel the image doesn't have). Check [`ai_quality`](Self::ai_quality),
+    /// or use [`good_ai`](Self::good_ai).
+    pub fn ai(&self, ch: i32) -> Option<f64> {
+        usize::try_from(ch).ok().and_then(|i| self.ai.get(i).copied())
+    }
+
+    /// An analog input's value only when its quality is `Good`.
+    pub fn good_ai(&self, ch: i32) -> Option<f64> {
+        self.ai_quality(ch).is_good().then(|| self.ai(ch)).flatten()
+    }
+
+    pub fn di(&self, ch: i32) -> Option<bool> {
+        usize::try_from(ch).ok().and_then(|i| self.di.get(i).copied())
+    }
+
+    /// A digital input's level only when its quality is `Good`.
+    pub fn good_di(&self, ch: i32) -> Option<bool> {
+        self.di_quality(ch).is_good().then(|| self.di(ch)).flatten()
+    }
+
+    pub fn r#do(&self, ch: i32) -> Option<bool> {
+        usize::try_from(ch).ok().and_then(|i| self.r#do.get(i).copied())
+    }
+
+    pub fn ao(&self, ch: i32) -> Option<f64> {
+        usize::try_from(ch).ok().and_then(|i| self.ao.get(i).copied())
+    }
+}
+
+/// The outputs [`set_image`](PlatformClient::set_image) couldn't write; the
+/// others were written.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct ImageWriteResult {
+    pub failed_do: Vec<i32>,
+    pub failed_ao: Vec<i32>,
+}
+
+impl ImageWriteResult {
+    pub fn all_written(&self) -> bool {
+        self.failed_do.is_empty() && self.failed_ao.is_empty()
+    }
+}
+
+/// The latest image from a [`watch_image`](PlatformClient::watch_image), and
+/// when it arrived here.
+#[derive(Debug, Clone)]
+pub struct LatestImage {
+    pub image: Arc<IoImage>,
+    pub received: Instant,
+}
+
+impl LatestImage {
+    /// How long ago this image arrived.
+    pub fn age(&self) -> Duration {
+        self.received.elapsed()
+    }
+}
+
+/// The latest process image, kept by a background task that follows the
+/// platform's `subscribeImage` stream and reconnects when it drops. Reading
+/// it never makes a call or waits: a scan takes [`latest`](Self::latest) at
+/// its start and checks [`LatestImage::age`] against its own staleness
+/// limit. Dropping the watch (or [`PlatformClient::close`]) stops the task.
+pub struct ImageWatch {
+    rx: watch::Receiver<Option<LatestImage>>,
+    task: tokio::task::AbortHandle,
+}
+
+impl ImageWatch {
+    /// The latest image, or `None` before the first one arrives.
+    pub fn latest(&self) -> Option<LatestImage> {
+        self.rx.borrow().clone()
+    }
+
+    /// Wait for the next image (for event-driven code; a scan doesn't need
+    /// it). Errors only when the watch has stopped.
+    pub async fn changed(&mut self) -> Result<LatestImage> {
+        loop {
+            self.rx
+                .changed()
+                .await
+                .map_err(|_| DooverError::Other("image watch stopped".into()))?;
+            if let Some(latest) = self.rx.borrow_and_update().clone() {
+                return Ok(latest);
+            }
+        }
+    }
+
+    /// Stop following the stream; [`latest`](Self::latest) keeps the last image.
+    pub fn stop(&self) {
+        self.task.abort();
+    }
+}
+
+impl Drop for ImageWatch {
+    fn drop(&mut self) {
+        self.task.abort();
+    }
+}
+
+/// How long the image watch waits before reconnecting a dropped stream.
+const IMAGE_WATCH_RETRY: Duration = Duration::from_secs(1);
+
+/// The image watch's loop, apart from the gRPC client so it can be tested
+/// with any stream: connect, publish every image, reconnect after
+/// `retry` ([`IMAGE_WATCH_RETRY`]) when the stream fails or ends.
+async fn run_image_watch<C, Fut, S>(
+    mut connect: C,
+    tx: watch::Sender<Option<LatestImage>>,
+    retry: Duration,
+)
+where
+    C: FnMut() -> Fut,
+    Fut: std::future::Future<Output = Result<S>>,
+    S: Stream<Item = Result<IoImage>> + Unpin,
+{
+    loop {
+        match connect().await {
+            Ok(mut stream) => {
+                while let Some(item) = stream.next().await {
+                    match item {
+                        Ok(image) => {
+                            tx.send_replace(Some(LatestImage {
+                                image: Arc::new(image),
+                                received: Instant::now(),
+                            }));
+                        }
+                        Err(e) => {
+                            tracing::warn!("platform image stream failed: {e}; reconnecting");
+                            break;
+                        }
+                    }
+                }
+            }
+            Err(e) => tracing::warn!("platform image stream unavailable: {e}; retrying"),
+        }
+        if tx.is_closed() {
+            return;
+        }
+        tokio::time::sleep(retry).await;
+    }
+}
+
+impl PlatformClient {
+    /// The whole process image in one call (`getImage`), served from the
+    /// platform's last poll of each device: it never waits on hardware.
+    pub async fn fetch_image(&self) -> Result<IoImage> {
+        let resp = self
+            .shared
+            .call(|ch| async move { GenClient::new(ch).get_image(pb::GetImageRequest {}).await })
+            .await?;
+        Self::check(resp.response_header.clone())?;
+        Ok(IoImage::from_pb(resp))
+    }
+
+    /// Write any number of DOs and AOs in one call (`setImage`). The result
+    /// lists the channels whose write failed; the others were written.
+    pub async fn set_image(&self, dos: &[(i32, bool)], aos: &[(i32, f64)]) -> Result<ImageWriteResult> {
+        let req = pb::SetImageRequest {
+            r#do: dos.iter().map(|(ch, _)| *ch).collect(),
+            do_value: dos.iter().map(|(_, v)| *v).collect(),
+            ao: aos.iter().map(|(ch, _)| *ch).collect(),
+            ao_value: aos.iter().map(|(_, v)| *v).collect(),
+        };
+        let resp = self
+            .shared
+            .call(|ch| {
+                let req = req.clone();
+                async move { GenClient::new(ch).set_image(req).await }
+            })
+            .await?;
+        Self::check(resp.response_header)?;
+        Ok(ImageWriteResult { failed_do: resp.failed_do, failed_ao: resp.failed_ao })
+    }
+
+    /// Every new image (`subscribeImage`; every board frame on a Doovit 2),
+    /// at most `max_rate_hz` times a second (`None`: all), on a stream channel of its own
+    /// with keepalives. The stream ends when the platform closes it or the
+    /// connection drops; [`watch_image`](Self::watch_image) reconnects.
+    pub async fn subscribe_image(
+        &self,
+        max_rate_hz: Option<f32>,
+    ) -> Result<impl Stream<Item = Result<IoImage>> + Unpin> {
+        let req = pb::SubscribeImageRequest { max_rate_hz };
+        let mut client = GenClient::new(self.shared.stream_channel());
+        let stream = client.subscribe_image(req).await?.into_inner();
+        Ok(stream.map(|item| {
+            let resp = item?;
+            Self::check(resp.response_header.clone())?;
+            Ok(IoImage::from_pb(resp))
+        }))
+    }
+
+    /// Follow the image in the background (see [`ImageWatch`]). The task is
+    /// also stopped by [`close`](Self::close).
+    pub fn watch_image(&self, max_rate_hz: Option<f32>) -> ImageWatch {
+        let (tx, rx) = watch::channel(None);
+        let client = self.clone();
+        let task = tokio::spawn(run_image_watch(
+            move || {
+                let client = client.clone();
+                async move { client.subscribe_image(max_rate_hz).await }
+            },
+            tx,
+            IMAGE_WATCH_RETRY,
+        ));
+        let abort = task.abort_handle();
+        self.listeners.lock().expect("listener lock poisoned").push(task);
+        ImageWatch { rx, task: abort }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1605,5 +1983,141 @@ mod tests {
         // Now in events mode; live-pulse mode must refuse to start.
         counter.start_listener_pulses();
         assert!(!counter.state().receiving_pulses);
+    }
+}
+
+#[cfg(test)]
+mod image_tests {
+    use super::*;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    fn response() -> pb::GetImageResponse {
+        let mut ai_status = HashMap::new();
+        ai_status.insert(1, pb::ChannelStatus { quality: pb::ChannelQuality::UnderRange as i32, detail: Some("1.2 mA".into()) });
+        ai_status.insert(2, pb::ChannelStatus { quality: 99, detail: None });
+        pb::GetImageResponse {
+            response_header: None,
+            di: vec![true, false],
+            r#do: vec![false; 10],
+            ai: vec![15.5, 1.2, 0.0],
+            ao: vec![0.0, 0.0],
+            ai_status,
+            di_count: HashMap::from([(0, 42)]),
+            devices: vec![pb::DeviceImageStatus {
+                index: -1,
+                name: "doovit2".into(),
+                online: true,
+                age_ms: Some(12),
+                last_error: None,
+                timestamp_ms: None,
+            }],
+            sequence: 7,
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn image_from_response() {
+        let img = IoImage::from_pb(response());
+        assert_eq!(img.sequence, 7);
+        assert_eq!(img.r#do.len(), 10);
+        assert_eq!(img.di_count.get(&0), Some(&42));
+        assert_eq!(img.devices[0].index, -1);
+        assert_eq!(img.devices[0].age_ms, Some(12));
+        assert_eq!(img.ai_status[&1].detail.as_deref(), Some("1.2 mA"));
+    }
+
+    #[test]
+    fn qualities_and_values() {
+        let img = IoImage::from_pb(response());
+        assert_eq!(img.ai_quality(0), ChannelQuality::Good);
+        assert_eq!(img.good_ai(0), Some(15.5));
+        // Not good: the value is still there, good_ai withholds it.
+        assert_eq!(img.ai_quality(1), ChannelQuality::UnderRange);
+        assert_eq!(img.ai(1), Some(1.2));
+        assert_eq!(img.good_ai(1), None);
+        // A quality this build doesn't know counts as not good.
+        assert_eq!(img.ai_quality(2), ChannelQuality::Other(99));
+        assert_eq!(img.good_ai(2), None);
+        // Channels the image doesn't have.
+        assert_eq!(img.ai(3), None);
+        assert_eq!(img.ai(-1), None);
+        assert_eq!(img.ai_quality(3), ChannelQuality::NoValue);
+        assert_eq!(img.good_di(0), Some(true));
+        assert_eq!(img.do_quality(9), ChannelQuality::Good);
+        assert_eq!(img.do_quality(10), ChannelQuality::NoValue);
+    }
+
+    #[test]
+    fn write_result() {
+        assert!(ImageWriteResult::default().all_written());
+        assert!(!ImageWriteResult { failed_do: vec![3], failed_ao: vec![] }.all_written());
+    }
+
+    const RETRY: Duration = Duration::from_millis(10);
+
+    fn image(sequence: u64) -> Result<IoImage> {
+        Ok(IoImage { sequence, ..Default::default() })
+    }
+
+    #[tokio::test]
+    async fn watch_publishes_and_reconnects() {
+        let connects = Arc::new(AtomicUsize::new(0));
+        let (tx, mut rx) = watch::channel(None);
+        let c = Arc::clone(&connects);
+        let task = tokio::spawn(run_image_watch(
+            move || {
+                let n = c.fetch_add(1, Ordering::SeqCst);
+                async move {
+                    // First stream: two images then an error; second: one image, then ends.
+                    let items = if n == 0 {
+                        vec![image(1), image(2), Err(DooverError::Other("dropped".into()))]
+                    } else {
+                        vec![image(3)]
+                    };
+                    Ok(futures_util::stream::iter(items))
+                }
+            },
+            tx,
+            RETRY,
+        ));
+        let mut seen = Vec::new();
+        while seen.last() != Some(&3) {
+            rx.changed().await.unwrap();
+            if let Some(latest) = rx.borrow_and_update().clone() {
+                seen.push(latest.image.sequence);
+            }
+        }
+        // Latest wins: a watch may skip images a slow reader missed, but
+        // never goes backwards, and the image after the reconnect arrives.
+        assert!(seen.windows(2).all(|w| w[0] < w[1]), "out of order: {seen:?}");
+        assert!(connects.load(Ordering::SeqCst) >= 2);
+        // Dropping the receiver lets the loop finish at its next retry.
+        drop(rx);
+        tokio::time::timeout(Duration::from_secs(5), task).await.unwrap().unwrap();
+    }
+
+    #[tokio::test]
+    async fn watch_retries_when_unavailable() {
+        let connects = Arc::new(AtomicUsize::new(0));
+        let (tx, mut rx) = watch::channel(None);
+        let c = Arc::clone(&connects);
+        let _task = tokio::spawn(run_image_watch(
+            move || {
+                let n = c.fetch_add(1, Ordering::SeqCst);
+                async move {
+                    if n < 2 {
+                        Err(DooverError::Other("connection refused".into()))
+                    } else {
+                        Ok(futures_util::stream::iter(vec![image(5)]))
+                    }
+                }
+            },
+            tx,
+            RETRY,
+        ));
+        rx.changed().await.unwrap();
+        assert_eq!(rx.borrow().as_ref().map(|l| l.image.sequence), Some(5));
+        assert_eq!(connects.load(Ordering::SeqCst), 3);
     }
 }

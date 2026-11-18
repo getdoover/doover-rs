@@ -609,6 +609,86 @@ mod declarative_app {
         .unwrap_or_else(|_| panic!("timed out waiting for {what}"));
     }
 
+    /// A tag counter set on every loop of a 10 ms loop.
+    static FAST_LOOPS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    /// Set once by the test: the next loop sets the `marker` tag, once.
+    static MARK: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+    struct FastApp;
+
+    #[doover::async_trait]
+    impl Application for FastApp {
+        type Config = ();
+        type Tags = ();
+        type Ui = ();
+        type Notifications = ();
+
+        fn create(_config: (), _tags: (), _ui: ()) -> Self {
+            Self
+        }
+
+        fn loop_target_period(&self) -> Duration {
+            Duration::from_millis(10)
+        }
+
+        async fn main_loop(&mut self, ctx: &AppContext) -> doover::Result<()> {
+            let n = FAST_LOOPS.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
+            if MARK.swap(false, std::sync::atomic::Ordering::Relaxed) {
+                ctx.set_tags([("marker".to_string(), json!(true))]).await?;
+            }
+            ctx.set_tags([("count".to_string(), json!(n))]).await
+        }
+    }
+
+    #[tokio::test]
+    async fn a_failed_tag_commit_is_kept_and_retried_without_a_restart() {
+        let (state, uri) = spawn_fake_agent().await;
+        state.seed_aggregate("tag_values", json!({}));
+        state.seed_aggregate("dv-ui-sub", json!({}));
+        let mut config_path = std::env::temp_dir();
+        config_path.push(format!("doover-rs-fast-app-{}.json", std::process::id()));
+        std::fs::write(&config_path, r#"{"APP_KEY": "fast_app"}"#).unwrap();
+        let opts = RunOptions {
+            dda_uri: uri,
+            plt_uri: String::new(),
+            modbus_uri: String::new(),
+            app_key: "fast_app".to_string(),
+            config_fp: Some(config_path.to_string_lossy().into_owned()),
+            healthcheck_port: 49309,
+            debug: false,
+            error_wait: Duration::from_secs(1),
+            config_sync_timeout: Duration::from_secs(5),
+            config_cache: None,
+            dda_connect_timeout: Some(Duration::from_secs(5)),
+        };
+        let handle = tokio::spawn(doover::run_with::<FastApp>(opts));
+        let loops = || FAST_LOOPS.load(std::sync::atomic::Ordering::Relaxed);
+        wait_for("the first loop", || loops() > 0).await;
+
+        // The agent goes down: every commit fails, and the loop keeps going.
+        state.fail_aggregates.store(true, std::sync::atomic::Ordering::Relaxed);
+        let before = loops();
+        MARK.store(true, std::sync::atomic::Ordering::Relaxed);
+        tokio::time::sleep(Duration::from_millis(300)).await;
+        assert!(!MARK.load(std::sync::atomic::Ordering::Relaxed), "the marker was set during the outage");
+        assert!(!handle.is_finished(), "a failed commit does not stop the app");
+        assert!(loops() > before + 10, "the loop kept running");
+
+        // Back up: the latest count gets through, and so does the marker,
+        // set once while every commit was failing.
+        state.fail_aggregates.store(false, std::sync::atomic::Ordering::Relaxed);
+        let target = loops() as f64;
+        wait_for("the latest count and the marker in the aggregate", || {
+            let aggregates = state.aggregates.lock().unwrap();
+            let own = aggregates.get("tag_values").map(|v| v["fast_app"].clone());
+            own.is_some_and(|own| {
+                own["count"].as_f64().is_some_and(|c| c >= target) && own["marker"] == json!(true)
+            })
+        })
+        .await;
+        handle.abort();
+    }
+
     #[tokio::test]
     async fn ui_state_published_after_setup_and_on_change() {
         let (state, handle) = spawn_app(49301).await;

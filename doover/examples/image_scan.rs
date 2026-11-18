@@ -44,6 +44,7 @@ async fn main() -> doover::Result<()> {
     let mut ticker = tokio::time::interval(Duration::from_secs_f64(1.0 / hz));
     let (mut ages, mut read_us, mut scans, mut new_images) = (Vec::new(), Vec::new(), 0u64, 0u64);
     let mut last_seq = 0;
+    let mut first_seq = None;
     let mut last_value = None;
     let end = Instant::now() + Duration::from_secs(secs);
     while Instant::now() < end {
@@ -53,6 +54,7 @@ async fn main() -> doover::Result<()> {
         let value = latest.image.good_ai(ai);
         read_us.push(t.elapsed().as_secs_f64() * 1e6);
         ages.push(latest.age().as_secs_f64() * 1e3);
+        first_seq.get_or_insert(latest.image.sequence);
         if latest.image.sequence != last_seq {
             new_images += 1;
             last_seq = latest.image.sequence;
@@ -69,5 +71,8 @@ async fn main() -> doover::Result<()> {
         pct(&mut read_us, 0.5), pct(&mut read_us, 0.99),
         pct(&mut ages, 0.5), pct(&mut ages, 0.99), pct(&mut ages, 1.0),
     );
+    if let Some(first) = first_seq {
+        println!("image sequence span {} (images the platform interface stored)", last_seq - first);
+    }
     Ok(())
 }
